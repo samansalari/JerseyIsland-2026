@@ -1,6 +1,35 @@
 import { z } from "zod";
 
 /**
+ * Valid-shaped placeholder so `next build` can finish when `DATABASE_URL` is not
+ * injected yet (e.g. some Railway/CI builds). Refused at 127.0.0.1:1; only used
+ * if no real `DATABASE_URL` is set. Production **must** set `DATABASE_URL`.
+ */
+const BUILD_PLACEHOLDER_DATABASE_URL =
+  "postgresql://votepulse_build:unused@127.0.0.1:1/postgres";
+
+function isNextBuildWithoutDatabaseUrl(): boolean {
+  if (process.env.DATABASE_URL?.trim()) return false;
+  return (
+    process.env.npm_lifecycle_event === "build" ||
+    process.env.NEXT_PHASE === "phase-production-build" ||
+    process.env.NEXT_PHASE === "phase-development-build"
+  );
+}
+
+/**
+ * `next build` evaluates server modules (e.g. API routes) and requires `env` to
+ * parse. Merge a placeholder only for that case so the real `DATABASE_URL` from
+ * Railway (runtime + preferred at build) is still used when present.
+ */
+function getEnvForValidation(): NodeJS.ProcessEnv {
+  if (isNextBuildWithoutDatabaseUrl()) {
+    return { ...process.env, DATABASE_URL: BUILD_PLACEHOLDER_DATABASE_URL };
+  }
+  return process.env;
+}
+
+/**
  * Runtime-validated environment.
  *
  * Anything read at runtime (server components, API routes, drizzle-kit)
@@ -61,7 +90,7 @@ const EnvSchema = z.object({
   RESEND_API_KEY: z.string().optional().default(""),
 });
 
-const parsed = EnvSchema.safeParse(process.env);
+const parsed = EnvSchema.safeParse(getEnvForValidation());
 
 if (!parsed.success) {
   // Surface a clean error instead of letting Zod's raw output leak

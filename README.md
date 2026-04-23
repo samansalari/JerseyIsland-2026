@@ -105,7 +105,7 @@ VotePulse is configured to run on **Railway** as **two services** from the same 
 2. **Settings → Config as code:** `railway.json` (or let Railway detect Next.js and set **Build** `npm run build`, **Start** `npm start`).
 3. **Port:** leave default (Next listens on `PORT`; Railway sets it — `npm run start` uses it).
 4. **Healthcheck:** `GET /api/health` (30s timeout) — set in `railway.json` when that file is used.
-5. **Environment variables:** copy from `.env.example` — at minimum `DATABASE_URL`, `NEXT_PUBLIC_*` Supabase keys, `NEXT_PUBLIC_SITE_URL` (your `*.railway.app` or custom domain), `REVALIDATION_SECRET`, `ADMIN_SECRET` if you use `/admin`, `RESEND_API_KEY` if you use email.
+5. **Environment variables:** copy from `.env.example` — at minimum `DATABASE_URL`, `NEXT_PUBLIC_*` Supabase keys, `NEXT_PUBLIC_SITE_URL` (your `*.railway.app` or custom domain), `REVALIDATION_SECRET`, `ADMIN_SECRET` if you use `/admin`, `RESEND_API_KEY` if you use email. Add **`DATABASE_URL` before the first `npm run build`** on Railway if you want every `/candidates/[slug]` page **pre-generated** at build time; the build can still succeed without it (routes stay on-demand until you set it and rebuild).
 6. `SKIP_DB_HEALTHCHECK` should be `false` (or unset) in production so `/api/health` validates Postgres.
 
 ### Service 2 — Worker (cron / scrapers / enrichment)
