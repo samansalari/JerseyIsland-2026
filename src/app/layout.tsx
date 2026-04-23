@@ -1,12 +1,15 @@
 import type { Metadata, Viewport } from "next";
 import { Archivo } from "next/font/google";
 import Link from "next/link";
+import Script from "next/script";
 import "./globals.css";
 import { env } from "@/lib/env";
 import { JERSEY_RED_PRIMARY_HEX } from "@/lib/brand-metadata";
 import { NavMobile } from "@/components/nav-mobile";
 import { Logo } from "@/components/logo";
 import { NavLinks } from "@/components/nav-links";
+
+const GOOGLE_TAG_ID = "G-4WZWNNE0LP";
 
 const archivo = Archivo({
   subsets: ["latin"],
@@ -117,6 +120,20 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en-GB" className={archivo.variable}>
+      <head>
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${GOOGLE_TAG_ID}`}
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${GOOGLE_TAG_ID}');
+          `}
+        </Script>
+      </head>
       <body className="min-h-screen bg-background font-sans text-foreground">
         {/* Top accent ribbon */}
         <div className="h-[3px] w-full bg-jersey-red" aria-hidden />

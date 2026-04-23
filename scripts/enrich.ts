@@ -93,6 +93,7 @@ interface EnrichmentResult {
     source_quote: string;
     confidence: number;
   }>;
+  election_history?: string;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -162,34 +163,35 @@ async function callGrokForManifesto(
   district: string,
   manifestoRaw: string,
 ): Promise<ManifestoGrokResult> {
-  const systemPrompt = `You are a neutral political analyst summarising election manifestos for Jersey's 2026 general election. You must be balanced, factual, and never editorialize. Every claim must be directly supported by the manifesto text. If the text is ambiguous on an issue, say so rather than guessing.`;
+  const systemPrompt = `You are analysing a Jersey election candidate's profile page. The text may contain election history, biographical details, and declared intentions for 2026. Extract whatever is available. Do not say "no manifesto provided" - work with what exists.`;
 
-  const userPrompt = `Analyse the following manifesto for ${candidateName}, running in ${district}.
+  const userPrompt = `Analyse this profile for ${candidateName}.
 
-Return ONLY a JSON object with this exact structure, no markdown, no preamble:
+Return ONLY valid JSON:
 {
-  "summary": "A 2-3 paragraph neutral summary of their key positions and priorities",
-  "key_promises": ["specific promise 1", "specific promise 2", ...],
+  "summary": "2-3 sentence summary of who this person is and what is known about their 2026 intentions. If limited info, summarise their background and declared intention to stand.",
+  "key_promises": ["any stated intention or past position"],
   "issues": [
     {
       "issue": "one of: housing, healthcare, tax, education, environment, transport, cost_of_living, immigration, economy, public_services",
       "position": "Their stance in 1-2 sentences",
-      "source_quote": "Exact quote from the manifesto text supporting this position",
+      "source_quote": "Exact quote from the profile text supporting this position",
       "confidence": 0.0 to 1.0
     }
-  ]
+  ],
+  "election_history": "brief summary of past elections if present"
 }
 
 Rules:
-- Only include issues the manifesto explicitly addresses
-- source_quote MUST be a verbatim quote from the manifesto text below
-- If the manifesto is vague on an issue, set confidence below 0.5
-- Do NOT infer positions that aren't stated
-- key_promises should be specific and verifiable, not vague
+- Work with profile history, biography, and declared 2026 intentions even when policy detail is sparse
+- Only include issues that are explicitly supported by the text
+- source_quote MUST be a verbatim quote from the text below
+- Do NOT say there is no manifesto; summarise what is actually present
+- If details are sparse, use key_promises for declared intentions or notable positions and leave issues empty when unsupported
 
-Manifesto text:
+Profile text:
 ---
-${manifestoRaw}
+${manifestoRaw.substring(0, 3000)}
 ---`;
 
   for (let attempt = 0; attempt < 2; attempt++) {
@@ -290,20 +292,26 @@ async function enrichOneCandidate(
     });
 
     const now = new Date();
-    await db
-      .update(candidates)
-      .set({
-        aiSummary: gr.summary,
-        aiIssues: validIssues.map((i) => ({
-          issue: i.issue,
-          position: i.position,
-          confidence: i.confidence,
-          source_quote: i.source_quote,
-        })),
-        lastEnrichedAt: now,
-        updatedAt: now,
-      })
-      .where(eq(candidates.id, candidate.id));
+    const summary = gr.summary?.trim() || null;
+    try {
+      await db
+        .update(candidates)
+        .set({
+          aiSummary: summary,
+          aiIssues: validIssues.map((i) => ({
+            issue: i.issue,
+            position: i.position,
+            confidence: i.confidence,
+            source_quote: i.source_quote,
+          })),
+          lastEnrichedAt: now,
+          updatedAt: now,
+        })
+        .where(eq(candidates.id, candidate.id));
+    } catch (error) {
+      console.error("[ERROR] DB save failed:", error);
+      throw error;
+    }
 
     for (const entry of validIssues) {
       const issueId = issueMap.get(entry.issue);

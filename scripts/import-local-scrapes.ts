@@ -101,6 +101,26 @@ function extractBio(markdown: string, _name: string): string | null {
   return cleanBio.length > 50 ? cleanBio.substring(0, 500) : null;
 }
 
+function extractDistrict(markdown: string): string | null {
+  const normalized = markdown.toLowerCase();
+
+  for (const district of JERSEY_DISTRICTS) {
+    if (normalized.includes(district.toLowerCase())) return district;
+  }
+
+  const districtMatch = markdown.match(/(?:District|district)\s+(\d+)/);
+  if (districtMatch?.[1]) return `District ${districtMatch[1]}`;
+
+  if (
+    normalized.includes("senators election") ||
+    normalized.includes("2026 senators")
+  ) {
+    return "Island-wide (Senator)";
+  }
+
+  return null;
+}
+
 function cleanMarkdown(markdown: string): string {
   const lines = markdown.split("\n");
   const cleaned: string[] = [];
@@ -209,8 +229,7 @@ async function main() {
       }
 
       const slug = toSlug(name);
-      const district =
-        JERSEY_DISTRICTS.find((d) => markdown.includes(d)) || "Unknown";
+      const district = extractDistrict(markdown) || "Unknown";
       const party = JERSEY_PARTIES.find((p) => markdown.includes(p)) || null;
       const bio = extractBio(markdown, name);
       const manifesto_raw = extractManifesto(markdown);
@@ -263,6 +282,7 @@ async function main() {
       const existing = await db
         .select({
           id: candidates.id,
+          district: candidates.district,
           sourceUrls: candidates.sourceUrls,
           manifestoRaw: candidates.manifestoRaw,
           manifestoUrl: candidates.manifestoUrl,
@@ -283,6 +303,7 @@ async function main() {
             sourceUrls: [
               ...new Set([...(ex.sourceUrls || []), ...c.source_urls]),
             ],
+            district: ex.district !== "Unknown" ? ex.district : c.district,
             bio: c.bio || ex.bio,
             photoUrl: ex.photoUrl || c.photo_url,
             party: ex.party || c.party,
