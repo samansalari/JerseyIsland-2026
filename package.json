@@ -38,6 +38,10 @@
     "@mendable/firecrawl-js": "^1.8.1",
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.104.1",
+    "@tailwindcss/postcss": "^4.2.4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
     "dotenv": "^16.4.5",
     "drizzle-orm": "^0.36.4",
     "next": "^15.0.7",
@@ -47,20 +51,17 @@
     "react-dom": "19.0.0-rc-66855b96-20241106",
     "resend": "^6.12.2",
     "rss-parser": "^3.13.0",
-    "zod": "^3.23.8",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "typescript": "^5"
+    "typescript": "^5",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/node-cron": "^3.0.11",
-    "autoprefixer": "^10.4.20",
+    "autoprefixer": "^10.5.0",
     "drizzle-kit": "^0.28.1",
     "eslint": "^9.14.0",
     "eslint-config-next": "^15.0.7",
-    "postcss": "^8.4.49",
-    "tailwindcss": "^3.4.15",
+    "postcss": "^8.5.10",
+    "tailwindcss": "^3.4.19",
     "tsx": "^4.19.2"
   },
   "engines": {
