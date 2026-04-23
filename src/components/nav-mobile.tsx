@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 /**
  * Mobile slide-out nav. Renders only on <md breakpoints.
@@ -14,6 +15,7 @@ export function NavMobile({
   links: { href: string; label: string }[];
 }) {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
 
   // Lock body scroll when open
   useEffect(() => {
@@ -43,7 +45,7 @@ export function NavMobile({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex h-9 w-9 items-center justify-center rounded-md text-on-primary/75 transition-colors hover:bg-white/10 hover:text-on-primary"
+        className="flex h-9 w-9 items-center justify-center rounded-md text-[#0D1B2A] transition-colors hover:bg-[#0D1B2A]/5 hover:text-[#A31621]"
         aria-label={open ? "Close menu" : "Open menu"}
         aria-expanded={open}
       >
@@ -73,7 +75,7 @@ export function NavMobile({
       {/* Overlay */}
       {open && (
         <div
-          className="fixed inset-0 z-50 bg-navy/30 backdrop-blur-sm"
+          className="fixed inset-0 z-50 bg-[#0D1B2A]/15 backdrop-blur-sm"
           onClick={() => setOpen(false)}
           aria-hidden
         />
@@ -116,7 +118,12 @@ export function NavMobile({
               <Link
                 href={href}
                 onClick={() => setOpen(false)}
-                className="block rounded-md px-3 py-2.5 text-[15px] font-medium text-navy transition-colors hover:bg-navy/5"
+                aria-current={pathname === href ? "page" : undefined}
+                className={`block rounded-md px-3 py-2.5 text-[15px] transition-colors ${
+                  pathname === href
+                    ? "font-semibold text-[#A31621]"
+                    : "font-medium text-[#0D1B2A] hover:bg-[#0D1B2A]/5 hover:text-[#A31621]"
+                }`}
               >
                 {label}
               </Link>

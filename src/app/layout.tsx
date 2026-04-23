@@ -6,6 +6,7 @@ import { env } from "@/lib/env";
 import { JERSEY_RED_PRIMARY_HEX } from "@/lib/brand-metadata";
 import { NavMobile } from "@/components/nav-mobile";
 import { Logo } from "@/components/logo";
+import { NavLinks } from "@/components/nav-links";
 
 const archivo = Archivo({
   subsets: ["latin"],
@@ -95,21 +96,15 @@ export default function RootLayout({
         <div className="h-[3px] w-full bg-jersey-red" aria-hidden />
 
         {/* ── Header ────────────────────────────────────── */}
-        <header className="sticky top-0 z-40 border-b border-gold/20 bg-navy/95 backdrop-blur-sm">
+        <header className="sticky top-0 z-40 border-b border-[#0D1B2A]/10 bg-[#F5F5F0]/95 backdrop-blur-sm">
           <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-5">
-            <Logo size="md" showWordmark href="/" />
+            <Logo size="md" showWordmark href="/" wordmarkTheme="dark" />
 
             {/* Desktop nav */}
             <nav className="hidden items-center gap-1 md:flex" aria-label="Main">
-              {NAV_LINKS.map(({ href, label }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  className="rounded-md px-3 py-1.5 text-[13px] font-medium text-on-primary/75 transition-colors hover:bg-white/10 hover:text-on-primary"
-                >
-                  {label}
-                </Link>
-              ))}
+              <NavLinks
+                links={NAV_LINKS as unknown as { href: string; label: string }[]}
+              />
             </nav>
 
             {/* Mobile hamburger — client component */}

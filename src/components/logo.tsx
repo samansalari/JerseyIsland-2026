@@ -6,6 +6,7 @@ interface LogoProps {
   showWordmark?: boolean;
   href?: string;
   className?: string;
+  wordmarkTheme?: "light" | "dark";
 }
 
 const sizes = {
@@ -19,8 +20,13 @@ export function Logo({
   showWordmark = true,
   href = "/",
   className = "",
+  wordmarkTheme = "light",
 }: LogoProps) {
   const px = sizes[size];
+  const wordmarkColors =
+    wordmarkTheme === "dark"
+      ? { vote: "#0D1B2A", pulse: "#A31621" }
+      : { vote: "#F5E8C8", pulse: "#C8922A" };
 
   const content = (
     <div className={`flex items-center gap-2.5 ${className}`}>
@@ -29,7 +35,7 @@ export function Logo({
         alt="VotePulse"
         width={px}
         height={px}
-        className="flex-shrink-0"
+        className="flex-shrink-0 rounded-xl shadow-sm"
         priority
       />
 
@@ -41,8 +47,8 @@ export function Logo({
             fontFamily: "Archivo, sans-serif",
           }}
         >
-          <span style={{ color: "#F5E8C8" }}>Vote</span>
-          <span style={{ color: "#C8922A" }}>Pulse</span>
+          <span style={{ color: wordmarkColors.vote }}>Vote</span>
+          <span style={{ color: wordmarkColors.pulse }}>Pulse</span>
         </span>
       )}
     </div>
