@@ -18,11 +18,11 @@ const archivo = Archivo({
 export const metadata: Metadata = {
   metadataBase: new URL(env.NEXT_PUBLIC_SITE_URL),
   title: {
-    default: "Home | VotePulse — Jersey 2026 Election",
-    template: "%s | VotePulse — Jersey 2026 Election",
+    default: "VotePulse — Jersey 2026 election intelligence",
+    template: "%s | VotePulse",
   },
   description:
-    "Independent candidate, policy, and district tracking for Jersey's 2026 general election. Non-partisan. Sources cited.",
+    "Non-partisan public election intelligence for Jersey's 2026 general election. Candidate summaries, policy comparisons, and news tracking.",
   icons: {
     icon: [
       { url: "/favicons/votepulse_icon_navy.svg", type: "image/svg+xml" },
@@ -34,16 +34,19 @@ export const metadata: Metadata = {
   manifest: "/favicons/site.webmanifest",
   applicationName: "VotePulse",
   keywords: [
-    "Jersey election",
-    "Jersey 2026",
-    "States Assembly",
-    "Deputies",
-    "Constables",
-    "Senators",
-    "candidates",
-    "policy tracker",
+    "Jersey election 2026",
+    "Jersey candidates 2026",
+    "States of Jersey election",
+    "Jersey politics",
+    "Jersey voting",
+    "vote Jersey",
+    "Jersey election candidates",
+    "Jersey manifesto",
     "VotePulse",
   ],
+  authors: [{ name: "VotePulse" }],
+  creator: "VotePulse",
+  publisher: "VotePulse",
   alternates: {
     canonical: "/",
   },
@@ -52,9 +55,9 @@ export const metadata: Metadata = {
     siteName: "VotePulse",
     locale: "en_GB",
     url: "/",
-    title: "Home | VotePulse — Jersey 2026 Election",
+    title: "VotePulse — Jersey 2026 election intelligence",
     description:
-      "Independent candidate, policy, and district tracking for Jersey's 2026 general election. Non-partisan. Sources cited.",
+      "Non-partisan public election intelligence for Jersey's 2026 general election. Candidate summaries, policy comparisons, and news tracking.",
     images: [
       {
         url: "/Logo__2_.png",
@@ -66,12 +69,30 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Home | VotePulse — Jersey 2026 Election",
+    creator: "@votepulse_je",
+    site: "@votepulse_je",
+    title: "VotePulse — Jersey 2026 election intelligence",
     description:
-      "Independent candidate, policy, and district tracking for Jersey's 2026 general election.",
+      "Non-partisan public election intelligence for Jersey's 2026 general election.",
     images: ["/Logo__2_.png"],
   },
-  robots: { index: true, follow: true },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  verification: {
+    // Add after registering in Search Console / Bing:
+    // google: "your-google-search-console-verification-code",
+    // yandex: "your-yandex-code",
+  },
+  category: "politics",
 };
 
 export const viewport: Viewport = {

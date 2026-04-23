@@ -1,14 +1,8 @@
 import type { MetadataRoute } from "next";
 import { db } from "@/db";
 import { candidates } from "@/db/schema";
-import { asc } from "drizzle-orm";
-
-function siteBase() {
-  return (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(
-    /\/$/,
-    "",
-  );
-}
+import { asc, ne } from "drizzle-orm";
+import { siteBase } from "@/lib/seo";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = siteBase();
@@ -29,6 +23,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.85,
     },
     {
+      url: `${base}/districts`,
+      lastModified: now,
+      changeFrequency: "daily",
+      priority: 0.8,
+    },
+    {
       url: `${base}/trends`,
       lastModified: now,
       changeFrequency: "daily",
@@ -43,22 +43,40 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   try {
-    const rows = await db
+    const candidateRows = await db
       .select({
         slug: candidates.slug,
         updatedAt: candidates.updatedAt,
+        lastEnrichedAt: candidates.lastEnrichedAt,
+        district: candidates.district,
       })
       .from(candidates)
+      .where(ne(candidates.district, "Unknown"))
       .orderBy(asc(candidates.slug));
 
-    const candidateEntries: MetadataRoute.Sitemap = rows.map((r) => ({
+    const candidateEntries: MetadataRoute.Sitemap = candidateRows.map((r) => ({
       url: `${base}/candidates/${encodeURIComponent(r.slug)}`,
-      lastModified: r.updatedAt ?? now,
+      lastModified: r.lastEnrichedAt ?? r.updatedAt ?? now,
       changeFrequency: "weekly" as const,
-      priority: 0.85,
+      priority: 0.9,
     }));
 
-    return [...staticEntries, ...candidateEntries];
+    const districts = [
+      ...new Set(
+        candidateRows
+          .map((c) => c.district)
+          .filter((d): d is string => Boolean(d && d !== "Unknown")),
+      ),
+    ].sort();
+
+    const districtEntries: MetadataRoute.Sitemap = districts.map((d) => ({
+      url: `${base}/districts/${encodeURIComponent(d)}`,
+      lastModified: now,
+      changeFrequency: "daily" as const,
+      priority: 0.7,
+    }));
+
+    return [...staticEntries, ...candidateEntries, ...districtEntries];
   } catch {
     return staticEntries;
   }

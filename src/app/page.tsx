@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { db } from "@/db";
 import { candidates, issues } from "@/db/schema";
+import { generateHomepageJsonLd } from "@/lib/homepage-jsonld";
 import { buildPublicPageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = buildPublicPageMetadata({
@@ -42,9 +43,16 @@ async function getStats() {
 
 export default async function Home() {
   const stats = await getStats();
+  const homepageJsonLd = generateHomepageJsonLd();
 
   return (
     <main>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(homepageJsonLd),
+        }}
+      />
       {/* ── Hero ──────────────────────────────────────────── */}
       <section className="relative overflow-hidden border-b border-border bg-navy">
         {/* Subtle grid texture */}

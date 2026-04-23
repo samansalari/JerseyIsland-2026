@@ -1,0 +1,38 @@
+# VotePulse full context
+# Jersey 2026 general election intelligence
+
+## About Jersey elections
+
+Jersey holds general elections for the States Assembly, which includes Deputies, Connétables, and Senators. The 2026 election date is published by the States Assembly and official election channels — confirm on vote.je.
+Jersey has 14 parishes, each returning Deputies. Connétables are the heads of each parish.
+
+## About VotePulse
+
+VotePulse was built to provide voters with structured, comparable information about candidates — something that did not exist for Jersey elections before 2026.
+
+The platform uses AI to:
+
+1. Summarise candidate manifestos in neutral language
+2. Extract positions on 10 key policy issues
+3. Classify news sentiment
+
+All AI content is clearly labelled and linked to source text.
+
+## District list
+
+St Helier North, St Helier Central, St Helier South,
+St Saviour, St Brelade, St Clement, St Peter,
+St Lawrence, St Mary, St Ouen, St John,
+Trinity, Grouville, St Martin
+
+## Methodology
+
+Data collection: public candidate pages and official sources (e.g. flow.je, vote.je, policy.je)
+AI enrichment: structured JSON output with source quotes tied to manifesto text
+Source verification: every AI claim should be checked against original manifesto text
+Update cycle: on a regular cadence aligned with the scraper and enrichment pipeline (target: every 6 hours where sources allow)
+
+## Contact
+
+For corrections or data issues: see the About page on the live site.
+For press: see the About page on the live site.

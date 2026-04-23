@@ -1,15 +1,9 @@
 import type { MetadataRoute } from "next";
-
-function siteBase() {
-  return (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(
-    /\/$/,
-    "",
-  );
-}
+import { siteBase } from "@/lib/seo";
 
 /**
- * Allow broad crawling of public content; block admin tooling and admin APIs
- * from being indexed.
+ * Public content is crawlable; admin and revalidation API are blocked from indexing.
+ * Explicit rules for common AI/search crawlers mirror the default allow policy.
  */
 export default function robots(): MetadataRoute.Robots {
   const base = siteBase();
@@ -18,8 +12,12 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/admin", "/admin/", "/api/admin"],
+        disallow: ["/admin", "/admin/", "/api/admin", "/api/revalidate"],
       },
+      { userAgent: "GPTBot", allow: "/" },
+      { userAgent: "Claude-Web", allow: "/" },
+      { userAgent: "PerplexityBot", allow: "/" },
+      { userAgent: "Googlebot", allow: "/" },
     ],
     sitemap: `${base}/sitemap.xml`,
     host: new URL(base).host,

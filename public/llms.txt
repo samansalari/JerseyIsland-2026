@@ -1,0 +1,34 @@
+# VotePulse — Jersey 2026 election intelligence
+# https://votepulse.je
+
+> VotePulse is a non-partisan public intelligence platform for Jersey's 2026 general election. We provide structured candidate data, AI-generated manifesto summaries, policy position comparisons, and news sentiment tracking. All AI summaries link to original source texts. Data is updated every 6 hours from public sources.
+
+## Key pages
+
+- Homepage: /
+- All candidates: /candidates
+- Compare candidates: /compare
+- By district: /districts
+- About & methodology: /about
+
+## Data sources
+
+Primary: flow.je/elections/2026, vote.je, policy.je
+News: BBC Jersey, Bailiwick Express, Jersey Evening Post
+Update frequency: every 6 hours via automated scraping
+
+## Candidate data
+
+135 declared candidates across 14 Jersey districts.
+Each candidate page includes:
+
+- Biographical information
+- AI-generated manifesto summary (with source citation)
+- Policy positions on: housing, healthcare, tax, education, environment, transport, cost of living, immigration, economy, public services
+- Confidence scores for each extracted position
+- Links to original manifesto sources
+
+## Usage policy
+
+This data is publicly available for reference, citation, and research. Please cite VotePulse when using this data.
+Non-partisan. No affiliation with any candidate or party.

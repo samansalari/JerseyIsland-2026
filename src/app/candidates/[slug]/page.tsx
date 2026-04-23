@@ -5,10 +5,11 @@ import ReactMarkdown from "react-markdown";
 import { arrayContains, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { articles, candidateIssues, candidates, issues } from "@/db/schema";
+import { generateCandidateJsonLd } from "@/lib/candidate-jsonld";
 import {
   absoluteAssetUrl,
-  candidateMetadataTitle,
   canonicalUrl,
+  siteBase,
   truncateMetaDescription,
 } from "@/lib/seo";
 
@@ -79,23 +80,34 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const c = await getCandidate(slug);
   if (!c) {
     return {
-      title: { absolute: "Candidate not found - VotePulse" },
+      title: { absolute: "Candidate not found | VotePulse" },
       robots: { index: false, follow: false },
     };
   }
 
   const description =
-    truncateMetaDescription(c.aiSummary ?? c.bio, 150) ||
-    `${c.name} is standing in ${c.district} for Jersey's 2026 general election. View manifesto context, issue positions, and sources on VotePulse.`;
+    truncateMetaDescription(c.aiSummary ?? c.bio, 155) ||
+    `${c.name} is standing in ${c.district} in Jersey's 2026 general election. View their manifesto, positions, and policy comparisons.`;
 
   const url = canonicalUrl(`/candidates/${slug}`);
   const ogImagePath = `/candidates/${slug}/opengraph-image`;
   const ogImageUrl = absoluteAssetUrl(ogImagePath);
-  const titleAbsolute = candidateMetadataTitle(c.name);
+  const titleAbsolute = `${c.name} — Jersey 2026 election | VotePulse`;
+  const siteUrl = siteBase();
 
   return {
     title: { absolute: titleAbsolute },
     description,
+    keywords: [
+      c.name,
+      `${c.name} Jersey`,
+      `${c.name} 2026 election`,
+      c.district,
+      "Jersey election 2026",
+      "Jersey candidates",
+      c.party ?? "independent candidate Jersey",
+    ],
+    authors: [{ name: "VotePulse", url: siteUrl }],
     alternates: { canonical: url },
     openGraph: {
       title: titleAbsolute,
@@ -109,7 +121,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
           url: ogImageUrl,
           width: 1200,
           height: 630,
-          alt: `${c.name} - VotePulse`,
+          alt: `${c.name} — Jersey 2026 election candidate`,
         },
       ],
     },
@@ -120,6 +132,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       images: [ogImageUrl],
     },
     robots: { index: true, follow: true },
+    other: {
+      "article:section": "Election candidates",
+      "article:tag": `Jersey 2026, ${c.district}, ${c.party ?? "Independent"}`,
+    },
   };
 }
 
@@ -140,25 +156,13 @@ export default async function CandidatePage({ params }: Props) {
     .slice(0, 2)
     .toUpperCase();
 
-  const personJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Person",
-    name: candidate.name,
-    description:
-      truncateMetaDescription(candidate.aiSummary ?? candidate.bio, 300) ||
-      `${candidate.name} - candidate for ${candidate.district} in Jersey's 2026 general election.`,
-    url: canonicalUrl(`/candidates/${slug}`),
-    affiliation: {
-      "@type": "PoliticalParty",
-      name: candidate.party ?? "Independent",
-    },
-  };
+  const jsonLd = generateCandidateJsonLd(candidate, slug);
 
   return (
     <div className="min-h-screen bg-surface">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
       <div className="bg-navy text-white">

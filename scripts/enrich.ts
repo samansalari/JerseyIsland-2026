@@ -101,6 +101,25 @@ function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+async function revalidateCandidate(slug: string): Promise<void> {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "");
+  const secret = process.env.REVALIDATION_SECRET?.trim();
+  if (!siteUrl || !secret) return;
+
+  try {
+    await fetch(`${siteUrl}/api/revalidate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        secret,
+        paths: [`/candidates/${slug}`, "/candidates", "/sitemap.xml"],
+      }),
+    });
+  } catch {
+    /* non-fatal — ISR will refresh on the next cycle */
+  }
+}
+
 /** Fuzzy substring match — returns similarity ratio 0–1. */
 function fuzzyMatch(needle: string, haystack: string): number {
   const n = needle.toLowerCase().replace(/\s+/g, " ").trim();
@@ -318,6 +337,7 @@ async function enrichOneCandidate(
     console.log(
       `  ✓ Done — ${validIssues.length} issues extracted (${elapsed}s)`,
     );
+    await revalidateCandidate(candidate.slug);
     return "processed";
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

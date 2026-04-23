@@ -1,10 +1,43 @@
+import type { Metadata } from "next";
 import { asc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { db } from "@/db";
 import { candidates } from "@/db/schema";
 import { DistrictTable } from "@/components/district-table";
+import { siteBase } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
+
+type Props = { params: Promise<{ district: string }> };
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { district: districtParam } = await params;
+  const district = decodeURIComponent(districtParam);
+  const base = siteBase();
+  const title = `${district} candidates — Jersey 2026 | VotePulse`;
+  const description = `All candidates standing in ${district} for Jersey's 2026 general election. Compare their positions on housing, healthcare, tax, and more.`;
+  const canonical = `${base}/districts/${districtParam}`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: canonical,
+      siteName: "VotePulse",
+      locale: "en_GB",
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
+    alternates: { canonical },
+    robots: { index: true, follow: true },
+  };
+}
 
 export async function generateStaticParams() {
   try {
@@ -21,11 +54,7 @@ export async function generateStaticParams() {
   }
 }
 
-export default async function DistrictPage({
-  params,
-}: {
-  params: Promise<{ district: string }>;
-}) {
+export default async function DistrictPage({ params }: Props) {
   const { district: districtParam } = await params;
   const district = decodeURIComponent(districtParam);
 

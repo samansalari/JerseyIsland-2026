@@ -41,7 +41,7 @@ export type PageSeoInput = {
 
 export function buildPublicPageMetadata(input: PageSeoInput): Metadata {
   const url = canonicalUrl(input.path);
-  const fullTitle = `${input.titleSegment} | VotePulse — Jersey 2026 Election`;
+  const fullTitle = `${input.titleSegment} | VotePulse`;
   const ogTitle = input.openGraphTitle ?? fullTitle;
   const ogPath = input.ogImagePath ?? DEFAULT_OG_PATH;
   const ogImageUrl = absoluteAssetUrl(ogPath);
