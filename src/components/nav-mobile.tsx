@@ -43,7 +43,7 @@ export function NavMobile({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-navy/5 hover:text-navy"
+        className="flex h-9 w-9 items-center justify-center rounded-md text-on-primary/75 transition-colors hover:bg-white/10 hover:text-on-primary"
         aria-label={open ? "Close menu" : "Open menu"}
         aria-expanded={open}
       >

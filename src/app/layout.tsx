@@ -5,6 +5,7 @@ import "./globals.css";
 import { env } from "@/lib/env";
 import { JERSEY_RED_PRIMARY_HEX } from "@/lib/brand-metadata";
 import { NavMobile } from "@/components/nav-mobile";
+import { Logo } from "@/components/logo";
 
 const archivo = Archivo({
   subsets: ["latin"],
@@ -21,6 +22,11 @@ export const metadata: Metadata = {
   },
   description:
     "Independent candidate, policy, and district tracking for Jersey's 2026 general election. Non-partisan. Sources cited.",
+  icons: {
+    icon: "/votepulse-icon.svg",
+    shortcut: "/votepulse-icon.svg",
+    apple: "/votepulse-icon.svg",
+  },
   applicationName: "VotePulse",
   keywords: [
     "Jersey election",
@@ -46,9 +52,9 @@ export const metadata: Metadata = {
       "Independent candidate, policy, and district tracking for Jersey's 2026 general election. Non-partisan. Sources cited.",
     images: [
       {
-        url: "/opengraph-image",
-        width: 1200,
-        height: 630,
+        url: "/votepulse-icon.svg",
+        width: 1024,
+        height: 1024,
         alt: "VotePulse — Jersey 2026 election intelligence",
       },
     ],
@@ -58,7 +64,7 @@ export const metadata: Metadata = {
     title: "Home | VotePulse — Jersey 2026 Election",
     description:
       "Independent candidate, policy, and district tracking for Jersey's 2026 general election.",
-    images: ["/opengraph-image"],
+    images: ["/votepulse-icon.svg"],
   },
   robots: { index: true, follow: true },
 };
@@ -89,18 +95,9 @@ export default function RootLayout({
         <div className="h-[3px] w-full bg-jersey-red" aria-hidden />
 
         {/* ── Header ────────────────────────────────────── */}
-        <header className="sticky top-0 z-40 border-b border-border bg-surface/95 backdrop-blur-sm">
+        <header className="sticky top-0 z-40 border-b border-gold/20 bg-navy/95 backdrop-blur-sm">
           <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-5">
-            {/* Logo */}
-            <Link
-              href="/"
-              className="flex items-center gap-2.5 transition-opacity hover:opacity-80"
-            >
-              <Crest />
-              <span className="text-[15px] font-bold tracking-tight text-navy">
-                VotePulse
-              </span>
-            </Link>
+            <Logo size="md" showWordmark href="/" />
 
             {/* Desktop nav */}
             <nav className="hidden items-center gap-1 md:flex" aria-label="Main">
@@ -108,7 +105,7 @@ export default function RootLayout({
                 <Link
                   key={href}
                   href={href}
-                  className="rounded-md px-3 py-1.5 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-navy/5 hover:text-navy"
+                  className="rounded-md px-3 py-1.5 text-[13px] font-medium text-on-primary/75 transition-colors hover:bg-white/10 hover:text-on-primary"
                 >
                   {label}
                 </Link>
@@ -129,12 +126,7 @@ export default function RootLayout({
             <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
               {/* Brand column */}
               <div className="max-w-xs">
-                <div className="flex items-center gap-2">
-                  <Crest variant="light" />
-                  <span className="text-[15px] font-bold tracking-tight text-on-primary">
-                    VotePulse
-                  </span>
-                </div>
+                <Logo size="sm" showWordmark href="/" />
                 <p className="mt-3 text-[13px] leading-relaxed">
                   Independent election intelligence for Jersey&rsquo;s 2026
                   general election. Non-partisan. Open source. Sources cited.
@@ -215,30 +207,5 @@ export default function RootLayout({
         </footer>
       </body>
     </html>
-  );
-}
-
-// ── Crest SVG ───────────────────────────────────────────────────────────────
-
-function Crest({ variant = "dark" }: { variant?: "dark" | "light" }) {
-  return (
-    <svg
-      aria-hidden
-      viewBox="0 0 28 28"
-      className="h-7 w-7 flex-shrink-0"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <rect
-        width="28"
-        height="28"
-        rx="6"
-        className={variant === "dark" ? "fill-jersey-red" : "fill-on-primary/15"}
-      />
-      <path
-        d="M7 18.5V9h2.3l2.7 4.6L14.7 9H17v9.5h-1.9v-5.5l-2.5 4.3h-1.2L8.9 13v5.5Z M19 18.5V9h1.9v9.5Z"
-        className="fill-on-primary"
-      />
-      <circle cx="22.5" cy="9.5" r="1.1" className="fill-gold" />
-    </svg>
   );
 }
