@@ -1,10 +1,9 @@
-import { z } from "zod";
-
 /**
- * Valid-shaped placeholder so `next build` can finish when `DATABASE_URL` is not
- * injected yet (e.g. some Railway/CI builds). Refused at 127.0.0.1:1; only used
- * if no real `DATABASE_URL` is set. Production **must** set `DATABASE_URL`.
+ * Lazy server environment: no validation runs at import time (Railway/CI
+ * `next build` may not have secrets or DATABASE_URL). Access fields when needed;
+ * `DATABASE_URL` throws only when read outside a build placeholder context.
  */
+
 const BUILD_PLACEHOLDER_DATABASE_URL =
   "postgresql://votepulse_build:unused@127.0.0.1:1/postgres";
 
@@ -17,90 +16,117 @@ function isNextBuildWithoutDatabaseUrl(): boolean {
   );
 }
 
-/**
- * `next build` evaluates server modules (e.g. API routes) and requires `env` to
- * parse. Merge a placeholder only for that case so the real `DATABASE_URL` from
- * Railway (runtime + preferred at build) is still used when present.
- */
-function getEnvForValidation(): NodeJS.ProcessEnv {
-  if (isNextBuildWithoutDatabaseUrl()) {
-    return { ...process.env, DATABASE_URL: BUILD_PLACEHOLDER_DATABASE_URL };
+function requirePostgresUrl(value: string, name: string): string {
+  if (!value.startsWith("postgres://") && !value.startsWith("postgresql://")) {
+    throw new Error(
+      `${name} must start with postgres:// or postgresql://`,
+    );
   }
-  return process.env;
+  return value;
 }
 
-/**
- * Runtime-validated environment.
- *
- * Anything read at runtime (server components, API routes, drizzle-kit)
- * should import `env` from here rather than touching `process.env`
- * directly, so we fail fast on missing/malformed values.
- */
-const EnvSchema = z.object({
-  /** Do not use `.url()` — valid Postgres URIs often fail WHATWG URL parsing. */
-  DATABASE_URL: z
-    .string()
-    .min(1, "DATABASE_URL is required")
-    .refine(
-      (v) => v.startsWith("postgres://") || v.startsWith("postgresql://"),
-      "DATABASE_URL must start with postgres:// or postgresql://",
-    ),
-  /**
-   * URL used by `drizzle-kit push` (see `drizzle.config.ts`). Prefer this over
-   * the transaction pooler in `DATABASE_URL` for schema introspection.
-   *
-   * - **IPv6 (or Supabase IPv4 add-on):** Dashboard → Connect → *Direct connection*
-   *   (`postgresql://postgres:…@db.<project-ref>.supabase.co:5432/postgres`).
-   * - **IPv4-only (default Supabase):** use *Session pooler* (port **5432**), not
-   *   `db.*.supabase.co`. Host is like `aws-0-<region>.pooler.supabase.com` or
-   *   `aws-1-<region>.pooler.supabase.com` — copy the exact host from Connect.
-   *   Same settings as `psql`: `-h` host, `-p 5432`, `-U postgres.<project-ref>`, `-d postgres`
-   *   → URI: `postgresql://postgres.<ref>:PASSWORD@<host>:5432/postgres`
-   *
-   * See https://supabase.com/docs/guides/database/connecting-to-postgres
-   */
-  DIRECT_URL: z
-    .preprocess(
-      (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
-      z
-        .string()
-        .refine(
-          (v) => v.startsWith("postgres://") || v.startsWith("postgresql://"),
-          "DIRECT_URL must start with postgres:// or postgresql://",
-        )
-        .optional(),
-    ),
-  NEXT_PUBLIC_SITE_URL: z
-    .string()
-    .url()
-    .default("http://localhost:3000"),
-  SKIP_DB_HEALTHCHECK: z
-    .enum(["true", "false"])
-    .default("false")
-    .transform((v) => v === "true"),
-  NODE_ENV: z
-    .enum(["development", "test", "production"])
-    .default("development"),
-  /** Cookie-based admin UI (`/admin`). If empty, admin login is disabled. */
-  ADMIN_SECRET: z.string().optional().default(""),
-  /** xAI Grok (optional until you run enrichment scripts). */
-  GROK_API_KEY: z.string().optional(),
-  GROK_MODEL: z.string().optional(),
-  /** Resend transactional email (https://resend.com). Optional until you send mail. */
-  RESEND_API_KEY: z.string().optional().default(""),
-});
-
-const parsed = EnvSchema.safeParse(getEnvForValidation());
-
-if (!parsed.success) {
-  // Surface a clean error instead of letting Zod's raw output leak
-  // into serverless logs.
-  const issues = parsed.error.issues
-    .map((i) => `  - ${i.path.join(".") || "(root)"}: ${i.message}`)
-    .join("\n");
+function resolveDatabaseUrlForRead(): string {
+  const fromEnv = process.env.DATABASE_URL?.trim();
+  if (fromEnv) {
+    return requirePostgresUrl(fromEnv, "DATABASE_URL");
+  }
+  if (isNextBuildWithoutDatabaseUrl()) {
+    return BUILD_PLACEHOLDER_DATABASE_URL;
+  }
   throw new Error(
-    `Invalid environment variables:\n${issues}\n\nCheck your .env.local against .env.example.`,
+    "DATABASE_URL is required. Set it in Railway variables or .env.local — see .env.example.",
   );
 }
 
-export const env = parsed.data;
+function resolveDirectUrlForRead(): string | undefined {
+  const v = process.env.DIRECT_URL?.trim();
+  if (!v) return undefined;
+  return requirePostgresUrl(v, "DIRECT_URL");
+}
+
+function resolveSiteUrlForRead(): string {
+  const raw = process.env.NEXT_PUBLIC_SITE_URL?.trim() || "http://localhost:3000";
+  try {
+    // eslint-disable-next-line no-new
+    new URL(raw);
+    return raw;
+  } catch {
+    return "http://localhost:3000";
+  }
+}
+
+function resolveNodeEnvForRead(): "development" | "test" | "production" {
+  const n = process.env.NODE_ENV;
+  if (n === "development" || n === "test" || n === "production") return n;
+  return "development";
+}
+
+function resolveSkipDbHealthcheckForRead(): boolean {
+  return process.env.SKIP_DB_HEALTHCHECK === "true";
+}
+
+export type AppEnv = {
+  readonly DATABASE_URL: string;
+  readonly DIRECT_URL: string | undefined;
+  readonly NEXT_PUBLIC_SITE_URL: string;
+  readonly SKIP_DB_HEALTHCHECK: boolean;
+  readonly NODE_ENV: "development" | "test" | "production";
+  readonly ADMIN_SECRET: string;
+  readonly GROK_API_KEY: string | undefined;
+  readonly GROK_MODEL: string | undefined;
+  readonly RESEND_API_KEY: string;
+  /** Public Supabase project URL (optional until Supabase is wired in that path). */
+  readonly NEXT_PUBLIC_SUPABASE_URL: string;
+  /** Legacy anon / publishable key names — empty if unset. */
+  readonly NEXT_PUBLIC_SUPABASE_ANON_KEY: string;
+  readonly NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: string;
+  readonly SUPABASE_SERVICE_ROLE_KEY: string;
+  readonly REVALIDATION_SECRET: string;
+};
+
+export const env: AppEnv = {
+  get DATABASE_URL() {
+    return resolveDatabaseUrlForRead();
+  },
+  get DIRECT_URL() {
+    return resolveDirectUrlForRead();
+  },
+  get NEXT_PUBLIC_SITE_URL() {
+    return resolveSiteUrlForRead();
+  },
+  get SKIP_DB_HEALTHCHECK() {
+    return resolveSkipDbHealthcheckForRead();
+  },
+  get NODE_ENV() {
+    return resolveNodeEnvForRead();
+  },
+  get ADMIN_SECRET() {
+    return process.env.ADMIN_SECRET?.trim() ?? "";
+  },
+  get GROK_API_KEY() {
+    const v = process.env.GROK_API_KEY?.trim();
+    return v || undefined;
+  },
+  get GROK_MODEL() {
+    const v = process.env.GROK_MODEL?.trim();
+    return v || undefined;
+  },
+  get RESEND_API_KEY() {
+    return process.env.RESEND_API_KEY?.trim() ?? "";
+  },
+  get NEXT_PUBLIC_SUPABASE_URL() {
+    return process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() ?? "";
+  },
+  get NEXT_PUBLIC_SUPABASE_ANON_KEY() {
+    return process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() ?? "";
+  },
+  get NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY() {
+    return process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim() ?? "";
+  },
+  get SUPABASE_SERVICE_ROLE_KEY() {
+    return process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ?? "";
+  },
+  get REVALIDATION_SECRET() {
+    return process.env.REVALIDATION_SECRET?.trim() ?? "";
+  },
+};
