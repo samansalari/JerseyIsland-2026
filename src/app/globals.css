@@ -1,0 +1,74 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * VotePulse CSS variables.
+ *
+ * Tailwind pulls semantic tokens (background, foreground, border, muted)
+ * from these vars via `tailwind.config.ts`, so components can stay token-
+ * based while the raw brand colours remain one-hop away for ad-hoc use.
+ */
+:root {
+  /* Brand — Jersey palette */
+  --color-jersey-red: #a31621;
+  --color-jersey-red-dark: #6b1414;
+  --color-gold: #c8922a;
+  --color-navy: #0d1b2a;
+  --color-surface: #f5f5f0;
+  --color-on-primary: #f5e8c8;
+  --color-success: #1a6b3a;
+
+  /* Semantic */
+  --color-background: var(--color-surface);
+  --color-foreground: var(--color-navy);
+  --color-muted: #eaeae2;
+  --color-muted-foreground: #4a5663;
+  --color-border: #d9d9cf;
+
+  /* Charts / sentiment (align with success, muted text, jersey red) */
+  --chart-sentiment-positive: var(--color-success);
+  --chart-sentiment-neutral: var(--color-muted-foreground);
+  --chart-sentiment-negative: var(--color-jersey-red);
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-feature-settings: "ss01", "cv11";
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    color: var(--color-navy);
+  }
+
+  ::selection {
+    background-color: var(--color-jersey-red);
+    color: var(--color-on-primary);
+  }
+}
+
+@layer components {
+  .container-tight {
+    @apply mx-auto w-full max-w-5xl px-6;
+  }
+
+  .pill {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-border bg-white/60 px-2.5 py-1 text-xs font-medium text-muted-foreground;
+  }
+
+  .pill-dot {
+    @apply inline-block h-1.5 w-1.5 rounded-full;
+  }
+}

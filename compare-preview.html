@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Compare — VotePulse</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{--jr:#A31621;--jrd:#6B1414;--gold:#C8922A;--navy:#0D1B2A;--surface:#F5F5F0;--on-p:#F5E8C8;--success:#1A6B3A;--muted:#EAEAE2;--mf:#4A5663;--border:#D9D9CF}
+*{box-sizing:border-box;margin:0;padding:0}html{-webkit-font-smoothing:antialiased}
+body{font-family:'Archivo',system-ui,sans-serif;background:var(--surface);color:var(--navy)}
+a{color:inherit;text-decoration:none}::selection{background:var(--jr);color:var(--on-p)}
+
+.ribbon{height:3px;background:var(--jr)}
+.hdr{position:sticky;top:0;z-index:40;border-bottom:1px solid var(--border);background:rgba(245,245,240,.95);backdrop-filter:blur(6px)}
+.hdr-in{max-width:1152px;margin:0 auto;display:flex;height:56px;align-items:center;justify-content:space-between;padding:0 20px}
+.logo{display:flex;align-items:center;gap:10px}.logo svg{height:28px;width:28px}.logo span{font-size:15px;font-weight:700}
+.nav{display:flex;gap:4px}.nav a{padding:6px 12px;border-radius:6px;font-size:13px;font-weight:500;color:var(--mf);transition:.15s}.nav a:hover,.nav a.active{background:rgba(13,27,42,.05);color:var(--navy)}
+
+.page{max-width:1152px;margin:0 auto;padding:40px 20px 64px}
+.page h1{font-size:34px;font-weight:700;letter-spacing:-.02em}
+.page>p{margin-top:8px;max-width:520px;font-size:14px;color:var(--mf)}
+
+.sel-box{margin-top:32px;border-radius:14px;border:1px solid var(--border);background:#fff;padding:20px}
+.sel-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+select{height:40px;border:1px solid var(--border);border-radius:6px;background:var(--surface);padding:0 12px;font:13px/1 'Archivo',system-ui,sans-serif;color:var(--navy);outline:none;cursor:pointer;transition:.15s}
+select:focus{border-color:rgba(163,22,33,.4);box-shadow:0 0 0 2px rgba(163,22,33,.1)}
+.search-wrap{position:relative;flex:1;min-width:200px}
+.search-wrap svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:rgba(74,86,99,.5)}
+.search-wrap input{width:100%;height:40px;border:1px solid var(--border);border-radius:6px;background:var(--surface);padding:0 12px 0 36px;font:13px/1 'Archivo',system-ui,sans-serif;color:var(--navy);outline:none;transition:.15s}
+.search-wrap input:focus{border-color:rgba(163,22,33,.4);box-shadow:0 0 0 2px rgba(163,22,33,.1)}
+.search-wrap input::placeholder{color:rgba(74,86,99,.5)}
+.dd{position:absolute;left:0;top:48px;width:100%;max-height:240px;overflow-y:auto;border-radius:10px;border:1px solid var(--border);background:#fff;box-shadow:0 8px 24px rgba(13,27,42,.12);z-index:30;display:none}
+.dd.open{display:block}
+.dd button{display:flex;width:100%;align-items:center;gap:10px;padding:10px 16px;text-align:left;font:13px/1 'Archivo',system-ui,sans-serif;border:none;background:none;cursor:pointer;transition:.1s;color:var(--navy)}
+.dd button:hover{background:var(--surface)}
+.dd button:disabled{opacity:.4;cursor:default}
+.dd .av{width:28px;height:28px;border-radius:6px;background:var(--jr);color:var(--on-p);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
+.dd .nm{flex:1;font-weight:500}
+.dd .dist{font-size:11px;color:var(--mf)}
+
+.chips{margin-top:16px;display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 6px 4px 12px;border-radius:999px;border:1px solid var(--border);background:var(--surface);font-size:13px;font-weight:500;color:var(--navy)}
+.chip button{width:20px;height:20px;border-radius:999px;border:none;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--mf);transition:.15s}
+.chip button:hover{background:rgba(163,22,33,.1);color:var(--jr)}
+.chip button svg{width:12px;height:12px}
+.share-btn{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:999px;border:1px solid var(--border);background:#fff;font:12px/1 'Archivo',system-ui,sans-serif;font-weight:500;color:var(--mf);cursor:pointer;transition:.15s}
+.share-btn:hover{border-color:rgba(163,22,33,.3);color:var(--jr)}
+.share-btn svg{width:14px;height:14px}
+.hint{margin-top:12px;font-size:12px;color:var(--mf)}
+
+/* Table */
+.matrix{margin-top:32px;overflow-x:auto;border-radius:14px;border:1px solid var(--border);background:#fff;display:none}
+.matrix.show{display:block}
+.matrix table{width:100%;border-collapse:collapse;font-size:13px}
+.matrix th{padding:16px 20px;text-align:left;border-bottom:1px solid var(--border);background:var(--surface)}
+.matrix th:first-child{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:var(--mf)}
+.matrix th:not(:first-child){border-left:1px solid var(--border);min-width:210px}
+.matrix th .cname{font-weight:600;color:var(--navy)}
+.matrix th .cmeta{margin-top:2px;font-size:11px;font-weight:400;color:var(--mf)}
+.matrix td{padding:16px 20px;border-top:1px solid var(--border);vertical-align:top}
+.matrix td:not(:first-child){border-left:1px solid var(--border)}
+.matrix tr:nth-child(even) td{background:rgba(245,245,240,.4)}
+.matrix td:first-child{font-weight:500;color:var(--navy);white-space:nowrap}
+.issue-label{display:flex;align-items:center;gap:8px}
+
+.conf-dot{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--mf)}
+.conf-dot .dot{width:8px;height:8px;border-radius:999px}
+.dot-h{background:var(--success)}.dot-m{background:var(--gold)}.dot-l{background:var(--jr)}
+
+.pos-text{margin-top:4px;line-height:1.55;color:var(--navy)}
+.src-btn{margin-top:8px;font-size:11px;font-weight:500;color:var(--gold);cursor:pointer;background:none;border:none;font-family:inherit;padding:0;transition:.15s}
+.src-btn:hover{color:var(--jr)}
+.quote-box{margin-top:8px;border-left:2px solid rgba(163,22,33,.3);background:var(--surface);border-radius:0 6px 6px 0;padding:8px 10px 8px 12px;font-size:11px;font-style:italic;line-height:1.55;color:var(--mf);display:none}
+.quote-box.show{display:block}
+.no-data{font-size:12px;font-style:italic;color:rgba(74,86,99,.4)}
+</style>
+</head>
+<body>
+<div class="ribbon"></div>
+<header class="hdr"><div class="hdr-in">
+  <a href="preview.html" class="logo"><svg viewBox="0 0 28 28"><rect width="28" height="28" rx="6" fill="#A31621"/><path d="M7 18.5V9h2.3l2.7 4.6L14.7 9H17v9.5h-1.9v-5.5l-2.5 4.3h-1.2L8.9 13v5.5Z M19 18.5V9h1.9v9.5Z" fill="#F5E8C8"/><circle cx="22.5" cy="9.5" r="1.1" fill="#C8922A"/></svg><span>VotePulse</span></a>
+  <nav class="nav"><a href="preview.html">Home</a><a href="candidates-preview.html">Candidates</a><a href="#" class="active">Compare</a><a href="#">About</a></nav>
+</div></header>
+
+<main class="page">
+  <h1>Compare Candidates</h1>
+  <p>Select 2–4 candidates to see where they stand on every issue, side by side. Positions are AI-extracted from manifestos with source quotes linked.</p>
+
+  <div class="sel-box">
+    <div class="sel-row">
+      <select id="distFilter"><option value="">All districts</option></select>
+      <div class="search-wrap">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="9" r="6"/><path d="M13.5 13.5 18 18"/></svg>
+        <input type="text" id="searchInput" placeholder="Search candidates to add…"/>
+        <div class="dd" id="dropdown"></div>
+      </div>
+    </div>
+    <div class="chips" id="chips"></div>
+    <p class="hint" id="hint">Select at least 2 candidates to compare.</p>
+  </div>
+
+  <div class="matrix" id="matrix"></div>
+</main>
+
+<script>
+// Mock data
+const CANDIDATES=[
+  {id:"c1",slug:"marie-le-breton",name:"Marie Le Breton",district:"St Brelade",party:null},
+  {id:"c2",slug:"john-smith",name:"John Smith",district:"St Helier Central",party:"Reform Jersey"},
+  {id:"c3",slug:"rachel-vibert",name:"Rachel Vibert",district:"Grouville",party:"Jersey Alliance"},
+  {id:"c4",slug:"sarah-nicolle",name:"Sarah Nicolle",district:"St Saviour",party:"Reform Jersey"},
+  {id:"c5",slug:"david-pallot",name:"David Pallot",district:"Trinity",party:"Jersey Alliance"},
+  {id:"c6",slug:"peter-le-maistre",name:"Peter Le Maistre",district:"St Peter",party:null},
+  {id:"c7",slug:"mark-le-cornu",name:"Mark Le Cornu",district:"St Lawrence",party:"Jersey Alliance"},
+  {id:"c8",slug:"tom-binet",name:"Tom Binet",district:"St Helier North",party:"Reform Jersey"},
+  {id:"c9",slug:"anna-sherrington",name:"Anna Sherrington",district:"St Clement",party:null},
+];
+const ISSUES=[
+  {id:"i1",name:"housing",displayName:"Housing",icon:"🏠"},
+  {id:"i2",name:"healthcare",displayName:"Healthcare",icon:"🏥"},
+  {id:"i3",name:"tax",displayName:"Tax",icon:"💷"},
+  {id:"i4",name:"education",displayName:"Education",icon:"🎓"},
+  {id:"i5",name:"environment",displayName:"Environment",icon:"🌿"},
+  {id:"i6",name:"transport",displayName:"Transport",icon:"🚌"},
+  {id:"i7",name:"cost_of_living",displayName:"Cost of living",icon:"🧾"},
+  {id:"i8",name:"economy",displayName:"Economy",icon:"📈"},
+];
+const POSITIONS=[
+  {candidateId:"c1",issueId:"i5",position:"Net zero by 2040 with £50m offshore wind investment and mandatory green roofs.",sourceQuote:"Jersey must lead, not follow. I will push for binding legislation to achieve net zero emissions by 2040.",confidence:.92},
+  {candidateId:"c1",issueId:"i6",position:"Electric bus fleet by 2032 and 30km of protected cycle lanes.",sourceQuote:"Working with LibertyBus to convert the entire fleet to electric vehicles by 2032.",confidence:.88},
+  {candidateId:"c1",issueId:"i1",position:"Brownfield-first development policy. Stricter greenfield controls.",sourceQuote:"Stricter controls on greenfield development. Brownfield-first policy for all new housing.",confidence:.6},
+  {candidateId:"c2",issueId:"i1",position:"500 new public housing units by 2030. Rent controls for private sector.",sourceQuote:"We must build 500 publicly-owned homes by 2030 and cap private rents to stop the housing crisis.",confidence:.95},
+  {candidateId:"c2",issueId:"i7",position:"GST exemption on food and energy. Minimum wage increase to £14/hr.",sourceQuote:"Working families are being crushed. I will fight for GST-free food and a living wage of at least £14 per hour.",confidence:.9},
+  {candidateId:"c2",issueId:"i3",position:"Progressive income tax. Higher rate for earnings over £200k.",sourceQuote:"Those who earn the most should contribute the most. A fair tax system means a progressive rate above £200,000.",confidence:.72},
+  {candidateId:"c3",issueId:"i2",position:"General Hospital modernisation programme. Reduce GP wait to under 48hrs.",sourceQuote:"Every Islander deserves to see a GP within 48 hours. Our hospital needs a £100m modernisation plan.",confidence:.91},
+  {candidateId:"c3",issueId:"i4",position:"Ring-fence education budget at 25% of States spending.",sourceQuote:"Education must be protected. I will fight to guarantee 25% of all government spending goes to our schools.",confidence:.65},
+  {candidateId:"c3",issueId:"i8",position:"Diversify beyond finance. Tech sector growth incentives.",sourceQuote:"We cannot rely on finance alone. Jersey needs a tech strategy to create 1,000 new digital jobs by 2030.",confidence:.58},
+  {candidateId:"c4",issueId:"i4",position:"Higher teacher pay, smaller classes, free school meals for all primary children.",sourceQuote:"Our teachers deserve better pay. Every primary child should get a free healthy meal at school.",confidence:.87},
+  {candidateId:"c4",issueId:"i1",position:"First-time buyer grant of £30,000 for Jersey-born residents.",sourceQuote:"Young Islanders are priced out. A £30,000 first-home grant would give our children a future here.",confidence:.83},
+  {candidateId:"c4",issueId:"i2",position:"Expand mental health services. Double counselling availability.",sourceQuote:"The mental health crisis is real. We need to double the number of counsellors available in the community.",confidence:.75},
+];
+
+let selected=[];
+let expandedQuotes=new Set();
+
+const distFilter=document.getElementById('distFilter');
+const searchInput=document.getElementById('searchInput');
+const dropdown=document.getElementById('dropdown');
+const chipsEl=document.getElementById('chips');
+const hintEl=document.getElementById('hint');
+const matrixEl=document.getElementById('matrix');
+
+// Populate district filter
+const dists=[...new Set(CANDIDATES.map(c=>c.district))].sort();
+dists.forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent=d;distFilter.appendChild(o)});
+
+function initials(n){return n.split(' ').map(w=>w[0]).join('').slice(0,2)}
+
+function renderDropdown(){
+  const q=searchInput.value.toLowerCase().trim();
+  const d=distFilter.value;
+  const opts=CANDIDATES.filter(c=>{
+    if(selected.includes(c.id))return false;
+    if(d&&c.district!==d)return false;
+    if(q&&!c.name.toLowerCase().includes(q))return false;
+    return true;
+  });
+  if(opts.length===0||!document.activeElement||document.activeElement!==searchInput){dropdown.classList.remove('open');return}
+  dropdown.classList.add('open');
+  dropdown.innerHTML=opts.map(c=>`<button type="button" data-id="${c.id}" ${selected.length>=4?'disabled':''}><span class="av">${initials(c.name)}</span><span class="nm">${c.name}</span><span class="dist">${c.district}</span></button>`).join('');
+  if(selected.length>=4)dropdown.innerHTML+=`<div style="padding:8px 16px;font-size:12px;color:var(--mf)">Maximum 4 candidates</div>`;
+  dropdown.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+    selected.push(b.dataset.id);searchInput.value='';dropdown.classList.remove('open');render();
+  }));
+}
+
+function render(){
+  // Chips
+  const selCands=CANDIDATES.filter(c=>selected.includes(c.id));
+  let html=selCands.map(c=>`<span class="chip">${c.name}<button data-id="${c.id}"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></span>`).join('');
+  if(selected.length>=2)html+=`<button class="share-btn" id="shareBtn"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 10l4-4M9 4.5h2.5V7"/><rect x="2" y="6" width="7" height="7" rx="1.5"/></svg>Share comparison</button>`;
+  chipsEl.innerHTML=html;
+  chipsEl.querySelectorAll('.chip button').forEach(b=>b.addEventListener('click',()=>{selected=selected.filter(id=>id!==b.dataset.id);render()}));
+  const sb=document.getElementById('shareBtn');
+  if(sb)sb.addEventListener('click',()=>{sb.textContent='Copied!';setTimeout(()=>sb.innerHTML='<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M6 10l4-4M9 4.5h2.5V7"/><rect x="2" y="6" width="7" height="7" rx="1.5"/></svg>Share comparison',2000)});
+
+  hintEl.style.display=selected.length>=2?'none':'';
+  if(selected.length===1)hintEl.textContent='Select at least 2 candidates to compare. Add 1 more.';
+  else if(selected.length===0)hintEl.textContent='Select at least 2 candidates to compare.';
+
+  // Matrix
+  if(selected.length<2){matrixEl.classList.remove('show');matrixEl.innerHTML='';return}
+  matrixEl.classList.add('show');
+  const posMap=new Map();
+  POSITIONS.forEach(p=>posMap.set(`${p.candidateId}:${p.issueId}`,p));
+
+  let t=`<table><thead><tr><th>Issue</th>`;
+  selCands.forEach(c=>{t+=`<th><span class="cname">${c.name}</span><div class="cmeta">${c.district}${c.party?' · '+c.party:' · Independent'}</div></th>`});
+  t+=`</tr></thead><tbody>`;
+  ISSUES.forEach(issue=>{
+    t+=`<tr><td><span class="issue-label">${issue.icon?'<span>'+issue.icon+'</span>':''}${issue.displayName}</span></td>`;
+    selCands.forEach(c=>{
+      const p=posMap.get(`${c.id}:${issue.id}`);
+      if(p){
+        const lvl=p.confidence>=.8?'High':p.confidence>=.5?'Medium':'Low';
+        const dot=p.confidence>=.8?'dot-h':p.confidence>=.5?'dot-m':'dot-l';
+        const qk=`${c.id}:${issue.id}`;
+        t+=`<td><span class="conf-dot"><span class="dot ${dot}"></span>${lvl}</span><p class="pos-text">${p.position}</p><button class="src-btn" data-qk="${qk}">View source</button><div class="quote-box" id="q-${qk}">&ldquo;${p.sourceQuote}&rdquo;</div></td>`;
+      } else {
+        t+=`<td><span class="no-data">No data</span></td>`;
+      }
+    });
+    t+=`</tr>`;
+  });
+  t+=`</tbody></table>`;
+  matrixEl.innerHTML=t;
+
+  matrixEl.querySelectorAll('.src-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const qk=btn.dataset.qk;
+      const box=document.getElementById('q-'+qk);
+      const open=box.classList.toggle('show');
+      btn.textContent=open?'Hide source':'View source';
+    });
+  });
+}
+
+searchInput.addEventListener('input',renderDropdown);
+searchInput.addEventListener('focus',renderDropdown);
+distFilter.addEventListener('change',renderDropdown);
+document.addEventListener('click',e=>{if(!e.target.closest('.search-wrap'))dropdown.classList.remove('open')});
+
+// Pre-select 3 for demo
+selected=['c1','c2','c3'];
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+{
+  "markdown": "# [flow.je](https://flow.je/) / **News**\n\nMenu\n\n- [Home](https://flow.je/)\n- [News & Weather](https://flow.je/news)\n- [Elections Archive](https://flow.je/elections)\n- [Info](https://flow.je/info)\n- [over.flow](https://over.flow.je/)\n\n# Jersey News & Weather\n\nOur news feeds are no longer available following the rescindment of the Twitter API.\n\nFor the latest news in Jersey, visit [Today.je](https://today.je/)\n\n[© 2018-2026](https://flow.je/info) [hello@flow.je](mailto:hello@flow.je) [Return to Top](https://flow.je/news#top \"Return to Top\")",
+  "metadata": {
+    "mobile-web-app-capable": "yes",
+    "ogSiteName": "flow.je",
+    "title": "Jersey News & Weather / flow.je",
+    "ogImage": "",
+    "language": "en-GB",
+    "og:type": "Website",
+    "ogTitle": "Jersey News & Weather / flow.je",
+    "theme-color": "#5f9ea0",
+    "og:url": "https://flow.je/news",
+    "viewport": "width=device-width, initial-scale=1, maximum-scale=1.5",
+    "og:image": "",
+    "apple-mobile-web-app-capable": "yes",
+    "og:title": "Jersey News & Weather / flow.je",
+    "application-name": "flow.je",
+    "og:site_name": "flow.je",
+    "ogUrl": "https://flow.je/news",
+    "twitter:card": "summary",
+    "scrapeId": "019dba09-9ed2-73ea-831a-1edf28b79a95",
+    "sourceURL": "https://flow.je/news",
+    "url": "https://flow.je/news",
+    "statusCode": 200,
+    "contentType": "text/html; charset=UTF-8",
+    "timezone": "America/New_York",
+    "proxyUsed": "basic",
+    "cacheState": "miss",
+    "indexId": "c8d350fe-d798-4fa6-acb9-357c5e56eddb",
+    "creditsUsed": 1
+  }
+}

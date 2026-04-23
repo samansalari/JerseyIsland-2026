@@ -1,0 +1,32 @@
+/**
+ * data/candidates.json
+ *
+ * Fill this array with REAL candidate data collected from:
+ *   - flow.je/elections/2026/candidates/...
+ *   - vote.je/candidates/...
+ *   - policy.je
+ *
+ * Structure per candidate:
+ * {
+ *   "name":           "Full Name (required)",
+ *   "district":       "One of the 14 valid Jersey districts (required)",
+ *   "party":          "Party name or null for independents",
+ *   "photo_url":      "URL to candidate photo or null",
+ *   "bio":            "Bio text copied verbatim from source or null",
+ *   "manifesto_raw":  "Full manifesto text copied verbatim or null",
+ *   "manifesto_url":  "URL to manifesto source (required if manifesto_raw is set)",
+ *   "source_urls":    ["At least one URL where this data came from (required)"]
+ * }
+ *
+ * Valid districts:
+ *   St Helier North, St Helier Central, St Helier South, St Saviour,
+ *   St Brelade, St Clement, St Peter, St Lawrence, St Mary, St Ouen,
+ *   St John, Trinity, Grouville, St Martin
+ *
+ * Rules:
+ *   - No placeholder data. If you don't have a field, set it to null.
+ *   - manifesto_raw is sacred ground truth — never edit it after pasting.
+ *   - source_urls must link to the exact pages the data came from.
+ *   - The seed script auto-generates slug and data_hash — don't add those.
+ */
+[]

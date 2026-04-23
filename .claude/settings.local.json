@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/saman/.agents/skills/make-interfaces-feel-better/**)",
+      "Read(//c/Users/saman/.agents/skills/gsap/**)",
+      "Read(//c/Users/saman/.agents/skills/website-to-hyperframes/**)",
+      "Bash(mkdir -p /d/KAROMIGIRI/48-Jersey2026/.claude/skills)",
+      "Bash(ln -s /c/Users/saman/.agents/skills/make-interfaces-feel-better /d/KAROMIGIRI/48-Jersey2026/.claude/skills/make-interfaces-feel-better)",
+      "Bash(ln -s /c/Users/saman/.agents/skills/gsap /d/KAROMIGIRI/48-Jersey2026/.claude/skills/gsap)",
+      "Bash(ln -s /c/Users/saman/.agents/skills/website-to-hyperframes /d/KAROMIGIRI/48-Jersey2026/.claude/skills/website-to-hyperframes)"
+    ]
+  }
+}

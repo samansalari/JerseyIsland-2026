@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Marie Le Breton — St Brelade · VotePulse</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{--jr:#A31621;--jrd:#6B1414;--gold:#C8922A;--navy:#0D1B2A;--surface:#F5F5F0;--on-p:#F5E8C8;--success:#1A6B3A;--muted:#EAEAE2;--mf:#4A5663;--border:#D9D9CF}
+*{box-sizing:border-box;margin:0;padding:0}html{-webkit-font-smoothing:antialiased}
+body{font-family:'Archivo',system-ui,sans-serif;background:var(--surface);color:var(--navy)}
+a{color:inherit;text-decoration:none}::selection{background:var(--jr);color:var(--on-p)}
+
+.ribbon{height:3px;background:var(--jr)}
+.header{position:sticky;top:0;z-index:40;border-bottom:1px solid var(--border);background:rgba(245,245,240,.95);backdrop-filter:blur(6px)}
+.header-inner{max-width:1152px;margin:0 auto;display:flex;height:56px;align-items:center;justify-content:space-between;padding:0 20px}
+.logo{display:flex;align-items:center;gap:10px}.logo svg{height:28px;width:28px}.logo span{font-size:15px;font-weight:700}
+.nav{display:flex;gap:4px}.nav a{padding:6px 12px;border-radius:6px;font-size:13px;font-weight:500;color:var(--mf);transition:.15s}.nav a:hover,.nav a.active{background:rgba(13,27,42,.05);color:var(--navy)}
+
+.page{max-width:768px;margin:0 auto;padding:40px 20px 64px}
+
+.back{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--mf);margin-bottom:32px;transition:.15s}.back:hover{color:var(--jr)}
+.back svg{width:14px;height:14px}
+
+/* Header section */
+.profile-header{display:flex;gap:20px}
+.avatar{width:96px;height:96px;border-radius:14px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--jr);color:var(--on-p);font-size:28px;font-weight:700}
+.profile-header h1{font-size:34px;font-weight:700;letter-spacing:-.02em;line-height:1.1}
+.badges{margin-top:8px;display:flex;flex-wrap:wrap;gap:8px}
+.badge{display:inline-flex;align-items:center;padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:rgba(234,234,226,.5);font-size:13px;font-weight:500;color:var(--navy)}
+.badge.ind{border-color:rgba(200,146,42,.3);background:rgba(200,146,42,.1);color:var(--gold)}
+.source-pills{margin-top:12px;display:flex;flex-wrap:wrap;gap:6px}
+.source-pill{display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:999px;border:1px solid var(--border);background:#fff;font-size:11px;font-weight:500;color:var(--mf);transition:.15s}
+.source-pill:hover{border-color:rgba(163,22,33,.3);color:var(--jr)}
+.source-pill svg{width:12px;height:12px}
+
+/* AI Summary */
+.ai-section{margin-top:40px}
+.ai-section h2{font-size:18px;font-weight:700}
+.ai-card{margin-top:12px;border-radius:14px;border:1px solid rgba(200,146,42,.3);background:rgba(200,146,42,.05);padding:20px}
+.ai-badge{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--gold)}
+.ai-badge svg{width:16px;height:16px}
+.ai-card p{margin-top:12px;font-size:14px;line-height:1.65;color:var(--navy)}
+
+/* Manifesto expander */
+.expander-btn{margin-top:12px;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--mf);cursor:pointer;background:none;border:none;font-family:inherit;transition:.15s;padding:0}
+.expander-btn:hover{color:var(--navy)}
+.expander-btn svg{width:14px;height:14px;transition:transform .2s}
+.expander-btn.open svg{transform:rotate(90deg)}
+.manifesto-box{margin-top:12px;border-radius:14px;border:1px solid var(--border);background:#fff;padding:20px;display:none}
+.manifesto-box.show{display:block}
+.manifesto-box .src-link{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--jr);margin-bottom:12px}
+.manifesto-box .src-link:hover{text-decoration:underline}
+.manifesto-box blockquote{white-space:pre-wrap;font-size:13px;line-height:1.6;color:var(--mf)}
+
+/* Issues */
+.issues-section{margin-top:40px}
+.issues-section h2{font-size:18px;font-weight:700}
+.issues-list{margin-top:16px;display:flex;flex-direction:column;gap:12px}
+.issue-card{border-radius:14px;border:1px solid var(--border);background:#fff;padding:20px}
+.issue-top{display:flex;align-items:center;justify-content:space-between}
+.issue-name{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600}
+.conf{display:inline-flex;align-items:center;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:500;border:1px solid}
+.conf.high{border-color:rgba(26,107,58,.3);background:rgba(26,107,58,.1);color:var(--success)}
+.conf.med{border-color:rgba(200,146,42,.3);background:rgba(200,146,42,.1);color:var(--gold)}
+.conf.low{border-color:rgba(163,22,33,.3);background:rgba(163,22,33,.1);color:var(--jr)}
+.issue-card .position{margin-top:8px;font-size:13px;line-height:1.55;color:var(--navy)}
+.quote-box{margin-top:12px;border-left:2px solid rgba(163,22,33,.3);background:var(--surface);border-radius:0 8px 8px 0;padding:12px 12px 12px 16px}
+.quote-box .label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:rgba(74,86,99,.5)}
+.quote-box p{margin-top:4px;font-size:12px;font-style:italic;line-height:1.55;color:var(--mf)}
+
+/* Articles */
+.articles-section{margin-top:40px}
+.articles-section h2{font-size:18px;font-weight:700}
+.articles-list{margin-top:16px;display:flex;flex-direction:column;gap:8px}
+.article-card{display:flex;align-items:start;justify-content:space-between;gap:16px;padding:16px 20px;border-radius:10px;border:1px solid var(--border);background:#fff;transition:.2s}
+.article-card:hover{box-shadow:0 2px 4px rgba(13,27,42,.06),0 8px 16px rgba(13,27,42,.06)}
+.article-card .title{font-size:14px;font-weight:600;color:var(--navy);transition:.15s}
+.article-card:hover .title{color:var(--jr)}
+.article-card .meta{margin-top:4px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--mf)}
+.article-card .meta .sep{color:var(--border)}
+.sentiment-pos{font-weight:500;color:var(--success)}
+.sentiment-neg{font-weight:500;color:var(--jr)}
+.sentiment-neu{font-weight:500;color:var(--mf)}
+.article-card .ext{margin-top:4px;width:16px;height:16px;flex-shrink:0;color:rgba(74,86,99,.3);transition:.15s}
+.article-card:hover .ext{color:var(--jr)}
+
+/* Footer */
+.page-footer{margin-top:48px;padding-top:20px;border-top:1px solid var(--border);font-size:12px;color:var(--mf);display:flex;flex-wrap:wrap;gap:16px}
+</style>
+</head>
+<body>
+<div class="ribbon"></div>
+<header class="header"><div class="header-inner">
+  <a href="preview.html" class="logo"><svg viewBox="0 0 28 28"><rect width="28" height="28" rx="6" fill="#A31621"/><path d="M7 18.5V9h2.3l2.7 4.6L14.7 9H17v9.5h-1.9v-5.5l-2.5 4.3h-1.2L8.9 13v5.5Z M19 18.5V9h1.9v9.5Z" fill="#F5E8C8"/><circle cx="22.5" cy="9.5" r="1.1" fill="#C8922A"/></svg><span>VotePulse</span></a>
+  <nav class="nav"><a href="preview.html">Home</a><a href="candidates-preview.html" class="active">Candidates</a><a href="#">Compare</a><a href="#">About</a></nav>
+</div></header>
+
+<main class="page">
+  <a href="candidates-preview.html" class="back">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 12 6 8l4-4"/></svg>
+    All candidates
+  </a>
+
+  <!-- 1. Header -->
+  <header class="profile-header">
+    <div class="avatar">ML</div>
+    <div>
+      <h1>Marie Le Breton</h1>
+      <div class="badges">
+        <span class="badge">St Brelade</span>
+        <span class="badge ind">Independent</span>
+      </div>
+      <div class="source-pills">
+        <a href="#" class="source-pill"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M6 10l4-4"/><path d="M9 4.5h2.5V7"/><rect x="2" y="6" width="7" height="7" rx="1.5"/></svg>Source</a>
+        <a href="#" class="source-pill"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M6 10l4-4"/><path d="M9 4.5h2.5V7"/><rect x="2" y="6" width="7" height="7" rx="1.5"/></svg>Source</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- 2. AI Summary -->
+  <section class="ai-section">
+    <h2>AI-Generated Summary</h2>
+    <div class="ai-card">
+      <div class="ai-badge">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.168 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 6a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 6Zm0 9a1 1 0 100-2 1 1 0 000 2Z" clip-rule="evenodd"/></svg>
+        AI-generated — verify with original sources
+      </div>
+      <p>Marie Le Breton is an independent climate-first candidate standing in St Brelade. Her manifesto centres on reaching net zero emissions by 2040 — five years ahead of the States' current target. Key proposals include a £50m offshore wind investment programme, converting the entire LibertyBus fleet to electric by 2032, and establishing a Coastal Protection Fund to address rising sea levels around Jersey's southern parishes. She also advocates for a green skills training programme to prepare workers for the energy transition, and proposes stricter planning controls on greenfield development. Her education policy focuses on embedding environmental literacy into the Jersey curriculum from primary school.</p>
+    </div>
+
+    <button class="expander-btn" id="expandBtn" onclick="toggleManifesto()">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4l4 4-4 4"/></svg>
+      View original manifesto
+    </button>
+    <div class="manifesto-box" id="manifestoBox">
+      <a href="#" class="src-link">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="width:12px;height:12px"><path d="M6 10l4-4"/><path d="M9 4.5h2.5V7"/><rect x="2" y="6" width="7" height="7" rx="1.5"/></svg>
+        View original source
+      </a>
+      <blockquote>I am standing as an independent candidate in St Brelade because I believe Jersey's future depends on the choices we make today about our environment and climate.
+
+My key commitments:
+
+1. NET ZERO BY 2040 — Jersey must lead, not follow. I will push for binding legislation to achieve net zero emissions by 2040, five years ahead of current targets.
+
+2. OFFSHORE WIND — I propose a £50 million investment programme in offshore wind capacity, creating hundreds of skilled jobs while securing Jersey's energy independence.
+
+3. ELECTRIC TRANSPORT — Working with LibertyBus to convert the entire fleet to electric vehicles by 2032. Expanding the cycle network with 30km of protected lanes.
+
+4. COASTAL PROTECTION — Establishing a dedicated Coastal Protection Fund of £20 million to address erosion and flooding risks in St Brelade, St Ouen, and Grouville bays.
+
+5. GREEN SKILLS — A training programme to prepare 2,000 workers for careers in renewable energy, sustainable construction, and environmental management by 2030.
+
+6. PLANNING REFORM — Stricter controls on greenfield development. Brownfield-first policy for all new housing. Mandatory green roofs on commercial buildings over 500sqm.
+
+I am not affiliated with any political party. I answer only to the people of St Brelade and to the evidence.</blockquote>
+    </div>
+  </section>
+
+  <!-- 3. Issues & Positions -->
+  <section class="issues-section">
+    <h2>Issues &amp; Positions</h2>
+    <div class="issues-list">
+      <div class="issue-card">
+        <div class="issue-top">
+          <div class="issue-name"><span>🌿</span> Environment</div>
+          <span class="conf high">High confidence</span>
+        </div>
+        <p class="position">Proposes binding net zero legislation by 2040, £50m offshore wind investment, and mandatory green roofs on commercial buildings. Would establish a Coastal Protection Fund and pursue brownfield-first planning policy.</p>
+        <div class="quote-box">
+          <p class="label">Source quote</p>
+          <p>&ldquo;Jersey must lead, not follow. I will push for binding legislation to achieve net zero emissions by 2040, five years ahead of current targets.&rdquo;</p>
+        </div>
+      </div>
+
+      <div class="issue-card">
+        <div class="issue-top">
+          <div class="issue-name"><span>🚌</span> Transport</div>
+          <span class="conf high">High confidence</span>
+        </div>
+        <p class="position">Plans to convert the entire LibertyBus fleet to electric by 2032 and build 30km of protected cycle lanes across the Island.</p>
+        <div class="quote-box">
+          <p class="label">Source quote</p>
+          <p>&ldquo;Working with LibertyBus to convert the entire fleet to electric vehicles by 2032. Expanding the cycle network with 30km of protected lanes.&rdquo;</p>
+        </div>
+      </div>
+
+      <div class="issue-card">
+        <div class="issue-top">
+          <div class="issue-name"><span>🏠</span> Housing</div>
+          <span class="conf med">Medium confidence</span>
+        </div>
+        <p class="position">Advocates for brownfield-first development policy and stricter controls on greenfield sites. Does not propose specific housing supply targets.</p>
+        <div class="quote-box">
+          <p class="label">Source quote</p>
+          <p>&ldquo;Stricter controls on greenfield development. Brownfield-first policy for all new housing.&rdquo;</p>
+        </div>
+      </div>
+
+      <div class="issue-card">
+        <div class="issue-top">
+          <div class="issue-name"><span>🎓</span> Education</div>
+          <span class="conf low">Low confidence</span>
+        </div>
+        <p class="position">Mentions environmental literacy in schools but does not detail broader education policy or funding commitments.</p>
+        <div class="quote-box">
+          <p class="label">Source quote</p>
+          <p>&ldquo;A training programme to prepare 2,000 workers for careers in renewable energy, sustainable construction, and environmental management by 2030.&rdquo;</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. Related Articles -->
+  <section class="articles-section">
+    <h2>Related Articles</h2>
+    <div class="articles-list">
+      <a href="#" class="article-card">
+        <div>
+          <p class="title">St Brelade independent pledges net zero by 2040</p>
+          <div class="meta"><span style="font-weight:500">Bailiwick Express</span><span class="sep">·</span><span>18 Mar 2026</span><span class="sep">·</span><span class="sentiment-pos">Positive</span></div>
+        </div>
+        <svg class="ext" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M6 10l4-4"/><path d="M9 4.5h2.5V7"/></svg>
+      </a>
+      <a href="#" class="article-card">
+        <div>
+          <p class="title">Election 2026: Where candidates stand on climate</p>
+          <div class="meta"><span style="font-weight:500">BBC Jersey</span><span class="sep">·</span><span>12 Mar 2026</span><span class="sep">·</span><span class="sentiment-neu">Neutral</span></div>
+        </div>
+        <svg class="ext" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M6 10l4-4"/><path d="M9 4.5h2.5V7"/></svg>
+      </a>
+      <a href="#" class="article-card">
+        <div>
+          <p class="title">Coastal erosion: candidates debate protection funding</p>
+          <div class="meta"><span style="font-weight:500">ITV Channel</span><span class="sep">·</span><span>5 Mar 2026</span><span class="sep">·</span><span class="sentiment-pos">Positive</span></div>
+        </div>
+        <svg class="ext" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M6 10l4-4"/><path d="M9 4.5h2.5V7"/></svg>
+      </a>
+    </div>
+  </section>
+
+  <!-- 5. Footer -->
+  <footer class="page-footer">
+    <span>Last scraped: 22 Apr 2026, 08:14</span>
+    <span>AI enriched: 22 Apr 2026, 09:30</span>
+    <span>Record updated: 22 Apr 2026, 09:30</span>
+  </footer>
+</main>
+
+<script>
+function toggleManifesto(){
+  const btn=document.getElementById('expandBtn');
+  const box=document.getElementById('manifestoBox');
+  const open=box.classList.toggle('show');
+  btn.classList.toggle('open',open);
+  btn.querySelector('svg + *')?.remove();
+  const span=document.createTextNode(open?' Hide original manifesto':' View original manifesto');
+  btn.appendChild(span);
+}
+// Fix: replace text properly
+document.getElementById('expandBtn').addEventListener('click',function(){
+  const open=document.getElementById('manifestoBox').classList.contains('show');
+  this.childNodes.forEach(n=>{if(n.nodeType===3)n.remove()});
+  this.appendChild(document.createTextNode(open?' Hide original manifesto':' View original manifesto'));
+});
+</script>
+</body>
+</html>

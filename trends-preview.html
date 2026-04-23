@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Trends — VotePulse</title>
+<style>
+@font-face{font-family:'Archivo';src:url('fonts/Archivo-Regular.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'Archivo';src:url('fonts/Archivo-Medium.ttf') format('truetype');font-weight:500;font-style:normal;font-display:swap}
+@font-face{font-family:'Archivo';src:url('fonts/Archivo-SemiBold.ttf') format('truetype');font-weight:600;font-style:normal;font-display:swap}
+@font-face{font-family:'Archivo';src:url('fonts/Archivo-Bold.ttf') format('truetype');font-weight:700;font-style:normal;font-display:swap}
+
+:root{--jr:#A31621;--jrd:#6B1414;--gold:#C8922A;--navy:#0D1B2A;--surface:#F5F5F0;--on-p:#F5E8C8;--success:#1A6B3A;--muted:#EAEAE2;--mf:#4A5663;--border:#D9D9CF}
+*{box-sizing:border-box;margin:0;padding:0}html{-webkit-font-smoothing:antialiased}
+body{font-family:'Archivo',system-ui,sans-serif;background:var(--surface);color:var(--navy)}
+a{color:inherit;text-decoration:none}::selection{background:var(--jr);color:var(--on-p)}
+strong{font-weight:600}
+
+.ribbon{height:3px;background:var(--jr)}
+.hdr{position:sticky;top:0;z-index:40;border-bottom:1px solid var(--border);background:rgba(245,245,240,.95);backdrop-filter:blur(6px)}
+.hdr-in{max-width:1152px;margin:0 auto;display:flex;height:56px;align-items:center;justify-content:space-between;padding:0 20px}
+.logo{display:flex;align-items:center;gap:10px}.logo svg{height:28px;width:28px}.logo span{font-size:15px;font-weight:700}
+.nav{display:flex;gap:4px}.nav a{padding:6px 12px;border-radius:6px;font-size:13px;font-weight:500;color:var(--mf);transition:.15s}.nav a:hover,.nav a.active{background:rgba(13,27,42,.05);color:var(--navy)}
+
+.page{max-width:896px;margin:0 auto;padding:40px 20px 64px}
+.page h1{font-size:34px;font-weight:700;letter-spacing:-.02em}
+.page>p{margin-top:8px;max-width:480px;font-size:14px;color:var(--mf)}
+
+/* Disclaimer */
+.warn{margin-top:32px;border-radius:14px;border:1px solid rgba(200,146,42,.3);background:rgba(200,146,42,.05);padding:20px;display:flex;gap:12px}
+.warn svg{margin-top:2px;width:16px;height:16px;flex-shrink:0;color:var(--gold)}
+.warn p{font-size:13px;line-height:1.6;color:rgba(13,27,42,.8)}
+.warn p+p{margin-top:6px}
+.warn strong{font-weight:600}
+
+/* Overall card */
+.overall{margin-top:32px;border-radius:14px;border:1px solid var(--border);background:#fff;padding:24px}
+.overall h2{font-size:16px;font-weight:700}
+.overall .sub{margin-top:4px;font-size:12px;color:var(--mf)}
+.overall-inner{margin-top:20px;display:flex;flex-direction:column;align-items:center;gap:24px}
+@media(min-width:640px){.overall-inner{flex-direction:row;align-items:flex-start;gap:40px}}
+
+.donut{position:relative;flex-shrink:0}
+.donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.donut-center .num{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--navy)}
+.donut-center .lbl{font-size:10px;font-weight:500;color:var(--mf)}
+
+.legend{display:flex;flex-direction:column;gap:12px}
+.legend-row{display:flex;align-items:center;gap:12px;font-size:13px}
+.legend-dot{width:12px;height:12px;border-radius:2px;flex-shrink:0}
+.legend-label{width:64px;font-weight:500;color:var(--navy)}
+.legend-val{font-variant-numeric:tabular-nums;color:var(--mf)}
+
+/* Candidates */
+.cands{margin-top:32px}
+.cands h2{font-size:16px;font-weight:700}
+.cands .sub{margin-top:4px;font-size:12px;color:var(--mf)}
+.cands-list{margin-top:16px;display:flex;flex-direction:column;gap:12px}
+
+.cand-card{display:block;border-radius:14px;border:1px solid var(--border);background:#fff;padding:16px;transition:.2s}
+.cand-card:hover{box-shadow:0 2px 4px rgba(13,27,42,.06),0 8px 16px rgba(13,27,42,.06)}
+.cand-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.cand-name{font-size:14px;font-weight:600;color:var(--navy);transition:.15s}
+.cand-card:hover .cand-name{color:var(--jr)}
+.cand-meta{font-size:11px;color:var(--mf)}
+.cand-count{text-align:right;flex-shrink:0}
+.cand-count .num{font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--navy)}
+.cand-count .lbl{font-size:10px;color:var(--mf)}
+
+.bar{margin-top:12px;height:10px;display:flex;border-radius:999px;overflow:hidden;background:var(--muted)}
+.bar-seg{height:100%}
+
+.bar-labels{margin-top:8px;display:flex;gap:16px;font-size:11px;color:var(--mf)}
+.bar-labels span{display:flex;align-items:center;gap:4px}
+.bar-labels .dot{width:6px;height:6px;border-radius:999px}
+</style>
+</head>
+<body>
+<div class="ribbon"></div>
+<header class="hdr"><div class="hdr-in">
+  <a href="preview.html" class="logo"><svg viewBox="0 0 28 28"><rect width="28" height="28" rx="6" fill="#A31621"/><path d="M7 18.5V9h2.3l2.7 4.6L14.7 9H17v9.5h-1.9v-5.5l-2.5 4.3h-1.2L8.9 13v5.5Z M19 18.5V9h1.9v9.5Z" fill="#F5E8C8"/><circle cx="22.5" cy="9.5" r="1.1" fill="#C8922A"/></svg><span>VotePulse</span></a>
+  <nav class="nav"><a href="preview.html">Home</a><a href="candidates-preview.html">Candidates</a><a href="compare-preview.html">Compare</a><a href="#" class="active">Trends</a><a href="about-preview.html">About</a></nav>
+</div></header>
+
+<main class="page">
+  <h1>Sentiment Overview</h1>
+  <p>AI-estimated sentiment from media coverage of Jersey's 2026 election candidates.</p>
+
+  <!-- Disclaimers -->
+  <div class="warn">
+    <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.168 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 6a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 6Zm0 9a1 1 0 100-2 1 1 0 000 2Z" clip-rule="evenodd"/></svg>
+    <div>
+      <p><strong>Sentiment is AI-estimated from media coverage only.</strong> It reflects how news outlets write about candidates, not public opinion.</p>
+      <p><strong>Small sample sizes may not be representative.</strong> Candidates with fewer articles have less reliable readings.</p>
+      <p><strong>This is not a poll or prediction.</strong> It is a transparency tool showing how media coverage is distributed.</p>
+    </div>
+  </div>
+
+  <!-- Overall -->
+  <section class="overall">
+    <h2>Overall media sentiment</h2>
+    <p class="sub">Based on 47 articles with AI sentiment analysis</p>
+    <div class="overall-inner">
+      <div class="donut">
+        <svg width="120" height="120" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="40" fill="none" stroke="#1A6B3A" stroke-width="16" stroke-dasharray="65.3 251.3" stroke-dashoffset="0" transform="rotate(-90 50 50)"/>
+          <circle cx="50" cy="50" r="40" fill="none" stroke="#4A5663" stroke-width="16" stroke-dasharray="113.1 251.3" stroke-dashoffset="-65.3" transform="rotate(-90 50 50)"/>
+          <circle cx="50" cy="50" r="40" fill="none" stroke="#A31621" stroke-width="16" stroke-dasharray="72.9 251.3" stroke-dashoffset="-178.4" transform="rotate(-90 50 50)"/>
+        </svg>
+        <div class="donut-center"><span class="num">47</span><span class="lbl">articles</span></div>
+      </div>
+      <div class="legend">
+        <div class="legend-row"><span class="legend-dot" style="background:#1A6B3A"></span><span class="legend-label">Positive</span><span class="legend-val">12 (26%)</span></div>
+        <div class="legend-row"><span class="legend-dot" style="background:#4A5663"></span><span class="legend-label">Neutral</span><span class="legend-val">21 (45%)</span></div>
+        <div class="legend-row"><span class="legend-dot" style="background:#A31621"></span><span class="legend-label">Negative</span><span class="legend-val">14 (30%)</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Per-candidate -->
+  <section class="cands">
+    <h2>Sentiment by candidate</h2>
+    <p class="sub">Only candidates with 3+ articles shown</p>
+    <div class="cands-list" id="list"></div>
+  </section>
+</main>
+
+<script>
+const DATA=[
+  {slug:"john-smith",name:"John Smith",district:"St Helier Central",party:"Reform Jersey",articles:12,pos:5,neu:4,neg:3},
+  {slug:"marie-le-breton",name:"Marie Le Breton",district:"St Brelade",party:null,articles:9,pos:4,neu:3,neg:2},
+  {slug:"rachel-vibert",name:"Rachel Vibert",district:"Grouville",party:"Jersey Alliance",articles:8,pos:2,neu:4,neg:2},
+  {slug:"sarah-nicolle",name:"Sarah Nicolle",district:"St Saviour",party:"Reform Jersey",articles:7,pos:1,neu:3,neg:3},
+  {slug:"mark-le-cornu",name:"Mark Le Cornu",district:"St Lawrence",party:"Jersey Alliance",articles:6,pos:2,neu:3,neg:1},
+  {slug:"peter-le-maistre",name:"Peter Le Maistre",district:"St Peter",party:null,articles:5,pos:3,neu:1,neg:1},
+];
+
+const list=document.getElementById('list');
+list.innerHTML=DATA.map(c=>{
+  const t=c.pos+c.neu+c.neg;
+  const pP=(c.pos/t*100).toFixed(1);
+  const pN=(c.neu/t*100).toFixed(1);
+  const pNe=(c.neg/t*100).toFixed(1);
+  return `<a href="candidate-profile-preview.html" class="cand-card">
+    <div class="cand-top">
+      <div><p class="cand-name">${c.name}</p><p class="cand-meta">${c.district}${c.party?' · '+c.party:' · Independent'}</p></div>
+      <div class="cand-count"><p class="num">${c.articles}</p><p class="lbl">articles</p></div>
+    </div>
+    <div class="bar">
+      ${c.pos?`<div class="bar-seg" style="width:${pP}%;background:#1A6B3A"></div>`:''}
+      ${c.neu?`<div class="bar-seg" style="width:${pN}%;background:#4A5663"></div>`:''}
+      ${c.neg?`<div class="bar-seg" style="width:${pNe}%;background:#A31621"></div>`:''}
+    </div>
+    <div class="bar-labels">
+      <span><span class="dot" style="background:#1A6B3A"></span>${c.pos}</span>
+      <span><span class="dot" style="background:#4A5663"></span>${c.neu}</span>
+      <span><span class="dot" style="background:#A31621"></span>${c.neg}</span>
+    </div>
+  </a>`;
+}).join('');
+</script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+# Cloudflare Pages — pair with `npm run pages:build` (@cloudflare/next-on-pages).
+# Connect the repo in the Cloudflare dashboard, set the build output to the path
+# emitted by next-on-pages (see Cloudflare Next.js adapter docs for your adapter version).
+name = "votepulse"
+compatibility_date = "2024-11-01"
+pages_build_output_dir = ".vercel/output/static"

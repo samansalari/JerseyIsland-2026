@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>About — VotePulse</title>
+<style>
+@font-face{font-family:'Archivo';src:url('fonts/Archivo-Regular.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'Archivo';src:url('fonts/Archivo-Italic.ttf') format('truetype');font-weight:400;font-style:italic;font-display:swap}
+@font-face{font-family:'Archivo';src:url('fonts/Archivo-Medium.ttf') format('truetype');font-weight:500;font-style:normal;font-display:swap}
+@font-face{font-family:'Archivo';src:url('fonts/Archivo-SemiBold.ttf') format('truetype');font-weight:600;font-style:normal;font-display:swap}
+@font-face{font-family:'Archivo';src:url('fonts/Archivo-Bold.ttf') format('truetype');font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:'Archivo';src:url('fonts/Archivo-ExtraBold.ttf') format('truetype');font-weight:800;font-style:normal;font-display:swap}
+
+:root{--jr:#A31621;--jrd:#6B1414;--gold:#C8922A;--navy:#0D1B2A;--surface:#F5F5F0;--on-p:#F5E8C8;--success:#1A6B3A;--muted:#EAEAE2;--mf:#4A5663;--border:#D9D9CF}
+*{box-sizing:border-box;margin:0;padding:0}html{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body{font-family:'Archivo',system-ui,sans-serif;background:var(--surface);color:var(--navy);font-feature-settings:"ss01","cv11"}
+a{color:inherit;text-decoration:none}::selection{background:var(--jr);color:var(--on-p)}
+strong{font-weight:600}
+
+.ribbon{height:3px;background:var(--jr)}
+.hdr{position:sticky;top:0;z-index:40;border-bottom:1px solid var(--border);background:rgba(245,245,240,.95);backdrop-filter:blur(6px)}
+.hdr-in{max-width:1152px;margin:0 auto;display:flex;height:56px;align-items:center;justify-content:space-between;padding:0 20px}
+.logo{display:flex;align-items:center;gap:10px}.logo svg{height:28px;width:28px}.logo span{font-size:15px;font-weight:700}
+.nav{display:flex;gap:4px}.nav a{padding:6px 12px;border-radius:6px;font-size:13px;font-weight:500;color:var(--mf);transition:.15s}.nav a:hover,.nav a.active{background:rgba(13,27,42,.05);color:var(--navy)}
+
+.page{max-width:672px;margin:0 auto;padding:48px 20px 64px}
+@media(min-width:768px){.page{padding:64px 20px 80px}}
+.page h1{font-size:40px;font-weight:700;letter-spacing:-.02em;color:var(--navy)}
+
+section{margin-top:48px}
+section h2{font-size:20px;font-weight:700;color:var(--navy)}
+p{margin-top:12px;font-size:15px;line-height:1.75;color:rgba(13,27,42,.8)}
+
+/* Steps */
+.steps{margin-top:16px;display:flex;flex-direction:column;gap:16px}
+.step{display:flex;gap:16px}
+.step-n{width:28px;height:28px;border-radius:999px;background:var(--navy);color:var(--on-p);display:flex;align-items:center;justify-content:center;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;font-weight:700;flex-shrink:0}
+.step h3{font-size:15px;font-weight:600;color:var(--navy)}
+.step p{margin-top:4px;font-size:14px;line-height:1.7;color:rgba(13,27,42,.8)}
+
+/* Trust box */
+.trust{margin-top:16px;border-radius:14px;border:1px solid rgba(200,146,42,.3);background:rgba(200,146,42,.05);padding:20px}
+.trust ul{list-style:none;display:flex;flex-direction:column;gap:12px}
+.trust li{display:flex;gap:12px;font-size:14px;line-height:1.7;color:rgba(13,27,42,.8)}
+.trust .icon{margin-top:4px;width:20px;height:20px;border-radius:999px;border:1px solid rgba(200,146,42,.4);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--gold);flex-shrink:0}
+
+/* Sources */
+.sources{margin-top:16px;list-style:none;display:flex;flex-direction:column;gap:8px}
+.sources li a{display:flex;align-items:start;gap:12px;padding:12px 16px;border-radius:10px;border:1px solid var(--border);background:var(--surface);transition:.2s}
+.sources li a:hover{border-color:rgba(163,22,33,.3);box-shadow:0 2px 8px rgba(13,27,42,.04)}
+.sources svg{margin-top:2px;width:16px;height:16px;flex-shrink:0;color:rgba(74,86,99,.4);transition:.15s}
+.sources li a:hover svg{color:var(--jr)}
+.sources .sname{font-size:14px;font-weight:600;color:var(--navy);transition:.15s}
+.sources li a:hover .sname{color:var(--jr)}
+.sources .sdesc{margin-top:2px;font-size:12px;color:var(--mf)}
+.note{margin-top:16px;font-size:13px;line-height:1.7;color:var(--mf)}
+
+/* Contact */
+.email-btn{margin-top:16px;display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:6px;background:var(--jr);font-size:14px;font-weight:600;color:var(--on-p);transition:background .15s}
+.email-btn:hover{background:var(--jrd)}
+.email-btn svg{width:16px;height:16px}
+
+/* Legal */
+.legal{margin-top:48px;border-radius:14px;border:1px solid var(--border);background:#fff;padding:24px}
+.legal h2{font-size:16px;font-weight:700;color:var(--navy)}
+.legal p{margin-top:12px;font-size:13px;line-height:1.7;color:var(--mf)}
+.legal a{font-weight:500;color:var(--jr);text-decoration:underline;text-underline-offset:2px}
+
+.page-footer{margin-top:48px;padding-top:20px;border-top:1px solid var(--border);font-size:12px;color:var(--mf)}
+
+/* Footer */
+.footer{border-top:1px solid var(--border);background:var(--navy);color:rgba(245,232,200,.7)}
+.footer-in{max-width:1152px;margin:0 auto;padding:40px 20px}
+.footer-disc{margin-top:32px;padding-top:20px;border-top:1px solid rgba(245,232,200,.1);font-size:12px;line-height:1.6;color:rgba(245,232,200,.4)}
+.footer-disc p+p{margin-top:8px;font-size:11px;color:rgba(245,232,200,.25)}
+</style>
+</head>
+<body>
+<div class="ribbon"></div>
+<header class="hdr"><div class="hdr-in">
+  <a href="preview.html" class="logo"><svg viewBox="0 0 28 28"><rect width="28" height="28" rx="6" fill="#A31621"/><path d="M7 18.5V9h2.3l2.7 4.6L14.7 9H17v9.5h-1.9v-5.5l-2.5 4.3h-1.2L8.9 13v5.5Z M19 18.5V9h1.9v9.5Z" fill="#F5E8C8"/><circle cx="22.5" cy="9.5" r="1.1" fill="#C8922A"/></svg><span>VotePulse</span></a>
+  <nav class="nav"><a href="preview.html">Home</a><a href="candidates-preview.html">Candidates</a><a href="compare-preview.html">Compare</a><a href="#" class="active">About</a></nav>
+</div></header>
+
+<main class="page">
+  <h1>About VotePulse</h1>
+
+  <!-- What it is -->
+  <section>
+    <h2>What it is</h2>
+    <p>VotePulse is an independent, open-source election intelligence platform built for Jersey's 2026 general election. It exists to help voters understand where candidates stand on the issues that matter — housing, healthcare, tax, education, the environment and more.</p>
+    <p>VotePulse is <strong>not affiliated</strong> with any political party, candidate, or government body. It does not accept donations from political organisations and does not endorse or oppose any candidate.</p>
+  </section>
+
+  <!-- How it works -->
+  <section>
+    <h2>How it works</h2>
+    <div class="steps">
+      <div class="step">
+        <span class="step-n">1</span>
+        <div><h3>Data collection</h3><p>Candidate manifestos, public statements and news coverage are collected from publicly available sources — primarily flow.je, vote.je, policy.je and Jersey news outlets. Every piece of source data is stored with its original URL so nothing is lost.</p></div>
+      </div>
+      <div class="step">
+        <span class="step-n">2</span>
+        <div><h3>AI analysis</h3><p>AI (xAI Grok) reads each manifesto to generate plain-language summaries and extract policy positions mapped to specific issues. Each extraction includes the exact source quote from the original text and a confidence score.</p></div>
+      </div>
+      <div class="step">
+        <span class="step-n">3</span>
+        <div><h3>Labelling &amp; verification</h3><p>All AI-generated content is clearly labelled with a warning badge. Users can expand any summary to read the original manifesto text and verify claims against the source quote.</p></div>
+      </div>
+      <div class="step">
+        <span class="step-n">4</span>
+        <div><h3>Continuous updates</h3><p>Data is refreshed every 6 hours. When a candidate's manifesto or public statements change, the system detects the difference (via SHA-256 hash), re-ingests the content, and re-runs the analysis. Previous versions are preserved in an append-only snapshot history.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Trust -->
+  <section>
+    <h2>Trust &amp; transparency</h2>
+    <div class="trust">
+      <ul>
+        <li><span class="icon">!</span><span><strong>AI summaries may contain errors</strong> or misrepresentations. They are starting points for understanding, not definitive records.</span></li>
+        <li><span class="icon">!</span><span><strong>Always verify with the original text.</strong> Every AI summary links to the full manifesto and the specific quote that supports each claim.</span></li>
+        <li><span class="icon">!</span><span><strong>Confidence scores are shown</strong> for every extracted position (high, medium, low) so you know how certain the AI was about its reading.</span></li>
+        <li><span class="icon">!</span><span><strong>We do not editorially rank, endorse, or oppose any candidate.</strong> Candidates are listed alphabetically. Issue comparisons show raw data, not editorial judgement.</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- Sources -->
+  <section>
+    <h2>Data sources</h2>
+    <p style="font-size:14px">There is no official API for Jersey election data. VotePulse collects information from publicly accessible web pages:</p>
+    <ul class="sources">
+      <li><a href="https://flow.je" target="_blank" rel="noopener"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M6 10l4-4"/><path d="M9 4.5h2.5V7"/><rect x="2" y="6" width="7" height="7" rx="1.5"/></svg><div><span class="sname">flow.je</span><p class="sdesc">Candidate manifestos and profiles</p></div></a></li>
+      <li><a href="https://vote.je" target="_blank" rel="noopener"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M6 10l4-4"/><path d="M9 4.5h2.5V7"/><rect x="2" y="6" width="7" height="7" rx="1.5"/></svg><div><span class="sname">vote.je</span><p class="sdesc">Voter registration and election information</p></div></a></li>
+      <li><a href="https://policy.je" target="_blank" rel="noopener"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M6 10l4-4"/><path d="M9 4.5h2.5V7"/><rect x="2" y="6" width="7" height="7" rx="1.5"/></svg><div><span class="sname">policy.je</span><p class="sdesc">Policy documents and position papers</p></div></a></li>
+      <li><a href="#"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M6 10l4-4"/><path d="M9 4.5h2.5V7"/><rect x="2" y="6" width="7" height="7" rx="1.5"/></svg><div><span class="sname">Local news outlets</span><p class="sdesc">BBC Jersey, Bailiwick Express, ITV Channel, JEP (via RSS)</p></div></a></li>
+    </ul>
+    <p class="note">If a source is unavailable or changes format, VotePulse logs the failure in its ingest history so gaps are visible rather than silent.</p>
+  </section>
+
+  <!-- Contact -->
+  <section>
+    <h2>Contact &amp; feedback</h2>
+    <p>Found an error? Have a suggestion? We want to hear from you.</p>
+    <a href="mailto:hello@votepulse.je" class="email-btn">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="16" height="12" rx="2"/><path d="M2 6l8 5 8-5"/></svg>
+      hello@votepulse.je
+    </a>
+  </section>
+
+  <!-- Legal -->
+  <div class="legal">
+    <h2>Legal disclaimer</h2>
+    <p>VotePulse is a personal project built for public benefit. It is not a registered third-party campaigner under Jersey electoral law. If registration becomes required, this page will be updated accordingly.</p>
+    <p>No personal data is collected from users. VotePulse does not use cookies, analytics trackers, or any form of user identification.</p>
+    <p>The information presented is gathered from public sources and processed by AI. While every effort is made to ensure accuracy, VotePulse makes no warranty about the completeness or correctness of any content. For authoritative election information, contact the Judicial Greffe or visit <a href="https://vote.je" target="_blank" rel="noopener">vote.je</a>.</p>
+  </div>
+
+  <footer class="page-footer">Last updated: April 2026</footer>
+</main>
+
+<footer class="footer"><div class="footer-in">
+  <div class="footer-disc">
+    <p>VotePulse is an independent project. AI-generated summaries may contain errors. Always verify with original sources. Not affiliated with the States of Jersey or any political party.</p>
+    <p>&copy; 2026 VotePulse &middot; Jersey 2026</p>
+  </div>
+</div></footer>
+</body>
+</html>
