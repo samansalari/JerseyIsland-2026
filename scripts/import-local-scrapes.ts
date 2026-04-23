@@ -93,13 +93,43 @@ function extractBio(markdown: string, _name: string): string | null {
   return bio.length > 50 ? bio.substring(0, 500) : null;
 }
 
-function extractManifesto(markdown: string): string {
-  const sectionPattern =
-    /(?:#{1,3}\s+(?:Manifesto|Pledges|My Priorities|Key Promises|Policies|Commitments|What I Stand For)[^\n]*\n)([\s\S]+?)(?=\n#{1,3}\s|\n---|\Z)/i;
-  const section = markdown.match(sectionPattern);
-  if (section?.[1]) return section[1]!.trim();
+function cleanMarkdown(markdown: string): string {
+  const lines = markdown.split("\n");
+  const cleaned: string[] = [];
+  let pastNav = false;
 
-  return markdown;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]?.trim() ?? "";
+
+    if (!pastNav) {
+      if (line.startsWith("#") && line.includes("flow.je")) continue;
+      if (line.startsWith("- [") || line.startsWith("* [")) continue;
+      if (line === "Menu") continue;
+      if (line === "") continue;
+      pastNav = true;
+    }
+
+    cleaned.push(lines[i]!);
+  }
+
+  return cleaned.join("\n").trim();
+}
+
+function stripMarkdownLinks(text: string): string {
+  return text.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
+}
+
+function extractManifesto(markdown: string): string {
+  const noNav = cleanMarkdown(markdown);
+  const noLinks = stripMarkdownLinks(noNav);
+  const sectionPattern =
+    /(?:#{1,3}\s*(?:Manifesto|Pledges|My Priorities|Key Promises|Policies|Commitments|What I Stand For|My Plans|Election Pledges)[^\n]*\n)([\s\S]+?)(?=\n#{1,3}\s|\Z)/i;
+  const section = noLinks.match(sectionPattern);
+  if (section?.[1] && section[1].trim().length > 100) {
+    return section[1].trim();
+  }
+
+  return noLinks.trim();
 }
 
 function extractPhotoUrl(markdown: string, metadata: Record<string, string>) {
@@ -238,14 +268,6 @@ async function main() {
 
       if (existing.length > 0) {
         const ex = existing[0]!;
-        const useNewManifesto =
-          c.manifesto_raw.length > (ex.manifestoRaw?.length || 0);
-        const finalManifesto = useNewManifesto
-          ? c.manifesto_raw
-          : (ex.manifestoRaw ?? c.manifesto_raw);
-        const finalManifestoUrl = useNewManifesto
-          ? c.manifesto_url
-          : (ex.manifestoUrl || c.manifesto_url);
 
         await db
           .update(candidates)
@@ -256,9 +278,12 @@ async function main() {
             bio: ex.bio || c.bio,
             photoUrl: ex.photoUrl || c.photo_url,
             party: ex.party || c.party,
-            manifestoRaw: finalManifesto,
-            manifestoUrl: finalManifestoUrl,
-            dataHash: sha256(finalManifesto || ""),
+            manifestoRaw: c.manifesto_raw,
+            manifestoUrl: c.manifesto_url,
+            dataHash: c.data_hash,
+            aiSummary: null,
+            aiIssues: null,
+            lastEnrichedAt: null,
             lastScrapedAt: new Date(),
             updatedAt: new Date(),
           })

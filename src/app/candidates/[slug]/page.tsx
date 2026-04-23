@@ -1,33 +1,27 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { db } from "@/db";
-import { candidates, candidateIssues, issues, articles } from "@/db/schema";
 import { eq, desc, arrayContains } from "drizzle-orm";
-import { ManifestoExpander } from "./manifesto-expander";
+import { db } from "@/db";
+import { articles, candidates, candidateIssues, issues } from "@/db/schema";
 import {
   absoluteAssetUrl,
   candidateMetadataTitle,
   canonicalUrl,
   truncateMetaDescription,
 } from "@/lib/seo";
+import { ManifestoExpander } from "./manifesto-expander";
 
-export const revalidate = 21600; // 6 hours
-
-// ── Static params ───────────────────────────────────────────────────────────
+export const revalidate = 21600;
 
 export async function generateStaticParams() {
   try {
-    const rows = await db
-      .select({ slug: candidates.slug })
-      .from(candidates);
+    const rows = await db.select({ slug: candidates.slug }).from(candidates);
     return rows.map((r) => ({ slug: r.slug }));
   } catch {
     return [];
   }
 }
-
-// ── Data fetching ───────────────────────────────────────────────────────────
 
 async function getCandidate(slug: string) {
   const [row] = await db
@@ -69,8 +63,6 @@ async function getRelatedArticles(candidateId: string) {
     .limit(5);
 }
 
-// ── Metadata ────────────────────────────────────────────────────────────────
-
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -78,19 +70,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const c = await getCandidate(slug);
   if (!c) {
     return {
-      title: { absolute: "Candidate not found — VotePulse" },
+      title: { absolute: "Candidate not found - VotePulse" },
       robots: { index: false, follow: false },
     };
   }
 
   const description =
     truncateMetaDescription(c.aiSummary ?? c.bio, 150) ||
-    `${c.name} is standing in ${c.district} for Jersey’s 2026 general election. View manifesto context, issue positions, and sources on VotePulse.`;
+    `${c.name} is standing in ${c.district} for Jersey's 2026 general election. View manifesto context, issue positions, and sources on VotePulse.`;
 
   const url = canonicalUrl(`/candidates/${slug}`);
   const ogImagePath = `/candidates/${slug}/opengraph-image`;
   const ogImageUrl = absoluteAssetUrl(ogImagePath);
-
   const titleAbsolute = candidateMetadataTitle(c.name);
 
   return {
@@ -109,7 +100,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
           url: ogImageUrl,
           width: 1200,
           height: 630,
-          alt: `${c.name} — VotePulse`,
+          alt: `${c.name} - VotePulse`,
         },
       ],
     },
@@ -122,8 +113,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     robots: { index: true, follow: true },
   };
 }
-
-// ── Page ────────────────────────────────────────────────────────────────────
 
 export default async function CandidatePage({ params }: Props) {
   const { slug } = await params;
@@ -143,6 +132,14 @@ export default async function CandidatePage({ params }: Props) {
     .toUpperCase();
 
   const hasAiData = !!candidate.aiSummary || positions.length > 0;
+  const aiIssueCards = positions.map((p) => ({
+    issue: p.issueName,
+    label: p.issueDisplayName,
+    position: p.position,
+    confidence: p.confidence,
+    sourceQuote: p.sourceQuote,
+    icon: p.issueIcon,
+  }));
 
   const personJsonLd = {
     "@context": "https://schema.org",
@@ -150,7 +147,7 @@ export default async function CandidatePage({ params }: Props) {
     name: candidate.name,
     description:
       truncateMetaDescription(candidate.aiSummary ?? candidate.bio, 300) ||
-      `${candidate.name} — candidate for ${candidate.district} in Jersey’s 2026 general election.`,
+      `${candidate.name} - candidate for ${candidate.district} in Jersey's 2026 general election.`,
     url: canonicalUrl(`/candidates/${slug}`),
     affiliation: {
       "@type": "PoliticalParty",
@@ -159,15 +156,15 @@ export default async function CandidatePage({ params }: Props) {
   };
 
   return (
-    <main className="mx-auto max-w-3xl px-5 py-10 md:py-14">
+    <main className="mx-auto max-w-4xl px-5 py-10 md:py-14">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }}
       />
-      {/* Back link */}
+
       <Link
         href="/candidates"
-        className="mb-8 inline-flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground transition-colors hover:text-jersey-red"
+        className="mb-8 inline-flex min-h-10 items-center gap-1.5 rounded-full text-[13px] font-medium text-muted-foreground transition-colors hover:text-jersey-red"
       >
         <svg
           viewBox="0 0 16 16"
@@ -183,71 +180,90 @@ export default async function CandidatePage({ params }: Props) {
         All candidates
       </Link>
 
-      {/* ── 1. Header ────────────────────────────────────── */}
-      <header className="flex gap-5">
-        {candidate.photoUrl ? (
-          <img
-            src={candidate.photoUrl}
-            alt=""
-            className="h-20 w-20 flex-shrink-0 rounded-xl object-cover md:h-24 md:w-24"
-          />
-        ) : (
-          <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-xl bg-jersey-red text-[24px] font-bold text-on-primary md:h-24 md:w-24 md:text-[28px]">
-            {initials}
-          </div>
-        )}
-        <div className="min-w-0">
-          <h1 className="text-[28px] font-bold leading-tight tracking-tight text-navy md:text-[34px]">
-            {candidate.name}
-          </h1>
-          <div className="mt-2 flex flex-wrap items-center gap-2 text-[13px]">
-            <span className="inline-flex items-center rounded-md border border-border bg-muted/50 px-2.5 py-1 font-medium text-navy">
-              {candidate.district}
-            </span>
-            <span
-              className={`inline-flex items-center rounded-md border px-2.5 py-1 font-medium ${
-                candidate.party
-                  ? "border-border bg-muted/50 text-muted-foreground"
-                  : "border-gold/30 bg-gold/10 text-gold"
-              }`}
-            >
-              {candidate.party ?? "Independent"}
-            </span>
-          </div>
-          {/* Source pills */}
-          {candidate.sourceUrls.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {candidate.sourceUrls.map((url, i) => (
-                <a
-                  key={i}
-                  href={url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 rounded-full border border-border bg-white px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground transition-colors hover:border-jersey-red/30 hover:text-jersey-red"
+      <header className="overflow-hidden rounded-[28px] border border-border/70 bg-white shadow-card">
+        <div className="bg-[radial-gradient(circle_at_top_left,_rgba(163,22,33,0.10),_transparent_40%),linear-gradient(135deg,rgba(245,245,240,0.95),rgba(255,255,255,0.98))] px-6 py-7 md:px-8 md:py-8">
+          <div className="flex flex-col gap-6 md:flex-row md:items-start">
+            {candidate.photoUrl ? (
+              <img
+                src={candidate.photoUrl}
+                alt=""
+                className="h-24 w-24 flex-shrink-0 rounded-2xl object-cover shadow-card ring-1 ring-black/10 md:h-28 md:w-28"
+              />
+            ) : (
+              <div className="flex h-24 w-24 flex-shrink-0 items-center justify-center rounded-2xl bg-jersey-red text-[28px] font-bold text-on-primary shadow-card ring-1 ring-black/10 md:h-28 md:w-28 md:text-[32px]">
+                {initials}
+              </div>
+            )}
+
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2 text-[12px] font-medium">
+                <span className="rounded-full border border-jersey-red/15 bg-jersey-red/5 px-3 py-1 text-jersey-red">
+                  Candidate profile
+                </span>
+                <span className="rounded-full border border-border bg-white/80 px-3 py-1 text-muted-foreground">
+                  Jersey 2026
+                </span>
+              </div>
+
+              <h1 className="mt-4 max-w-2xl text-[30px] font-bold leading-tight tracking-tight text-navy [text-wrap:balance] md:text-[38px]">
+                {candidate.name}
+              </h1>
+
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-[13px]">
+                <span className="inline-flex items-center rounded-full border border-border bg-white/80 px-3 py-1.5 font-medium text-navy shadow-card">
+                  {candidate.district}
+                </span>
+                <span
+                  className={`inline-flex items-center rounded-full border px-3 py-1.5 font-medium shadow-card ${
+                    candidate.party
+                      ? "border-border bg-white/80 text-muted-foreground"
+                      : "border-gold/30 bg-gold/10 text-gold"
+                  }`}
                 >
-                  <svg
-                    viewBox="0 0 16 16"
-                    className="h-3 w-3"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                  >
-                    <path d="M6 10l4-4" />
-                    <path d="M9 4.5h2.5V7" />
-                    <rect x="2" y="6" width="7" height="7" rx="1.5" />
-                  </svg>
-                  Source
-                </a>
-              ))}
+                  {candidate.party ?? "Independent"}
+                </span>
+              </div>
+
+              {candidate.bio && (
+                <p className="mt-4 max-w-2xl text-[14px] leading-7 text-muted-foreground [text-wrap:pretty]">
+                  {candidate.bio}
+                </p>
+              )}
+
+              {candidate.sourceUrls.length > 0 && (
+                <div className="mt-5 flex flex-wrap gap-2">
+                  {candidate.sourceUrls.map((url, i) => (
+                    <a
+                      key={i}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-border bg-white px-3 py-1.5 text-[11px] font-medium text-muted-foreground transition-colors hover:border-jersey-red/30 hover:text-jersey-red"
+                    >
+                      <svg
+                        viewBox="0 0 16 16"
+                        className="h-3 w-3"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                      >
+                        <path d="M6 10l4-4" />
+                        <path d="M9 4.5h2.5V7" />
+                        <rect x="2" y="6" width="7" height="7" rx="1.5" />
+                      </svg>
+                      Source
+                    </a>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </header>
 
-      {/* ── No AI data state ─────────────────────────────── */}
       {!hasAiData && (
-        <section className="mt-10 rounded-xl border border-border bg-white p-6 text-center">
+        <section className="mt-10 rounded-2xl border border-border bg-white p-6 text-center shadow-card">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
             <svg
               viewBox="0 0 24 24"
@@ -265,42 +281,66 @@ export default async function CandidatePage({ params }: Props) {
             Processing in progress
           </p>
           <p className="mt-1 text-[13px] text-muted-foreground">
-            We&rsquo;re still analysing this candidate&rsquo;s manifesto and
-            public statements. Check back soon for AI-generated summaries and
-            issue positions.
+            We&apos;re still analysing this candidate&apos;s manifesto and public
+            statements. Check back soon for AI-generated summaries and issue
+            positions.
           </p>
         </section>
       )}
 
-      {/* ── 2. AI Summary ────────────────────────────────── */}
       {candidate.aiSummary && (
         <section className="mt-10">
-          <div className="flex items-center justify-between">
-            <h2 className="text-[18px] font-bold text-navy">
-              AI-Generated Summary
-            </h2>
-          </div>
-          <div className="mt-3 rounded-xl border border-gold/30 bg-gold/5 p-5">
-            <div className="flex items-center gap-2 text-[12px] font-semibold text-gold">
-              <svg
-                viewBox="0 0 20 20"
-                className="h-4 w-4"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.168 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 6a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 6Zm0 9a1 1 0 100-2 1 1 0 000 2Z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              AI-generated — verify with original sources
+          <h2 className="text-[18px] font-bold text-navy">AI Summary</h2>
+          <div className="mt-4 space-y-4 rounded-2xl border border-amber-200 bg-amber-50 p-6 shadow-card">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-amber-600">⚠</span>
+              <span className="text-sm font-medium text-amber-700">
+                AI-generated summary - always verify with original sources
+              </span>
             </div>
-            <p className="mt-3 text-[14px] leading-relaxed text-navy">
+
+            <p className="text-[15px] leading-7 text-slate-800 [text-wrap:pretty]">
               {candidate.aiSummary}
             </p>
+
+            {aiIssueCards.length > 0 && (
+              <div className="space-y-3 border-t border-amber-200 pt-3">
+                <h3 className="text-sm font-semibold text-slate-700">
+                  Issue Positions
+                </h3>
+
+                {aiIssueCards.map((issue) => (
+                  <div
+                    key={issue.issue}
+                    className="rounded-xl border border-amber-100 bg-white p-4 shadow-card"
+                  >
+                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        {issue.icon && (
+                          <span className="text-[15px]">{issue.icon}</span>
+                        )}
+                        <span className="text-xs font-semibold uppercase tracking-[0.14em] text-amber-700">
+                          {issue.label}
+                        </span>
+                      </div>
+                      <ConfidenceBadge value={issue.confidence} />
+                    </div>
+
+                    <p className="text-sm leading-6 text-slate-700">
+                      {issue.position}
+                    </p>
+
+                    {issue.sourceQuote && (
+                      <blockquote className="mt-3 border-l-2 border-amber-300 pl-3 text-xs italic leading-6 text-slate-500">
+                        &ldquo;{issue.sourceQuote}&rdquo;
+                      </blockquote>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Expandable manifesto */}
           {candidate.manifestoRaw && (
             <ManifestoExpander
               manifestoRaw={candidate.manifestoRaw}
@@ -310,34 +350,32 @@ export default async function CandidatePage({ params }: Props) {
         </section>
       )}
 
-      {/* ── 3. Issues & Positions ────────────────────────── */}
       {positions.length > 0 && (
         <section className="mt-10">
           <h2 className="text-[18px] font-bold text-navy">
-            Issues &amp; Positions
+            Source-Anchored Issue Breakdown
           </h2>
           <div className="mt-4 space-y-3">
             {positions.map((p) => (
               <div
                 key={p.issueName}
-                className="rounded-xl border border-border bg-white p-5"
+                className="rounded-2xl border border-border bg-white p-5 shadow-card"
               >
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
-                    {p.issueIcon && (
-                      <span className="text-[16px]">{p.issueIcon}</span>
-                    )}
+                    {p.issueIcon && <span className="text-[16px]">{p.issueIcon}</span>}
                     <h3 className="text-[15px] font-semibold text-navy">
                       {p.issueDisplayName}
                     </h3>
                   </div>
                   <ConfidenceBadge value={p.confidence} />
                 </div>
-                <p className="mt-2 text-[13px] leading-relaxed text-navy">
+
+                <p className="mt-2 text-[13px] leading-6 text-navy [text-wrap:pretty]">
                   {p.position}
                 </p>
-                {/* Source quote */}
-                <div className="mt-3 rounded-lg border-l-2 border-jersey-red/30 bg-surface pl-4 pr-3 py-3">
+
+                <div className="mt-3 rounded-xl border-l-2 border-jersey-red/30 bg-surface px-4 py-3">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/60">
                     Source quote
                   </p>
@@ -351,12 +389,9 @@ export default async function CandidatePage({ params }: Props) {
         </section>
       )}
 
-      {/* ── 4. Related Articles ──────────────────────────── */}
       {relatedArticles.length > 0 && (
         <section className="mt-10">
-          <h2 className="text-[18px] font-bold text-navy">
-            Related Articles
-          </h2>
+          <h2 className="text-[18px] font-bold text-navy">Related Articles</h2>
           <div className="mt-4 space-y-2">
             {relatedArticles.map((a) => (
               <a
@@ -364,7 +399,7 @@ export default async function CandidatePage({ params }: Props) {
                 href={a.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group flex items-start justify-between gap-4 rounded-lg border border-border bg-white px-5 py-4 transition-shadow hover:shadow-card-hover"
+                className="group flex items-start justify-between gap-4 rounded-2xl border border-border bg-white px-5 py-4 transition-shadow hover:shadow-card-hover"
               >
                 <div className="min-w-0">
                   <p className="text-[14px] font-semibold text-navy transition-colors group-hover:text-jersey-red">
@@ -408,9 +443,8 @@ export default async function CandidatePage({ params }: Props) {
         </section>
       )}
 
-      {/* ── 5. Last updated ──────────────────────────────── */}
       <footer className="mt-12 border-t border-border pt-5 text-[12px] text-muted-foreground">
-        <div className="flex flex-wrap items-center gap-4">
+        <div className="flex flex-wrap items-center gap-4 [font-variant-numeric:tabular-nums]">
           <span>
             Last scraped:{" "}
             {candidate.lastScrapedAt
@@ -421,7 +455,7 @@ export default async function CandidatePage({ params }: Props) {
                   hour: "2-digit",
                   minute: "2-digit",
                 })
-              : "—"}
+              : "-"}
           </span>
           {candidate.lastEnrichedAt && (
             <span>
@@ -451,17 +485,15 @@ export default async function CandidatePage({ params }: Props) {
   );
 }
 
-// ── Local components ────────────────────────────────────────────────────────
-
 function ConfidenceBadge({ value }: { value: number }) {
-  const level =
-    value >= 0.75 ? "High" : value >= 0.45 ? "Medium" : "Low";
+  const level = value >= 0.75 ? "High" : value >= 0.45 ? "Medium" : "Low";
   const color =
     value >= 0.75
       ? "border-success/30 bg-success/10 text-success"
       : value >= 0.45
         ? "border-gold/30 bg-gold/10 text-gold"
         : "border-jersey-red/30 bg-jersey-red/10 text-jersey-red";
+
   return (
     <span
       className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium ${color}`}
