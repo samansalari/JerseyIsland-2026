@@ -17,7 +17,13 @@ export async function GET() {
 
   if (env.SKIP_DB_HEALTHCHECK) {
     return NextResponse.json(
-      { status: "skipped", env: env.NODE_ENV, durationMs: Date.now() - startedAt },
+      {
+        status: "skipped",
+        timestamp: new Date().toISOString(),
+        environment: env.NODE_ENV,
+        database: "skipped",
+        durationMs: Date.now() - startedAt,
+      },
       { status: 200 },
     );
   }
@@ -56,7 +62,10 @@ export async function GET() {
     return NextResponse.json(
       {
         status: allTablesPresent ? "ok" : "degraded",
+        timestamp: new Date().toISOString(),
+        environment: env.NODE_ENV,
         env: env.NODE_ENV,
+        database: allTablesPresent ? "connected" : "degraded",
         db: {
           now: res.now,
           version: res.version,
@@ -89,7 +98,14 @@ export async function GET() {
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     return NextResponse.json(
-      { status: "error", env: env.NODE_ENV, message, durationMs: Date.now() - startedAt },
+      {
+        status: "error",
+        timestamp: new Date().toISOString(),
+        environment: env.NODE_ENV,
+        database: "disconnected",
+        message,
+        durationMs: Date.now() - startedAt,
+      },
       { status: 503 },
     );
   }

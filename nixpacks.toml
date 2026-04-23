@@ -1,0 +1,15 @@
+# Nixpacks — primary target: Web service (Next.js + npm run build).
+# For the Worker service, set Build Command in Railway to `npm install` if Nixpacks
+# would otherwise run a full `npm run build` (see README Deployment).
+
+[phases.setup]
+nixPkgs = ["nodejs_20"]
+
+[phases.install]
+cmds = ["npm install"]
+
+[phases.build]
+cmds = ["npm run build"]
+
+[start]
+cmd = "npm run start"

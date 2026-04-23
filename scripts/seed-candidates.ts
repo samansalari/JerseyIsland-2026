@@ -3,8 +3,10 @@ import { join } from "node:path";
 import { createHash } from "node:crypto";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { candidates } from "../src/db/schema";
+
+import "./bootstrap-env";
 
 /**
  * VotePulse — Candidate Seed Script
@@ -19,9 +21,6 @@ import { candidates } from "../src/db/schema";
  */
 
 // ── Bootstrap ───────────────────────────────────────────────────────────────
-
-const { config } = await import("dotenv");
-config({ path: ".env.local" });
 
 const DATABASE_URL = process.env.DATABASE_URL;
 if (!DATABASE_URL) {

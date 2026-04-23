@@ -15,8 +15,9 @@ Public, non-partisan election intelligence for Jersey’s 2026 general election:
 | Admin | Cookie gate via `ADMIN_SECRET` (internal `/admin` tool) |
 | AI | xAI Grok (`fetch` → `https://api.x.ai/v1/chat/completions`) |
 | Scraping | Firecrawl (`@mendable/firecrawl-js`) |
-| Frontend hosting | Cloudflare Pages (see `wrangler.toml` + `npm run pages:build`) or any Node host |
-| Worker / cron | Railway (`railway.json` → `scripts/cron.ts`) |
+| Production hosting | **Railway** — Web (Next.js) + Worker (`scripts/cron.ts`); see [Deployment](#deployment) |
+| Optional | Cloudflare Pages (`wrangler.toml` + `pages:build`) is not required for Railway |
+| Worker / cron | Railway worker service (`railway.worker.json` → `npx tsx scripts/cron.ts`) |
 
 A detailed audit lives in [`docs/CODEBASE-REPORT.md`](docs/CODEBASE-REPORT.md).
 
@@ -82,30 +83,73 @@ A detailed audit lives in [`docs/CODEBASE-REPORT.md`](docs/CODEBASE-REPORT.md).
 | `scrape:flow` / `scrape:vote` | Site scrapers |
 | `ingest:news` | RSS / news ingest |
 | `cron` | Long-running Railway worker |
-| `pages:build` / `pages:dev` | Cloudflare adapter (see adapter docs) |
+| `pages:build` / `pages:dev` | Optional Cloudflare adapter (not used on Railway) |
 
 ## Deployment
+
+VotePulse is configured to run on **Railway** as **two services** from the same GitHub repository (no Cloudflare or Vercel required).
+
+### Prerequisites
+
+- [Railway](https://railway.app) account
+- [Supabase](https://supabase.com) project (Postgres)
+- [xAI](https://console.x.ai) Grok API key
+- [Firecrawl](https://firecrawl.dev) API key
+- This repository connected to Railway
+
+**Repo config files:** `railway.json` (Web), `railway.worker.json` (Worker), `nixpacks.toml` (Node 20 + build). In Railway, the **Worker** service should point at `railway.worker.json` (or set **Build** to `npm install` and **Start** to `npx tsx scripts/cron.ts` manually) so it does not run a full `npm run build` unless you want to.
+
+### Service 1 — Web (Next.js)
+
+1. **New Project** → **Deploy from GitHub** → select this repo.
+2. **Settings → Config as code:** `railway.json` (or let Railway detect Next.js and set **Build** `npm run build`, **Start** `npm start`).
+3. **Port:** leave default (Next listens on `PORT`; Railway sets it — `npm run start` uses it).
+4. **Healthcheck:** `GET /api/health` (30s timeout) — set in `railway.json` when that file is used.
+5. **Environment variables:** copy from `.env.example` — at minimum `DATABASE_URL`, `NEXT_PUBLIC_*` Supabase keys, `NEXT_PUBLIC_SITE_URL` (your `*.railway.app` or custom domain), `REVALIDATION_SECRET`, `ADMIN_SECRET` if you use `/admin`, `RESEND_API_KEY` if you use email.
+6. `SKIP_DB_HEALTHCHECK` should be `false` (or unset) in production so `/api/health` validates Postgres.
+
+### Service 2 — Worker (cron / scrapers / enrichment)
+
+1. In the **same** Railway project → **New** → **GitHub repo** (this repo again).
+2. **Build:** `npm install` only (see `railway.worker.json`). **Start:** `npx tsx scripts/cron.ts` (or `npm run cron`).
+3. **Environment:** mirror **server** secrets: `DATABASE_URL`, `GROK_API_KEY`, `GROK_MODEL`, `FIRECRAWL_API_KEY`, `FIRECRAWL_DAILY_CREDIT_LIMIT`, `REVALIDATION_SECRET`, `NEXT_PUBLIC_SITE_URL` (needed for revalidation fetches), `RESEND` if used. `NEXT_PUBLIC_*` vars are only required on the Web service for the UI; the worker can omit them if your worker code does not read them (this project’s `cron.ts` uses `NEXT_PUBLIC_SITE_URL` for revalidation).
+4. No separate build artifact — long-running `node-cron` process.
+
+### Environment variables (summary)
+
+| Variable | Web | Worker | Notes |
+|----------|-----|--------|--------|
+| `DATABASE_URL` | Yes | Yes | Supabase **pooler** (port 6543, `pgbouncer=true`) |
+| `NEXT_PUBLIC_SUPABASE_URL` | Yes | Optional | — |
+| `NEXT_PUBLIC_SUPABASE_*` (anon/publishable) | Yes | Optional | — |
+| `GROK_API_KEY` / `XAI_API_KEY` | If enriching from web | Yes for cron enrich | — |
+| `GROK_MODEL` | Optional | Optional | Default in code: `grok-4-1-fast-reasoning` |
+| `FIRECRAWL_API_KEY` | Optional | Yes for scrapers | — |
+| `NEXT_PUBLIC_SITE_URL` | Yes | Yes (revalidate) | Public site URL |
+| `REVALIDATION_SECRET` | Yes | Yes | ISR `POST /api/revalidate` |
+| `ADMIN_SECRET` | If using `/admin` | No | — |
+| `NODE_ENV` | `production` | `production` | — |
+| `SKIP_DB_HEALTHCHECK` | `false` | — | Web healthcheck must hit DB in prod |
+
+### First deploy checklist
+
+- [ ] Supabase project created; `npm run db:push` (or `db:migrate`) applied with `DATABASE_URL` / `DIRECT_URL` from `.env`
+- [ ] `npm run db:seed` for issues taxonomy
+- [ ] Candidates: `npm run import:local` (or your seeding path) before expecting full UI
+- [ ] Web service: deploy succeeds; `GET /api/health` returns `200` with `database: "connected"`
+- [ ] Worker service: logs show `CRON: VotePulse orchestrator starting`
+- [ ] `/admin/login` works if you set admin auth env vars
 
 ### Supabase (database)
 
 1. Create a project at [https://supabase.com](https://supabase.com).
-2. Use the **pooler** connection string (port `6543`, `pgbouncer=true`) for `DATABASE_URL` in serverless / Vercel / Cloudflare contexts.
-3. Run `npm run db:push` (or your migration pipeline) against that database.
-4. **RLS** — add policies if you ever expose the DB to untrusted clients (the app server uses the service connection string today).
-5. Set **`ADMIN_SECRET`** on the web host if you use the `/admin` tool.
+2. Use the **pooler** connection string (port `6543`, `pgbouncer=true`) for `DATABASE_URL` in Railway and local server contexts.
+3. **RLS** — see `drizzle/*` and Supabase policies if you expose the DB beyond the app server.
+4. Set **`ADMIN_SECRET`** on the web host if you use `/admin`.
 
-### Cloudflare Pages
+### Cloudflare Pages (optional)
 
-1. Connect the Git repository.
-2. Install and configure [`@cloudflare/next-on-pages`](https://github.com/cloudflare/next-on-pages) (or the current recommended adapter) — align `npm run pages:build` with Cloudflare’s docs for your Next.js version.
-3. Set the same env vars as production (especially `DATABASE_URL`, `NEXT_PUBLIC_SITE_URL`, `ADMIN_SECRET` if using `/admin`).
-4. Confirm **Node** compatibility for routes that talk to Postgres over TCP.
-
-### Railway (cron worker)
-
-1. Create a Railway service from this repo.
-2. Set **Start Command** to `npx tsx scripts/cron.ts` (already reflected in `railway.json`).
-3. Mirror **all** worker secrets: `DATABASE_URL`, `GROK_API_KEY` (or `XAI_API_KEY`), `FIRECRAWL_API_KEY`, `REVALIDATION_SECRET`, `NEXT_PUBLIC_SITE_URL`, etc.
+1. See `wrangler.toml` and `npm run pages:build` if you use the Cloudflare adapter; otherwise prefer Railway for the main app.
 
 ## Operations
 
@@ -131,11 +175,11 @@ npm run enrich:articles
 ## Architecture (text)
 
 ```
-Browser ──► Next.js (Pages/API on host of choice)
+Browser ──► Next.js on Railway (Web service)
               │
-              ├──► PostgreSQL (Supabase / Railway / local)
+              ├──► PostgreSQL (Supabase pooler)
               │
-              └──► Railway worker (cron.ts)
+              └──► Railway Worker (cron.ts)
                       ├── Firecrawl / RSS / scrapers
                       ├── Grok enrichment
                       └── POST /api/revalidate (ISR)

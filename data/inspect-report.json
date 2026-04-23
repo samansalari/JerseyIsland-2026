@@ -1,0 +1,1217 @@
+[
+  {
+    "file": "flow.je_elections_candidates_alan-beadle.json",
+    "name": "Alan Beadle",
+    "district": "St Brelade",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/alan-beadle",
+    "hasPhoto": false,
+    "markdownLength": 1835
+  },
+  {
+    "file": "flow.je_elections_candidates_alan-breckon.json",
+    "name": "Alan Breckon",
+    "district": "St Saviour",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/alan-breckon",
+    "hasPhoto": false,
+    "markdownLength": 7193
+  },
+  {
+    "file": "flow.je_elections_candidates_alan-le-pavoux.json",
+    "name": "Alan Le Pavoux",
+    "district": "⚠️ NOT FOUND",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/alan-le-pavoux",
+    "hasPhoto": false,
+    "markdownLength": 902
+  },
+  {
+    "file": "flow.je_elections_candidates_alan-maclean.json",
+    "name": "Alan Maclean",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/alan-maclean",
+    "hasPhoto": false,
+    "markdownLength": 10519
+  },
+  {
+    "file": "flow.je_elections_candidates_alex-curtis.json",
+    "name": "Alex Curtis",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/alex-curtis",
+    "hasPhoto": false,
+    "markdownLength": 3169
+  },
+  {
+    "file": "flow.je_elections_candidates_alvin-aaron.json",
+    "name": "Alvin Aaron",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/alvin-aaron",
+    "hasPhoto": false,
+    "markdownLength": 4123
+  },
+  {
+    "file": "flow.je_elections_candidates_andy-howell.json",
+    "name": "Andy Howell",
+    "district": "Trinity",
+    "party": "Jersey Alliance",
+    "sourceUrl": "https://flow.je/elections/candidates/andy-howell",
+    "hasPhoto": false,
+    "markdownLength": 2756
+  },
+  {
+    "file": "flow.je_elections_candidates_andy-jehan.json",
+    "name": "Andy Jehan",
+    "district": "St John",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/andy-jehan",
+    "hasPhoto": false,
+    "markdownLength": 2710
+  },
+  {
+    "file": "flow.je_elections_candidates_angela-jeune.json",
+    "name": "Angela Jeune",
+    "district": "St Brelade",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/angela-jeune",
+    "hasPhoto": false,
+    "markdownLength": 7762
+  },
+  {
+    "file": "flow.je_elections_candidates_arlene-maltman.json",
+    "name": "Arlene Maltman",
+    "district": "⚠️ NOT FOUND",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/arlene-maltman",
+    "hasPhoto": false,
+    "markdownLength": 1261
+  },
+  {
+    "file": "flow.je_elections_candidates_barbara-ward.json",
+    "name": "Barbara Ward",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/barbara-ward",
+    "hasPhoto": false,
+    "markdownLength": 2850
+  },
+  {
+    "file": "flow.je_elections_candidates_beatriz-poree.json",
+    "name": "Beatriz Porée",
+    "district": "St Brelade",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/beatriz-poree",
+    "hasPhoto": false,
+    "markdownLength": 5322
+  },
+  {
+    "file": "flow.je_elections_candidates_bernard-manning.json",
+    "name": "Bernard Manning",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/bernard-manning",
+    "hasPhoto": false,
+    "markdownLength": 10658
+  },
+  {
+    "file": "flow.je_elections_candidates_bernard-place.json",
+    "name": "Bernard Place",
+    "district": "⚠️ NOT FOUND",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/bernard-place",
+    "hasPhoto": false,
+    "markdownLength": 1191
+  },
+  {
+    "file": "flow.je_elections_candidates_brian-beadle.json",
+    "name": "Brian Beadle",
+    "district": "⚠️ NOT FOUND",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/brian-beadle",
+    "hasPhoto": false,
+    "markdownLength": 2325
+  },
+  {
+    "file": "flow.je_elections_candidates_bruce-willing.json",
+    "name": "Bruce Willing",
+    "district": "Grouville",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/bruce-willing",
+    "hasPhoto": false,
+    "markdownLength": 2164
+  },
+  {
+    "file": "flow.je_elections_candidates_carina-alves.json",
+    "name": "Carina Alves",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/carina-alves",
+    "hasPhoto": false,
+    "markdownLength": 5104
+  },
+  {
+    "file": "flow.je_elections_candidates_carla-jardim.json",
+    "name": "Carla Jardim",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/carla-jardim",
+    "hasPhoto": false,
+    "markdownLength": 1037
+  },
+  {
+    "file": "flow.je_elections_candidates_carolyn-labey.json",
+    "name": "Carolyn Labey",
+    "district": "Grouville",
+    "party": "Jersey Alliance",
+    "sourceUrl": "https://flow.je/elections/candidates/carolyn-labey",
+    "hasPhoto": false,
+    "markdownLength": 9734
+  },
+  {
+    "file": "flow.je_elections_candidates_catherine-curtis.json",
+    "name": "Catherine Curtis",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/catherine-curtis",
+    "hasPhoto": false,
+    "markdownLength": 3798
+  },
+  {
+    "file": "flow.je_elections_candidates_chris-hopkins.json",
+    "name": "Chris Hopkins",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/chris-hopkins",
+    "hasPhoto": false,
+    "markdownLength": 2774
+  },
+  {
+    "file": "flow.je_elections_candidates_chris-leck.json",
+    "name": "Chris Leck",
+    "district": "⚠️ NOT FOUND",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/chris-leck",
+    "hasPhoto": false,
+    "markdownLength": 1126
+  },
+  {
+    "file": "flow.je_elections_candidates_christopher-blackstone.json",
+    "name": "Christopher Blackstone",
+    "district": "St Martin",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/christopher-blackstone",
+    "hasPhoto": false,
+    "markdownLength": 1846
+  },
+  {
+    "file": "flow.je_elections_candidates_corrie-stein.json",
+    "name": "Corrie Stein",
+    "district": "⚠️ NOT FOUND",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/corrie-stein",
+    "hasPhoto": false,
+    "markdownLength": 2841
+  },
+  {
+    "file": "flow.je_elections_candidates_dan-murphy.json",
+    "name": "Dan Murphy",
+    "district": "Grouville",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/dan-murphy",
+    "hasPhoto": false,
+    "markdownLength": 6144
+  },
+  {
+    "file": "flow.je_elections_candidates_david-benn.json",
+    "name": "David Benn",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/david-benn",
+    "hasPhoto": false,
+    "markdownLength": 2556
+  },
+  {
+    "file": "flow.je_elections_candidates_david-beuzeval.json",
+    "name": "David Beuzeval",
+    "district": "⚠️ NOT FOUND",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/david-beuzeval",
+    "hasPhoto": false,
+    "markdownLength": 2620
+  },
+  {
+    "file": "flow.je_elections_candidates_david-cabeldu.json",
+    "name": "David Cabeldu",
+    "district": "St Clement",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/david-cabeldu",
+    "hasPhoto": false,
+    "markdownLength": 3317
+  },
+  {
+    "file": "flow.je_elections_candidates_david-curtis.json",
+    "name": "David Curtis",
+    "district": "St Saviour",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/david-curtis",
+    "hasPhoto": false,
+    "markdownLength": 972
+  },
+  {
+    "file": "flow.je_elections_candidates_david-johnson.json",
+    "name": "David Johnson",
+    "district": "St Mary",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/david-johnson",
+    "hasPhoto": false,
+    "markdownLength": 7510
+  },
+  {
+    "file": "flow.je_elections_candidates_david-warr.json",
+    "name": "David Warr",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/david-warr",
+    "hasPhoto": false,
+    "markdownLength": 3432
+  },
+  {
+    "file": "flow.je_elections_candidates_deidre-mezbourian.json",
+    "name": "Deidre Mezbourian",
+    "district": "St Lawrence",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/deidre-mezbourian",
+    "hasPhoto": false,
+    "markdownLength": 8332
+  },
+  {
+    "file": "flow.je_elections_candidates_elaine-millar.json",
+    "name": "Elaine Millar",
+    "district": "⚠️ NOT FOUND",
+    "party": "Jersey Alliance",
+    "sourceUrl": "https://flow.je/elections/candidates/elaine-millar",
+    "hasPhoto": false,
+    "markdownLength": 3267
+  },
+  {
+    "file": "flow.je_elections_candidates_francesca-ahier.json",
+    "name": "Francesca Ahier",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/francesca-ahier",
+    "hasPhoto": false,
+    "markdownLength": 2477
+  },
+  {
+    "file": "flow.je_elections_candidates_frank-walker.json",
+    "name": "Frank Walker OBE",
+    "district": "⚠️ NOT FOUND",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/frank-walker",
+    "hasPhoto": false,
+    "markdownLength": 2946
+  },
+  {
+    "file": "flow.je_elections_candidates_gabriel-raimondo.json",
+    "name": "Gabriel Raimondo",
+    "district": "⚠️ NOT FOUND",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/gabriel-raimondo",
+    "hasPhoto": false,
+    "markdownLength": 1157
+  },
+  {
+    "file": "flow.je_elections_candidates_geoff-southern.json",
+    "name": "Geoff Southern",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/geoff-southern",
+    "hasPhoto": false,
+    "markdownLength": 23036
+  },
+  {
+    "file": "flow.je_elections_candidates_gerald-voisin.json",
+    "name": "Gerald Voisin",
+    "district": "St Lawrence",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/gerald-voisin",
+    "hasPhoto": false,
+    "markdownLength": 2454
+  },
+  {
+    "file": "flow.je_elections_candidates_gerard-baudains.json",
+    "name": "Gerard Baudains",
+    "district": "St Clement",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/gerard-baudains",
+    "hasPhoto": false,
+    "markdownLength": 14580
+  },
+  {
+    "file": "flow.je_elections_candidates_giffard-aubin.json",
+    "name": "Giffard Aubin",
+    "district": "⚠️ NOT FOUND",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/giffard-aubin",
+    "hasPhoto": false,
+    "markdownLength": 2498
+  },
+  {
+    "file": "flow.je_elections_candidates_gil-blackwood.json",
+    "name": "Gil Blackwood",
+    "district": "⚠️ NOT FOUND",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/gil-blackwood",
+    "hasPhoto": false,
+    "markdownLength": 2615
+  },
+  {
+    "file": "flow.je_elections_candidates_graeme-butcher.json",
+    "name": "Graeme Butcher",
+    "district": "St John",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/graeme-butcher",
+    "hasPhoto": false,
+    "markdownLength": 2322
+  },
+  {
+    "file": "flow.je_elections_candidates_guy-de-faye.json",
+    "name": "Guy de Faye",
+    "district": "Grouville",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/guy-de-faye",
+    "hasPhoto": false,
+    "markdownLength": 22191
+  },
+  {
+    "file": "flow.je_elections_candidates_helen-miles.json",
+    "name": "Dr Helen Miles",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/helen-miles",
+    "hasPhoto": false,
+    "markdownLength": 3559
+  },
+  {
+    "file": "flow.je_elections_candidates_hilary-jeune.json",
+    "name": "Hilary Jeune",
+    "district": "Trinity",
+    "party": "Jersey Alliance",
+    "sourceUrl": "https://flow.je/elections/candidates/hilary-jeune",
+    "hasPhoto": false,
+    "markdownLength": 3376
+  },
+  {
+    "file": "flow.je_elections_candidates_ian-barnes.json",
+    "name": "Ian Barnes",
+    "district": "⚠️ NOT FOUND",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/ian-barnes",
+    "hasPhoto": false,
+    "markdownLength": 945
+  },
+  {
+    "file": "flow.je_elections_candidates_ian-gorst.json",
+    "name": "Ian Gorst",
+    "district": "St Clement",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/ian-gorst",
+    "hasPhoto": false,
+    "markdownLength": 14951
+  },
+  {
+    "file": "flow.je_elections_candidates_inna-gardiner.json",
+    "name": "Inna Gardiner",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/inna-gardiner",
+    "hasPhoto": false,
+    "markdownLength": 6988
+  },
+  {
+    "file": "flow.je_elections_candidates_ivor-barette.json",
+    "name": "Ivor Barette",
+    "district": "St Mary",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/ivor-barette",
+    "hasPhoto": false,
+    "markdownLength": 964
+  },
+  {
+    "file": "flow.je_elections_candidates_jaime-boylan.json",
+    "name": "Jaime Boylan",
+    "district": "St Saviour",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/jaime-boylan",
+    "hasPhoto": false,
+    "markdownLength": 1856
+  },
+  {
+    "file": "flow.je_elections_candidates_james-baker.json",
+    "name": "James Baker",
+    "district": "⚠️ NOT FOUND",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/james-baker",
+    "hasPhoto": false,
+    "markdownLength": 3765
+  },
+  {
+    "file": "flow.je_elections_candidates_jane-blakeley.json",
+    "name": "Jane Blakeley",
+    "district": "St Brelade",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/jane-blakeley",
+    "hasPhoto": false,
+    "markdownLength": 2654
+  },
+  {
+    "file": "flow.je_elections_candidates_jennifer-bridge.json",
+    "name": "Jennifer Bridge",
+    "district": "⚠️ NOT FOUND",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/jennifer-bridge",
+    "hasPhoto": false,
+    "markdownLength": 2190
+  },
+  {
+    "file": "flow.je_elections_candidates_jo-luce.json",
+    "name": "Jo Luce",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/jo-luce",
+    "hasPhoto": false,
+    "markdownLength": 2873
+  },
+  {
+    "file": "flow.je_elections_candidates_joanne-vandermerwe-mahon.json",
+    "name": "Joanne Vandermerwe-Mahon",
+    "district": "⚠️ NOT FOUND",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/joanne-vandermerwe-mahon",
+    "hasPhoto": false,
+    "markdownLength": 1013
+  },
+  {
+    "file": "flow.je_elections_candidates_john-baker.json",
+    "name": "John Baker",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/john-baker",
+    "hasPhoto": false,
+    "markdownLength": 4269
+  },
+  {
+    "file": "flow.je_elections_candidates_john-lamy.json",
+    "name": "John Lamy",
+    "district": "Grouville",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/john-lamy",
+    "hasPhoto": false,
+    "markdownLength": 2134
+  },
+  {
+    "file": "flow.je_elections_candidates_john-le-fondre.json",
+    "name": "John Le Fondré",
+    "district": "St Lawrence",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/john-le-fondre",
+    "hasPhoto": false,
+    "markdownLength": 11216
+  },
+  {
+    "file": "flow.je_elections_candidates_john-le-maistre.json",
+    "name": "John Le Maistre",
+    "district": "Grouville",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/john-le-maistre",
+    "hasPhoto": false,
+    "markdownLength": 4059
+  },
+  {
+    "file": "flow.je_elections_candidates_john-young.json",
+    "name": "John Young",
+    "district": "St Brelade",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/john-young",
+    "hasPhoto": false,
+    "markdownLength": 10252
+  },
+  {
+    "file": "flow.je_elections_candidates_jonathan-renouf.json",
+    "name": "Dr Jonathan Renouf",
+    "district": "St Brelade",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/jonathan-renouf",
+    "hasPhoto": false,
+    "markdownLength": 3682
+  },
+  {
+    "file": "flow.je_elections_candidates_judy-martin.json",
+    "name": "Judy Martin",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/judy-martin",
+    "hasPhoto": false,
+    "markdownLength": 14418
+  },
+  {
+    "file": "flow.je_elections_candidates_julian-bernstein.json",
+    "name": "Julian Bernstein",
+    "district": "St Brelade",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/julian-bernstein",
+    "hasPhoto": false,
+    "markdownLength": 3952
+  },
+  {
+    "file": "flow.je_elections_candidates_karen-shenton-stone.json",
+    "name": "Karen Shenton-Stone",
+    "district": "St Martin",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/karen-shenton-stone",
+    "hasPhoto": false,
+    "markdownLength": 2574
+  },
+  {
+    "file": "flow.je_elections_candidates_karen-wilson.json",
+    "name": "Karen Wilson",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/karen-wilson",
+    "hasPhoto": false,
+    "markdownLength": 2758
+  },
+  {
+    "file": "flow.je_elections_candidates_karl-busch.json",
+    "name": "Karl Busch",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/karl-busch",
+    "hasPhoto": false,
+    "markdownLength": 2714
+  },
+  {
+    "file": "flow.je_elections_candidates_ken-addison.json",
+    "name": "Ken Addison",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/ken-addison",
+    "hasPhoto": false,
+    "markdownLength": 2234
+  },
+  {
+    "file": "flow.je_elections_candidates_kevin-lewis.json",
+    "name": "Kevin Lewis",
+    "district": "St Saviour",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/kevin-lewis",
+    "hasPhoto": false,
+    "markdownLength": 16067
+  },
+  {
+    "file": "flow.je_elections_candidates_kevin-oconnell.json",
+    "name": "Kevin O'Connell",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/kevin-oconnell",
+    "hasPhoto": false,
+    "markdownLength": 1066
+  },
+  {
+    "file": "flow.je_elections_candidates_kirsten-morel.json",
+    "name": "Kirsten Morel",
+    "district": "St Lawrence",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/kirsten-morel",
+    "hasPhoto": false,
+    "markdownLength": 4475
+  },
+  {
+    "file": "flow.je_elections_candidates_kristina-moore.json",
+    "name": "Kristina Moore",
+    "district": "St Peter",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/kristina-moore",
+    "hasPhoto": false,
+    "markdownLength": 9234
+  },
+  {
+    "file": "flow.je_elections_candidates_lee-carpenter.json",
+    "name": "Lee Carpenter",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/lee-carpenter",
+    "hasPhoto": false,
+    "markdownLength": 1119
+  },
+  {
+    "file": "flow.je_elections_candidates_len-norman.json",
+    "name": "Len Norman",
+    "district": "St Clement",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/len-norman",
+    "hasPhoto": false,
+    "markdownLength": 6754
+  },
+  {
+    "file": "flow.je_elections_candidates_lindsay-ash.json",
+    "name": "Lindsay Ash",
+    "district": "St Clement",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/lindsay-ash",
+    "hasPhoto": false,
+    "markdownLength": 4165
+  },
+  {
+    "file": "flow.je_elections_candidates_louise-doublet.json",
+    "name": "Louise Doublet",
+    "district": "St Saviour",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/louise-doublet",
+    "hasPhoto": false,
+    "markdownLength": 6364
+  },
+  {
+    "file": "flow.je_elections_candidates_lucy-stephenson.json",
+    "name": "Lucy Stephenson",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/lucy-stephenson",
+    "hasPhoto": false,
+    "markdownLength": 3274
+  },
+  {
+    "file": "flow.je_elections_candidates_lyndon-farnham.json",
+    "name": "Lyndon Farnham",
+    "district": "St Saviour",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/lyndon-farnham",
+    "hasPhoto": false,
+    "markdownLength": 13311
+  },
+  {
+    "file": "flow.je_elections_candidates_lyndsay-feltham.json",
+    "name": "Lyndsay Feltham",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/lyndsay-feltham",
+    "hasPhoto": false,
+    "markdownLength": 5216
+  },
+  {
+    "file": "flow.je_elections_candidates_malcolm-ferey.json",
+    "name": "Malcolm Ferey",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/malcolm-ferey",
+    "hasPhoto": false,
+    "markdownLength": 7168
+  },
+  {
+    "file": "flow.je_elections_candidates_mark-baker.json",
+    "name": "Mark Baker",
+    "district": "St Mary",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/mark-baker",
+    "hasPhoto": false,
+    "markdownLength": 2555
+  },
+  {
+    "file": "flow.je_elections_candidates_mark-boleat.json",
+    "name": "Sir Mark Boleat",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/mark-boleat",
+    "hasPhoto": false,
+    "markdownLength": 2729
+  },
+  {
+    "file": "flow.je_elections_candidates_mark-labey.json",
+    "name": "Mark Labey",
+    "district": "Grouville",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/mark-labey",
+    "hasPhoto": false,
+    "markdownLength": 2137
+  },
+  {
+    "file": "flow.je_elections_candidates_mark-le-chevalier.json",
+    "name": "Mark Le Chevalier",
+    "district": "⚠️ NOT FOUND",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/mark-le-chevalier",
+    "hasPhoto": false,
+    "markdownLength": 2054
+  },
+  {
+    "file": "flow.je_elections_candidates_martha-bernstein.json",
+    "name": "Martha Bernstein",
+    "district": "St Brelade",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/martha-bernstein",
+    "hasPhoto": false,
+    "markdownLength": 2431
+  },
+  {
+    "file": "flow.je_elections_candidates_martin-aliga.json",
+    "name": "Martin Aliga",
+    "district": "⚠️ NOT FOUND",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/martin-aliga",
+    "hasPhoto": false,
+    "markdownLength": 1116
+  },
+  {
+    "file": "flow.je_elections_candidates_mary-ayling-philip.json",
+    "name": "Mary Ayling-Philip",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/mary-ayling-philip",
+    "hasPhoto": false,
+    "markdownLength": 5110
+  },
+  {
+    "file": "flow.je_elections_candidates_mary-le-hegarat.json",
+    "name": "Mary Le Hegarat",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/mary-le-hegarat",
+    "hasPhoto": false,
+    "markdownLength": 4588
+  },
+  {
+    "file": "flow.je_elections_candidates_max-andrews.json",
+    "name": "Max Andrews",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/max-andrews",
+    "hasPhoto": false,
+    "markdownLength": 3010
+  },
+  {
+    "file": "flow.je_elections_candidates_mick-robbins.json",
+    "name": "Mick Robbins",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/mick-robbins",
+    "hasPhoto": false,
+    "markdownLength": 1037
+  },
+  {
+    "file": "flow.je_elections_candidates_mike-jackson.json",
+    "name": "Mike Jackson",
+    "district": "St Brelade",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/mike-jackson",
+    "hasPhoto": false,
+    "markdownLength": 8527
+  },
+  {
+    "file": "flow.je_elections_candidates_mike-vibert.json",
+    "name": "Mike Vibert",
+    "district": "⚠️ NOT FOUND",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/mike-vibert",
+    "hasPhoto": false,
+    "markdownLength": 6350
+  },
+  {
+    "file": "flow.je_elections_candidates_montfort-tadier.json",
+    "name": "Montfort Tadier",
+    "district": "St Brelade",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/montfort-tadier",
+    "hasPhoto": false,
+    "markdownLength": 14808
+  },
+  {
+    "file": "flow.je_elections_candidates_moz-scott.json",
+    "name": "Moz Scott",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/moz-scott",
+    "hasPhoto": false,
+    "markdownLength": 5685
+  },
+  {
+    "file": "flow.je_elections_candidates_nick-le-cornu.json",
+    "name": "Nick Le Cornu",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/nick-le-cornu",
+    "hasPhoto": false,
+    "markdownLength": 22091
+  },
+  {
+    "file": "flow.je_elections_candidates_noah-jervis.json",
+    "name": "Noah Jervis",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/noah-jervis",
+    "hasPhoto": false,
+    "markdownLength": 1065
+  },
+  {
+    "file": "flow.je_elections_candidates_paul-routier.json",
+    "name": "Paul Routier MBE",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/paul-routier",
+    "hasPhoto": false,
+    "markdownLength": 10077
+  },
+  {
+    "file": "flow.je_elections_candidates_peter-mclinton.json",
+    "name": "Peter McLinton",
+    "district": "St Saviour",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/peter-mclinton",
+    "hasPhoto": false,
+    "markdownLength": 2812
+  },
+  {
+    "file": "flow.je_elections_candidates_phil-romeril.json",
+    "name": "Phil Romeril",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/phil-romeril",
+    "hasPhoto": false,
+    "markdownLength": 2497
+  },
+  {
+    "file": "flow.je_elections_candidates_philip-bailhache.json",
+    "name": "Sir Philip Bailhache",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/philip-bailhache",
+    "hasPhoto": false,
+    "markdownLength": 9229
+  },
+  {
+    "file": "flow.je_elections_candidates_philip-le-claire.json",
+    "name": "Philip Le Claire",
+    "district": "⚠️ NOT FOUND",
+    "party": "Jersey Alliance",
+    "sourceUrl": "https://flow.je/elections/candidates/philip-le-claire",
+    "hasPhoto": false,
+    "markdownLength": 2080
+  },
+  {
+    "file": "flow.je_elections_candidates_philip-le-sueur.json",
+    "name": "Philip Le Sueur",
+    "district": "Trinity",
+    "party": "Jersey Alliance",
+    "sourceUrl": "https://flow.je/elections/candidates/philip-le-sueur",
+    "hasPhoto": false,
+    "markdownLength": 2763
+  },
+  {
+    "file": "flow.je_elections_candidates_philip-ozouf-jr.json",
+    "name": "Philip Ozouf Jr",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/philip-ozouf-jr",
+    "hasPhoto": false,
+    "markdownLength": 12454
+  },
+  {
+    "file": "flow.je_elections_candidates_piers-sangan.json",
+    "name": "Piers Sangan",
+    "district": "⚠️ NOT FOUND",
+    "party": "Jersey Alliance",
+    "sourceUrl": "https://flow.je/elections/candidates/piers-sangan",
+    "hasPhoto": false,
+    "markdownLength": 2145
+  },
+  {
+    "file": "flow.je_elections_candidates_raluca-kovacs.json",
+    "name": "Raluca Kovacs",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/raluca-kovacs",
+    "hasPhoto": false,
+    "markdownLength": 3884
+  },
+  {
+    "file": "flow.je_elections_candidates_richard-buchanan.json",
+    "name": "Richard Buchanan",
+    "district": "St Ouen",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/richard-buchanan",
+    "hasPhoto": false,
+    "markdownLength": 1540
+  },
+  {
+    "file": "flow.je_elections_candidates_richard-honeycombe.json",
+    "name": "Richard Honeycombe",
+    "district": "St Ouen",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/richard-honeycombe",
+    "hasPhoto": false,
+    "markdownLength": 1787
+  },
+  {
+    "file": "flow.je_elections_candidates_richard-vibert.json",
+    "name": "Richard Vibert",
+    "district": "St Peter",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/richard-vibert",
+    "hasPhoto": false,
+    "markdownLength": 2325
+  },
+  {
+    "file": "flow.je_elections_candidates_rob-ward.json",
+    "name": "Rob Ward",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/rob-ward",
+    "hasPhoto": false,
+    "markdownLength": 5087
+  },
+  {
+    "file": "flow.je_elections_candidates_robert-bisson.json",
+    "name": "Robert Bisson",
+    "district": "⚠️ NOT FOUND",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/robert-bisson",
+    "hasPhoto": false,
+    "markdownLength": 2794
+  },
+  {
+    "file": "flow.je_elections_candidates_robert-brown.json",
+    "name": "Robert Brown",
+    "district": "⚠️ NOT FOUND",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/robert-brown",
+    "hasPhoto": false,
+    "markdownLength": 2588
+  },
+  {
+    "file": "flow.je_elections_candidates_robin-ward.json",
+    "name": "Robin Ward",
+    "district": "⚠️ NOT FOUND",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/robin-ward",
+    "hasPhoto": false,
+    "markdownLength": 940
+  },
+  {
+    "file": "flow.je_elections_candidates_rod-bryans.json",
+    "name": "Rod Bryans",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/rod-bryans",
+    "hasPhoto": false,
+    "markdownLength": 7236
+  },
+  {
+    "file": "flow.je_elections_candidates_roger-bisson.json",
+    "name": "Roger Bisson",
+    "district": "⚠️ NOT FOUND",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/roger-bisson",
+    "hasPhoto": false,
+    "markdownLength": 3674
+  },
+  {
+    "file": "flow.je_elections_candidates_rose-binet.json",
+    "name": "Rose Binet",
+    "district": "⚠️ NOT FOUND",
+    "party": "Jersey Alliance",
+    "sourceUrl": "https://flow.je/elections/candidates/rose-binet",
+    "hasPhoto": false,
+    "markdownLength": 2481
+  },
+  {
+    "file": "flow.je_elections_candidates_russell-labey.json",
+    "name": "Russell Labey",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/russell-labey",
+    "hasPhoto": false,
+    "markdownLength": 6807
+  },
+  {
+    "file": "flow.je_elections_candidates_sam-mezec.json",
+    "name": "Sam Mézec",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/sam-mezec",
+    "hasPhoto": false,
+    "markdownLength": 11856
+  },
+  {
+    "file": "flow.je_elections_candidates_samantha-gleave.json",
+    "name": "Samantha Gleave",
+    "district": "⚠️ NOT FOUND",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/samantha-gleave",
+    "hasPhoto": false,
+    "markdownLength": 984
+  },
+  {
+    "file": "flow.je_elections_candidates_scott-wickenden.json",
+    "name": "Scott Wickenden",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/scott-wickenden",
+    "hasPhoto": false,
+    "markdownLength": 5057
+  },
+  {
+    "file": "flow.je_elections_candidates_serena-kersten.json",
+    "name": "Serena Kersten",
+    "district": "⚠️ NOT FOUND",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/serena-kersten",
+    "hasPhoto": false,
+    "markdownLength": 926
+  },
+  {
+    "file": "flow.je_elections_candidates_shirley-baudains.json",
+    "name": "Shirley Baudains",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/shirley-baudains",
+    "hasPhoto": false,
+    "markdownLength": 4034
+  },
+  {
+    "file": "flow.je_elections_candidates_simon-bree.json",
+    "name": "Simon Brée",
+    "district": "St Clement",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/simon-bree",
+    "hasPhoto": false,
+    "markdownLength": 8521
+  },
+  {
+    "file": "flow.je_elections_candidates_simon-crowcroft.json",
+    "name": "Simon Crowcroft",
+    "district": "⚠️ NOT FOUND",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/simon-crowcroft",
+    "hasPhoto": false,
+    "markdownLength": 7271
+  },
+  {
+    "file": "flow.je_elections_candidates_stephen-ahier.json",
+    "name": "Stephen Ahier",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/stephen-ahier",
+    "hasPhoto": false,
+    "markdownLength": 4700
+  },
+  {
+    "file": "flow.je_elections_candidates_stephen-beddoe.json",
+    "name": "Stephen Beddoe",
+    "district": "⚠️ NOT FOUND",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/stephen-beddoe",
+    "hasPhoto": false,
+    "markdownLength": 4687
+  },
+  {
+    "file": "flow.je_elections_candidates_steve-bailey.json",
+    "name": "Steve Bailey",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/steve-bailey",
+    "hasPhoto": false,
+    "markdownLength": 2540
+  },
+  {
+    "file": "flow.je_elections_candidates_steve-de-louche.json",
+    "name": "Steve De Louche",
+    "district": "Trinity",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/steve-de-louche",
+    "hasPhoto": false,
+    "markdownLength": 989
+  },
+  {
+    "file": "flow.je_elections_candidates_steve-luce.json",
+    "name": "Steve Luce",
+    "district": "St Martin",
+    "party": "Jersey Alliance",
+    "sourceUrl": "https://flow.je/elections/candidates/steve-luce",
+    "hasPhoto": false,
+    "markdownLength": 6335
+  },
+  {
+    "file": "flow.je_elections_candidates_steve-pallett.json",
+    "name": "Steve Pallett",
+    "district": "St Brelade",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/steve-pallett",
+    "hasPhoto": false,
+    "markdownLength": 11118
+  },
+  {
+    "file": "flow.je_elections_candidates_suzanne-webb.json",
+    "name": "Suzanne Webb",
+    "district": "St Saviour",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/suzanne-webb",
+    "hasPhoto": false,
+    "markdownLength": 3315
+  },
+  {
+    "file": "flow.je_elections_candidates_terry-mcdonald.json",
+    "name": "Terry McDonald",
+    "district": "St Saviour",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/terry-mcdonald",
+    "hasPhoto": false,
+    "markdownLength": 3877
+  },
+  {
+    "file": "flow.je_elections_candidates_tina-palmer.json",
+    "name": "Tina Palmer",
+    "district": "St Lawrence",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/tina-palmer",
+    "hasPhoto": false,
+    "markdownLength": 980
+  },
+  {
+    "file": "flow.je_elections_candidates_tom-binet.json",
+    "name": "Tom Binet",
+    "district": "⚠️ NOT FOUND",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/tom-binet",
+    "hasPhoto": false,
+    "markdownLength": 3161
+  },
+  {
+    "file": "flow.je_elections_candidates_tom-coles.json",
+    "name": "Tom Coles",
+    "district": "St Saviour",
+    "party": "Reform Jersey",
+    "sourceUrl": "https://flow.je/elections/candidates/tom-coles",
+    "hasPhoto": false,
+    "markdownLength": 4650
+  },
+  {
+    "file": "flow.je_elections_candidates_victoria-li.json",
+    "name": "Victoria Li",
+    "district": "⚠️ NOT FOUND",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/victoria-li",
+    "hasPhoto": false,
+    "markdownLength": 957
+  },
+  {
+    "file": "flow.je_elections_candidates_wendy-kinnard.json",
+    "name": "Wendy Kinnard",
+    "district": "⚠️ NOT FOUND",
+    "party": "Independent",
+    "sourceUrl": "https://flow.je/elections/candidates/wendy-kinnard",
+    "hasPhoto": false,
+    "markdownLength": 2889
+  }
+]

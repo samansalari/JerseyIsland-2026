@@ -3,7 +3,16 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { eq, isNull } from "drizzle-orm";
 import { articles, candidates } from "../src/db/schema";
-import { grokChatCompletionJson } from "../src/lib/grok";
+import {
+  type GrokUsage,
+  DEFAULT_GROK_MODEL,
+  grokChatCompletionJson,
+  resolveGrokModelId,
+} from "../src/lib/grok";
+import {
+  logTokenUsageToJsonl,
+  tokenTracker,
+} from "../src/lib/token-tracker";
 
 /**
  * VotePulse — Article Enrichment Pipeline
@@ -21,7 +30,7 @@ import { grokChatCompletionJson } from "../src/lib/grok";
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
-const MODEL = process.env.GROK_MODEL?.trim() || "grok-2-latest";
+const MODEL = process.env.GROK_MODEL?.trim() || DEFAULT_GROK_MODEL;
 const DELAY_MS = 2000;
 const RETRY_DELAY_MS = 5000;
 
@@ -40,6 +49,8 @@ if (!GROK_KEY?.trim()) {
   );
   process.exit(1);
 }
+
+console.log(`[enrich-articles] Grok model: ${resolveGrokModelId(MODEL)}`);
 
 const pgClient = postgres(DATABASE_URL, {
   max: 3,
@@ -99,7 +110,7 @@ async function callGrokForArticle(
   title: string,
   source: string,
   contentRaw: string,
-): Promise<ArticleResult> {
+): Promise<{ result: ArticleResult; usage: GrokUsage }> {
   const systemPrompt = `You are summarising news about Jersey's 2026 general election. Be neutral and factual. Output only valid JSON as instructed in the user message — no markdown fences.`;
 
   const userPrompt = `Summarise and analyse the following article.
@@ -120,7 +131,7 @@ ${contentRaw}
 
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      const parsed = await grokChatCompletionJson<ArticleResult>({
+      const { data: parsed, usage } = await grokChatCompletionJson<ArticleResult>({
         systemPrompt,
         userPrompt,
         temperature: 0,
@@ -139,7 +150,7 @@ ${contentRaw}
         parsed.sentiment = "neutral";
       }
 
-      return parsed;
+      return { result: parsed, usage };
     } catch (err) {
       if (attempt === 0) {
         console.warn(
@@ -158,7 +169,7 @@ ${contentRaw}
 
 // ── Main ────────────────────────────────────────────────────────────────────
 
-async function main() {
+async function runArticleEnrichment() {
   const startTime = Date.now();
 
   // Fetch all known candidates for name matching
@@ -195,11 +206,19 @@ async function main() {
     }
 
     try {
-      const result = await callGrokForArticle(
+      const { result, usage } = await callGrokForArticle(
         article.title,
         article.source,
         article.contentRaw,
       );
+
+      const rec = tokenTracker.record(
+        `enrich:article:${article.id}`,
+        usage.promptTokens,
+        usage.completionTokens,
+        usage.cachedTokens,
+      );
+      tokenTracker.printCall(rec);
 
       // Match candidate names to IDs
       const mentionedIds: string[] = [];
@@ -249,11 +268,32 @@ async function main() {
   console.log(`[enrich-articles] Skipped:   ${skipped}`);
   console.log(`[enrich-articles] Total:     ${totalElapsed}s`);
 
+  tokenTracker.printSummary();
+  logTokenUsageToJsonl(
+    process.argv.includes("--batch")
+      ? "enrich-articles:batch"
+      : "enrich-articles",
+  );
+
   await pgClient.end({ timeout: 5 });
 }
 
-main().catch(async (err) => {
-  console.error("[enrich-articles] ✗ Fatal:", err);
-  await pgClient.end({ timeout: 5 }).catch(() => {});
-  process.exit(1);
-});
+if (process.argv.includes("--batch")) {
+  (async () => {
+    console.log("\n=== GROK BATCH (ARTICLES) ===\n");
+    try {
+      await runArticleEnrichment();
+    } catch (err) {
+      console.error("[enrich-articles] ✗ Fatal:", err);
+      await pgClient.end({ timeout: 5 }).catch(() => {});
+      process.exit(1);
+    }
+    process.exit(0);
+  })();
+} else {
+  runArticleEnrichment().catch(async (err) => {
+    console.error("[enrich-articles] ✗ Fatal:", err);
+    await pgClient.end({ timeout: 5 }).catch(() => {});
+    process.exit(1);
+  });
+}

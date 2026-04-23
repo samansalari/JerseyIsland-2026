@@ -243,6 +243,8 @@ async function sixHourCycle() {
   // }
 
   // 2. Candidate enrichment (for any that changed)
+  // Token usage and cost: child processes append to logs/token-usage.jsonl
+  // and print a summary on exit (see src/lib/token-tracker.ts), not in this process.
   const nowEnr = new Date().toISOString();
   if (await runTask("ENRICH candidates", "scripts/enrich.ts")) {
     state.lastEnrichment = nowEnr;

@@ -1,8 +1,10 @@
 /**
  * xAI Grok — OpenAI-compatible Chat Completions API.
  *
+ * VotePulse uses **Grok 4.1 Fast** only (`grok-4-1-fast-reasoning`). Grok 3
+ * family ids in `GROK_MODEL` are ignored and remapped to that model.
+ *
  * @see https://docs.x.ai/docs/guides/chat
- * @see https://docs.x.ai/developers/model-capabilities/legacy/chat-completions
  *
  * Auth: `Authorization: Bearer <key>`. Keys are read from `GROK_API_KEY`
  * or, for parity with xAI docs, `XAI_API_KEY`.
@@ -10,11 +12,20 @@
 
 const GROK_CHAT_URL = "https://api.x.ai/v1/chat/completions";
 
-const DEFAULT_MODEL = "grok-2-latest";
+/** Grok 4.1 Fast — default when `GROK_MODEL` is unset (keep in sync with `scripts/enrich*.ts`). */
+export const DEFAULT_GROK_MODEL = "grok-4-1-fast-reasoning";
+const DEFAULT_MODEL = DEFAULT_GROK_MODEL;
+
+/** Other retired exact ids (non–Grok-3) → Grok 4.1 Fast */
+const LEGACY_MODEL_REMAP: Record<string, string> = {};
+
+/** One warning per process — batch jobs call Grok many times. */
+let legacyGrokModelWarned = false;
 
 export interface GrokUsage {
   promptTokens: number;
   completionTokens: number;
+  cachedTokens: number;
 }
 
 export interface GrokChatOptions {
@@ -36,9 +47,40 @@ function apiKey(): string {
   return k.trim();
 }
 
+/**
+ * Model id actually sent to the API (applies `GROK_MODEL`, optional per-call
+ * `override`, and legacy remaps). Use for logging from scripts.
+ */
+export function resolveGrokModelId(overrideFromCaller?: string): string {
+  return modelId(overrideFromCaller);
+}
+
 function modelId(override?: string): string {
-  const m = (override || process.env.GROK_MODEL || DEFAULT_MODEL).trim();
-  return m || DEFAULT_MODEL;
+  const raw = (override || process.env.GROK_MODEL || DEFAULT_MODEL).trim();
+  const m = raw || DEFAULT_MODEL;
+
+  // Never use Grok 3 — project standard is Grok 4.1 Fast only
+  if (m.startsWith("grok-3")) {
+    if (!legacyGrokModelWarned) {
+      legacyGrokModelWarned = true;
+      console.warn(
+        `[grok] Grok 3 is not used — switching to Grok 4.1 Fast (${DEFAULT_GROK_MODEL}). Set GROK_MODEL=${DEFAULT_GROK_MODEL} in .env.local.`,
+      );
+    }
+    return DEFAULT_GROK_MODEL;
+  }
+
+  const remapped = LEGACY_MODEL_REMAP[m];
+  if (remapped) {
+    if (!legacyGrokModelWarned) {
+      legacyGrokModelWarned = true;
+      console.warn(
+        `[grok] GROK_MODEL "${m}" is retired — using "${remapped}". Set GROK_MODEL=${remapped} in .env.local.`,
+      );
+    }
+    return remapped;
+  }
+  return m;
 }
 
 function sleep(ms: number): Promise<void> {
@@ -115,6 +157,10 @@ export async function grokChatCompletion(
         usage?: {
           prompt_tokens?: number;
           completion_tokens?: number;
+          /** xAI / OpenAI-style optional breakdown */
+          prompt_tokens_details?: { cached_tokens?: number };
+          /** Some providers use this name */
+          cache_read_input_tokens?: number;
         };
       };
 
@@ -123,9 +169,15 @@ export async function grokChatCompletion(
         throw new Error("Grok returned empty message content");
       }
 
+      const u = data.usage;
+      const cachedFromDetails = u?.prompt_tokens_details?.cached_tokens ?? 0;
+      const cachedFromTop = u?.cache_read_input_tokens ?? 0;
+      const cachedTokens = cachedFromDetails || cachedFromTop;
+
       const usage: GrokUsage = {
-        promptTokens: data.usage?.prompt_tokens ?? 0,
-        completionTokens: data.usage?.completion_tokens ?? 0,
+        promptTokens: u?.prompt_tokens ?? 0,
+        completionTokens: u?.completion_tokens ?? 0,
+        cachedTokens,
       };
 
       return { text, usage, model };
@@ -147,21 +199,27 @@ export async function grokChatCompletion(
 }
 
 /**
+ * Result of JSON-mode completion: parsed payload + usage (for cost tracking).
+ */
+export interface GrokJsonResult<T> {
+  data: T;
+  usage: GrokUsage;
+  model: string;
+}
+
+/**
  * Chat completion → parse JSON (with fence / substring fallbacks).
+ * Callers (enrich scripts) should record `usage` via `tokenTracker`.
  */
 export async function grokChatCompletionJson<T>(
   options: GrokChatOptions,
-): Promise<T> {
+): Promise<GrokJsonResult<T>> {
   const { text, usage, model } = await grokChatCompletion(options);
-  if (usage.promptTokens + usage.completionTokens > 0) {
-    console.log(
-      `  · Grok tokens — model=${model} in=${usage.promptTokens} out=${usage.completionTokens}`,
-    );
-  }
 
   const jsonStr = extractJsonObject(text);
   try {
-    return JSON.parse(jsonStr) as T;
+    const data = JSON.parse(jsonStr) as T;
+    return { data, usage, model };
   } catch {
     throw new Error(
       `Invalid JSON from Grok (first 240 chars): ${jsonStr.slice(0, 240)}`,

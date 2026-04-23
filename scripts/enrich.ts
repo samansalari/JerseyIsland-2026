@@ -8,7 +8,16 @@ import {
   issues,
   snapshots,
 } from "../src/db/schema";
-import { grokChatCompletionJson } from "../src/lib/grok";
+import {
+  type GrokUsage,
+  DEFAULT_GROK_MODEL,
+  grokChatCompletionJson,
+  resolveGrokModelId,
+} from "../src/lib/grok";
+import {
+  logTokenUsageToJsonl,
+  tokenTracker,
+} from "../src/lib/token-tracker";
 
 /**
  * VotePulse — Candidate Enrichment Pipeline
@@ -28,7 +37,7 @@ import { grokChatCompletionJson } from "../src/lib/grok";
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
-const MODEL = process.env.GROK_MODEL?.trim() || "grok-2-latest";
+const MODEL = process.env.GROK_MODEL?.trim() || DEFAULT_GROK_MODEL;
 const DELAY_MS = 2000;
 const RETRY_DELAY_MS = 5000;
 const STALE_DAYS = 7;
@@ -61,6 +70,8 @@ if (!GROK_KEY?.trim()) {
   );
   process.exit(1);
 }
+
+console.log(`[enrich] Grok model: ${resolveGrokModelId(MODEL)}`);
 
 const pgClient = postgres(DATABASE_URL, {
   max: 3,
@@ -121,12 +132,17 @@ function lcsLength(a: string, b: string): number {
   return prev.reduce((max, v) => Math.max(max, v), 0);
 }
 
+type ManifestoGrokResult = {
+  result: EnrichmentResult;
+  usage: GrokUsage;
+};
+
 /** Call Grok with one retry on parse / transport failure. */
 async function callGrokForManifesto(
   candidateName: string,
   district: string,
   manifestoRaw: string,
-): Promise<EnrichmentResult> {
+): Promise<ManifestoGrokResult> {
   const systemPrompt = `You are a neutral political analyst summarising election manifestos for Jersey's 2026 general election. You must be balanced, factual, and never editorialize. Every claim must be directly supported by the manifesto text. If the text is ambiguous on an issue, say so rather than guessing.`;
 
   const userPrompt = `Analyse the following manifesto for ${candidateName}, running in ${district}.
@@ -159,13 +175,14 @@ ${manifestoRaw}
 
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      return await grokChatCompletionJson<EnrichmentResult>({
+      const { data, usage } = await grokChatCompletionJson<EnrichmentResult>({
         systemPrompt,
         userPrompt,
         temperature: 0,
         maxTokens: 4096,
         model: MODEL,
       });
+      return { result: data, usage };
     } catch (err) {
       if (attempt === 0) {
         console.warn(
@@ -182,6 +199,133 @@ ${manifestoRaw}
   throw new Error("Unreachable");
 }
 
+// ── Per-candidate enrichment (used by default + --batch) ────────────────────
+
+type CandidateRow = (typeof candidates.$inferSelect);
+
+async function enrichOneCandidate(
+  candidate: CandidateRow,
+  issueMap: Map<string, string>,
+): Promise<"processed" | "failed" | "skipped"> {
+  const t0 = Date.now();
+  console.log(
+    `[enrich] Processing: ${candidate.name} (${candidate.district})`,
+  );
+
+  if (!candidate.manifestoRaw) {
+    console.log(`  ⏭ Skipped — no manifesto_raw`);
+    return "skipped";
+  }
+
+  try {
+    const { result: gr, usage } = await callGrokForManifesto(
+      candidate.name,
+      candidate.district,
+      candidate.manifestoRaw,
+    );
+
+    const rec = tokenTracker.record(
+      `enrich:candidate:${candidate.slug}`,
+      usage.promptTokens,
+      usage.completionTokens,
+      usage.cachedTokens,
+    );
+    tokenTracker.printCall(rec);
+
+    const validIssues: EnrichmentResult["issues"] = [];
+    for (const entry of gr.issues) {
+      if (!VALID_ISSUES.has(entry.issue)) {
+        console.warn(`  ⚠ Unknown issue "${entry.issue}" — skipping`);
+        continue;
+      }
+
+      if (
+        typeof entry.confidence !== "number" ||
+        entry.confidence < 0 ||
+        entry.confidence > 1
+      ) {
+        console.warn(
+          `  ⚠ Invalid confidence ${entry.confidence} for "${entry.issue}" — clamping`,
+        );
+        entry.confidence = Math.max(0, Math.min(1, Number(entry.confidence) || 0.5));
+      }
+
+      const matchScore = fuzzyMatch(entry.source_quote, candidate.manifestoRaw);
+      if (matchScore < 0.7) {
+        console.warn(
+          `  ⚠ Source quote for "${entry.issue}" has low match (${(matchScore * 100).toFixed(0)}%) — flagging`,
+        );
+      }
+
+      validIssues.push(entry);
+    }
+
+    await db.insert(snapshots).values({
+      entityType: "candidate",
+      entityId: candidate.id,
+      data: {
+        ai_summary: candidate.aiSummary,
+        ai_issues: candidate.aiIssues,
+        last_enriched_at: candidate.lastEnrichedAt,
+      },
+    });
+
+    const now = new Date();
+    await db
+      .update(candidates)
+      .set({
+        aiSummary: gr.summary,
+        aiIssues: validIssues.map((i) => ({
+          issue: i.issue,
+          position: i.position,
+          confidence: i.confidence,
+          source_quote: i.source_quote,
+        })),
+        lastEnrichedAt: now,
+        updatedAt: now,
+      })
+      .where(eq(candidates.id, candidate.id));
+
+    for (const entry of validIssues) {
+      const issueId = issueMap.get(entry.issue);
+      if (!issueId) {
+        console.warn(
+          `  ⚠ Issue "${entry.issue}" not in issues table — skipping junction row`,
+        );
+        continue;
+      }
+
+      await db
+        .insert(candidateIssues)
+        .values({
+          candidateId: candidate.id,
+          issueId,
+          position: entry.position,
+          sourceQuote: entry.source_quote,
+          confidence: entry.confidence,
+        })
+        .onConflictDoUpdate({
+          target: [candidateIssues.candidateId, candidateIssues.issueId],
+          set: {
+            position: sqlTag`excluded.position`,
+            sourceQuote: sqlTag`excluded.source_quote`,
+            confidence: sqlTag`excluded.confidence`,
+          },
+        });
+    }
+
+    const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+    console.log(
+      `  ✓ Done — ${validIssues.length} issues extracted (${elapsed}s)`,
+    );
+    return "processed";
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`  ✗ Failed: ${msg}`);
+    return "failed";
+  }
+}
+
 // ── Main ────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -191,15 +335,13 @@ async function main() {
     .find((a) => a.startsWith("--candidate-slug="))
     ?.split("=")[1];
 
-  // Fetch issue name→id map
   const issueRows = await db.select().from(issues);
   const issueMap = new Map(issueRows.map((i) => [i.name, i.id]));
 
-  // Build query
   const staleDate = new Date(Date.now() - STALE_DAYS * 86400_000);
 
   let query = db.select().from(candidates);
-  let rows;
+  let rows: CandidateRow[];
 
   if (slugFlag) {
     rows = await query.where(eq(candidates.slug, slugFlag));
@@ -232,129 +374,11 @@ async function main() {
   let skipped = 0;
 
   for (const candidate of rows) {
-    const t0 = Date.now();
-    console.log(
-      `[enrich] Processing: ${candidate.name} (${candidate.district})`,
-    );
+    const outcome = await enrichOneCandidate(candidate, issueMap);
+    if (outcome === "processed") processed++;
+    else if (outcome === "failed") failed++;
+    else skipped++;
 
-    if (!candidate.manifestoRaw) {
-      console.log(`  ⏭ Skipped — no manifesto_raw`);
-      skipped++;
-      continue;
-    }
-
-    try {
-      // 1. Call Grok
-      const result = await callGrokForManifesto(
-        candidate.name,
-        candidate.district,
-        candidate.manifestoRaw,
-      );
-
-      // 2. Validate
-      const validIssues: typeof result.issues = [];
-      for (const entry of result.issues) {
-        // Validate issue name
-        if (!VALID_ISSUES.has(entry.issue)) {
-          console.warn(`  ⚠ Unknown issue "${entry.issue}" — skipping`);
-          continue;
-        }
-
-        // Validate confidence
-        if (
-          typeof entry.confidence !== "number" ||
-          entry.confidence < 0 ||
-          entry.confidence > 1
-        ) {
-          console.warn(
-            `  ⚠ Invalid confidence ${entry.confidence} for "${entry.issue}" — clamping`,
-          );
-          entry.confidence = Math.max(0, Math.min(1, Number(entry.confidence) || 0.5));
-        }
-
-        // Validate source_quote
-        const matchScore = fuzzyMatch(
-          entry.source_quote,
-          candidate.manifestoRaw,
-        );
-        if (matchScore < 0.7) {
-          console.warn(
-            `  ⚠ Source quote for "${entry.issue}" has low match (${(matchScore * 100).toFixed(0)}%) — flagging`,
-          );
-        }
-
-        validIssues.push(entry);
-      }
-
-      // 3. Snapshot previous state
-      await db.insert(snapshots).values({
-        entityType: "candidate",
-        entityId: candidate.id,
-        data: {
-          ai_summary: candidate.aiSummary,
-          ai_issues: candidate.aiIssues,
-          last_enriched_at: candidate.lastEnrichedAt,
-        },
-      });
-
-      // 4. Update candidate
-      const now = new Date();
-      await db
-        .update(candidates)
-        .set({
-          aiSummary: result.summary,
-          aiIssues: validIssues.map((i) => ({
-            issue: i.issue,
-            position: i.position,
-            confidence: i.confidence,
-            source_quote: i.source_quote,
-          })),
-          lastEnrichedAt: now,
-          updatedAt: now,
-        })
-        .where(eq(candidates.id, candidate.id));
-
-      // 5. Upsert candidate_issues
-      for (const entry of validIssues) {
-        const issueId = issueMap.get(entry.issue);
-        if (!issueId) {
-          console.warn(
-            `  ⚠ Issue "${entry.issue}" not in issues table — skipping junction row`,
-          );
-          continue;
-        }
-
-        await db
-          .insert(candidateIssues)
-          .values({
-            candidateId: candidate.id,
-            issueId,
-            position: entry.position,
-            sourceQuote: entry.source_quote,
-            confidence: entry.confidence,
-          })
-          .onConflictDoUpdate({
-            target: [candidateIssues.candidateId, candidateIssues.issueId],
-            set: {
-              position: sqlTag`excluded.position`,
-              sourceQuote: sqlTag`excluded.source_quote`,
-              confidence: sqlTag`excluded.confidence`,
-            },
-          });
-      }
-
-      const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
-      console.log(
-        `  ✓ Done — ${validIssues.length} issues extracted (${elapsed}s)`,
-      );
-      processed++;
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error(`  ✗ Failed: ${msg}`);
-      failed++;
-    }
-
-    // Rate limit
     if (rows.indexOf(candidate) < rows.length - 1) {
       await sleep(DELAY_MS);
     }
@@ -367,11 +391,64 @@ async function main() {
   console.log(`[enrich] Skipped:   ${skipped}`);
   console.log(`[enrich] Total:     ${totalElapsed}s`);
 
+  tokenTracker.printSummary();
+  logTokenUsageToJsonl("enrich");
+
   await pgClient.end({ timeout: 5 });
 }
 
-main().catch(async (err) => {
-  console.error("[enrich] ✗ Fatal:", err);
-  await pgClient.end({ timeout: 5 }).catch(() => {});
-  process.exit(1);
-});
+// ── Batch: only never-enriched rows (ignores stale refresh) — npm run enrich:batch
+if (process.argv.includes("--batch")) {
+  (async () => {
+    console.log("\n=== GROK BATCH ENRICHMENT ===\n");
+    const issueRows = await db.select().from(issues);
+    const issueMap = new Map(issueRows.map((i) => [i.name, i.id]));
+
+    const unenriched = await db
+      .select()
+      .from(candidates)
+      .where(
+        and(
+          isNotNull(candidates.manifestoRaw),
+          isNull(candidates.aiSummary),
+        ),
+      );
+
+    console.log(`Found ${unenriched.length} candidates to enrich\n`);
+
+    let done = 0;
+    let failed = 0;
+    let i = 0;
+    for (const candidate of unenriched) {
+      i++;
+      console.log(`[${i}/${unenriched.length}] ${candidate.name}`);
+      try {
+        const outcome = await enrichOneCandidate(candidate, issueMap);
+        if (outcome === "processed") done++;
+        else if (outcome === "failed") failed++;
+      } catch (e) {
+        console.error(`  ❌ Failed: ${candidate.name}:`, e);
+        failed++;
+      }
+      await sleep(2000);
+    }
+
+    console.log(`\n=== BATCH COMPLETE ===`);
+    console.log(`Enriched: ${done}`);
+    console.log(`Failed  : ${failed}`);
+    tokenTracker.printSummary();
+    logTokenUsageToJsonl("enrich:batch");
+    await pgClient.end({ timeout: 5 });
+    process.exit(0);
+  })().catch(async (err) => {
+    console.error("[enrich] ✗ Batch fatal:", err);
+    await pgClient.end({ timeout: 5 }).catch(() => {});
+    process.exit(1);
+  });
+} else {
+  main().catch(async (err) => {
+    console.error("[enrich] ✗ Fatal:", err);
+    await pgClient.end({ timeout: 5 }).catch(() => {});
+    process.exit(1);
+  });
+}
