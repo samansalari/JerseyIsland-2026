@@ -14,6 +14,17 @@ import {
 
 export const revalidate = 21600;
 
+function stripMarkdown(text: string): string {
+  return text
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/\*([^*]+)\*/g, "$1")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/^>\s+/gm, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export async function generateStaticParams() {
   try {
     const rows = await db.select({ slug: candidates.slug }).from(candidates);
@@ -207,7 +218,7 @@ export default async function CandidatePage({ params }: Props) {
 
               {candidate.bio && (
                 <p className="mt-5 max-w-2xl text-sm leading-relaxed text-on-primary/80 [text-wrap:pretty]">
-                  {candidate.bio}
+                  {stripMarkdown(candidate.bio)}
                 </p>
               )}
             </div>

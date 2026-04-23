@@ -1,520 +1,442 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
-import Link from "next/link";
+import { useMemo, useState } from "react";
 
-// ── Types ───────────────────────────────────────────────────────────────────
-
-type CandidateOption = {
-  slug: string;
-  name: string;
-  district: string;
-  party: string | null;
-  photoUrl: string | null;
-};
-
-type IssueRow = {
+interface Candidate {
   id: string;
   name: string;
-  displayName: string;
-  icon: string | null;
-};
+  slug: string;
+  district: string;
+  party: string | null;
+  photo_url: string | null;
+}
 
-type Position = {
-  candidateId: string;
-  issueId: string;
+interface CandidateIssueFinding {
+  issue: string;
   position: string;
-  sourceQuote: string;
+  source_quote: string;
   confidence: number;
-};
+}
 
-type CompareData = {
-  candidates: (CandidateOption & { id: string })[];
-  issues: IssueRow[];
-  positions: Position[];
-};
+interface CandidateWithIssues extends Candidate {
+  ai_summary: string | null;
+  ai_issues: CandidateIssueFinding[] | null;
+}
 
-// ── Component ───────────────────────────────────────────────────────────────
+interface CompareClientProps {
+  allCandidates: Candidate[];
+  districts: string[];
+}
+
+const ALL_ISSUES = [
+  "housing",
+  "healthcare",
+  "tax",
+  "education",
+  "environment",
+  "transport",
+  "cost_of_living",
+  "immigration",
+  "economy",
+  "public_services",
+] as const;
 
 export function CompareClient({
   allCandidates,
-  allIssues,
   districts,
-}: {
-  allCandidates: CandidateOption[];
-  allIssues: IssueRow[];
-  districts: string[];
-}) {
-  const [selected, setSelected] = useState<string[]>([]); // slugs
-  const [districtFilter, setDistrictFilter] = useState("");
-  const [search, setSearch] = useState("");
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [data, setData] = useState<CompareData | null>(null);
+}: CompareClientProps) {
+  const [selectedDistrict, setSelectedDistrict] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [comparisonData, setComparisonData] = useState<CandidateWithIssues[]>([]);
   const [loading, setLoading] = useState(false);
-  const [expandedQuotes, setExpandedQuotes] = useState<Set<string>>(new Set());
-  const [copied, setCopied] = useState(false);
 
-  // Read initial selection from URL
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const c = params.get("candidates");
-    if (c) {
-      const slugs = c.split(",").filter(Boolean);
-      const valid = slugs.filter((s) =>
-        allCandidates.some((ac) => ac.slug === s),
-      );
-      if (valid.length >= 2) setSelected(valid.slice(0, 4));
-    }
-  }, [allCandidates]);
+  const filteredCandidates = useMemo(() => {
+    return allCandidates.filter((candidate) => {
+      const matchesDistrict =
+        selectedDistrict === "all" || candidate.district === selectedDistrict;
+      const matchesSearch = candidate.name
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
+      return matchesDistrict && matchesSearch;
+    });
+  }, [allCandidates, searchQuery, selectedDistrict]);
 
-  // Fetch comparison data when selection changes
-  useEffect(() => {
-    if (selected.length < 2) {
-      setData(null);
-      return;
-    }
+  const selectedCandidates = useMemo(
+    () => allCandidates.filter((candidate) => selectedIds.includes(candidate.id)),
+    [allCandidates, selectedIds],
+  );
+
+  function toggleCandidate(id: string) {
+    setSelectedIds((previous) => {
+      if (previous.includes(id)) {
+        return previous.filter((candidateId) => candidateId !== id);
+      }
+      if (previous.length >= 4) {
+        return previous;
+      }
+      return [...previous, id];
+    });
+    setComparisonData([]);
+  }
+
+  async function loadComparison() {
+    if (selectedIds.length < 2) return;
+
     setLoading(true);
-    fetch(`/api/compare?candidates=${selected.join(",")}`)
-      .then((r) => r.json())
-      .then((d: CompareData) => {
-        setData(d);
-        // Update URL
-        const url = new URL(window.location.href);
-        url.searchParams.set("candidates", selected.join(","));
-        window.history.replaceState({}, "", url.toString());
-      })
-      .catch(() => setData(null))
-      .finally(() => setLoading(false));
-  }, [selected]);
-
-  const toggleCandidate = useCallback(
-    (slug: string) => {
-      setSelected((prev) => {
-        if (prev.includes(slug)) return prev.filter((s) => s !== slug);
-        if (prev.length >= 4) return prev;
-        return [...prev, slug];
-      });
-    },
-    [],
-  );
-
-  const removeCandidate = useCallback((slug: string) => {
-    setSelected((prev) => prev.filter((s) => s !== slug));
-  }, []);
-
-  const filteredOptions = useMemo(() => {
-    const q = search.toLowerCase().trim();
-    return allCandidates.filter((c) => {
-      if (selected.includes(c.slug)) return false;
-      if (districtFilter && c.district !== districtFilter) return false;
-      if (q && !c.name.toLowerCase().includes(q)) return false;
-      return true;
-    });
-  }, [allCandidates, selected, districtFilter, search]);
-
-  const toggleQuote = (key: string) => {
-    setExpandedQuotes((prev) => {
-      const next = new Set(prev);
-      next.has(key) ? next.delete(key) : next.add(key);
-      return next;
-    });
-  };
-
-  const shareUrl = () => {
-    const url = new URL(window.location.href);
-    url.searchParams.set("candidates", selected.join(","));
-    navigator.clipboard.writeText(url.toString());
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  // Build lookup: candidateId+issueId → position
-  const posMap = useMemo(() => {
-    if (!data) return new Map<string, Position>();
-    const m = new Map<string, Position>();
-    for (const p of data.positions) {
-      m.set(`${p.candidateId}:${p.issueId}`, p);
+    try {
+      const response = await fetch(`/api/compare?ids=${selectedIds.join(",")}`);
+      if (!response.ok) {
+        throw new Error(`Compare API returned ${response.status}`);
+      }
+      const payload = (await response.json()) as {
+        candidates?: CandidateWithIssues[];
+      };
+      setComparisonData(payload.candidates ?? []);
+    } catch (error) {
+      console.error(error);
+      setComparisonData([]);
+    } finally {
+      setLoading(false);
     }
-    return m;
-  }, [data]);
-
-  const selectedCandidates = allCandidates.filter((c) =>
-    selected.includes(c.slug),
-  );
+  }
 
   return (
-    <div className="mt-8">
-      {/* ── Selector ─────────────────────────────────── */}
-      <div className="rounded-xl border border-border bg-white p-5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <select
-            value={districtFilter}
-            onChange={(e) => setDistrictFilter(e.target.value)}
-            className="h-10 rounded-md border border-border bg-surface px-3 text-[13px] text-navy outline-none transition-colors focus:border-jersey-red/40 focus:ring-1 focus:ring-jersey-red/20"
-          >
-            <option value="">All districts</option>
-            {districts.map((d) => (
-              <option key={d} value={d}>
-                {d}
-              </option>
-            ))}
-          </select>
-
-          <div className="relative flex-1">
-            <svg
-              viewBox="0 0 20 20"
-              className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-            >
-              <circle cx="9" cy="9" r="6" />
-              <path d="M13.5 13.5 18 18" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search candidates to add…"
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setDropdownOpen(true);
-              }}
-              onFocus={() => setDropdownOpen(true)}
-              className="h-10 w-full rounded-md border border-border bg-surface pl-9 pr-3 text-[13px] text-navy outline-none transition-colors placeholder:text-muted-foreground/50 focus:border-jersey-red/40 focus:ring-1 focus:ring-jersey-red/20"
-            />
-
-            {/* Dropdown */}
-            {dropdownOpen && filteredOptions.length > 0 && (
-              <div className="absolute left-0 top-12 z-30 max-h-60 w-full overflow-y-auto rounded-lg border border-border bg-white shadow-lg">
-                {filteredOptions.slice(0, 20).map((c) => {
-                  const initials = c.name
-                    .split(" ")
-                    .map((w) => w[0])
-                    .join("")
-                    .slice(0, 2);
-                  return (
-                    <button
-                      key={c.slug}
-                      type="button"
-                      disabled={selected.length >= 4}
-                      onClick={() => {
-                        toggleCandidate(c.slug);
-                        setSearch("");
-                        setDropdownOpen(false);
-                      }}
-                      className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-[13px] transition-colors hover:bg-surface disabled:opacity-40"
-                    >
-                      <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md bg-jersey-red text-[10px] font-bold text-on-primary">
-                        {initials}
-                      </span>
-                      <span className="flex-1 font-medium text-navy">
-                        {c.name}
-                      </span>
-                      <span className="text-[11px] text-muted-foreground">
-                        {c.district}
-                      </span>
-                    </button>
-                  );
-                })}
-                {selected.length >= 4 && (
-                  <p className="px-4 py-2 text-[12px] text-muted-foreground">
-                    Maximum 4 candidates selected
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
+    <div className="min-h-screen bg-[#F5F5F0]">
+      <div className="mx-auto max-w-7xl px-4 py-10">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-[#0D1B2A]">
+            Compare Candidates
+          </h1>
+          <p className="mt-2 text-sm text-gray-500">
+            Select 2-4 candidates to compare their positions on every issue
+            side by side.
+            <span className="ml-1 text-amber-600">
+              Positions are AI-extracted from manifestos.
+            </span>
+          </p>
         </div>
 
-        {/* Selected chips */}
-        {selectedCandidates.length > 0 && (
-          <div className="mt-4 flex flex-wrap gap-2">
-            {selectedCandidates.map((c) => (
-              <span
-                key={c.slug}
-                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface pl-3 pr-1.5 py-1 text-[13px] font-medium text-navy"
+        <div className="mb-8 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="mb-5 flex flex-wrap gap-3">
+            <select
+              value={selectedDistrict}
+              onChange={(event) => setSelectedDistrict(event.target.value)}
+              className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-[#0D1B2A] focus:border-[#A31621] focus:outline-none focus:ring-2 focus:ring-[#A31621]/30"
+            >
+              <option value="all">All districts</option>
+              {districts.map((district) => (
+                <option key={district} value={district}>
+                  {district}
+                </option>
+              ))}
+            </select>
+
+            <div className="relative min-w-[200px] flex-1">
+              <svg
+                className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
               >
-                {c.name}
-                <button
-                  type="button"
-                  onClick={() => removeCandidate(c.slug)}
-                  className="flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-jersey-red/10 hover:text-jersey-red"
-                  aria-label={`Remove ${c.name}`}
-                >
-                  <svg
-                    viewBox="0 0 16 16"
-                    className="h-3 w-3"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  >
-                    <path d="M4 4l8 8M12 4l-8 8" />
-                  </svg>
-                </button>
-              </span>
-            ))}
-            {selected.length >= 2 && (
-              <button
-                type="button"
-                onClick={shareUrl}
-                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-white px-3 py-1 text-[12px] font-medium text-muted-foreground transition-colors hover:border-jersey-red/30 hover:text-jersey-red"
-              >
-                <svg
-                  viewBox="0 0 16 16"
-                  className="h-3.5 w-3.5"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
+                <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                >
-                  <path d="M6 10l4-4M9 4.5h2.5V7" />
-                  <rect x="2" y="6" width="7" height="7" rx="1.5" />
-                </svg>
-                {copied ? "Copied!" : "Share comparison"}
-              </button>
-            )}
-          </div>
-        )}
-
-        {selected.length < 2 && (
-          <p className="mt-3 text-[12px] text-muted-foreground">
-            Select at least 2 candidates to compare.
-            {selected.length === 1 && " Add 1 more."}
-          </p>
-        )}
-      </div>
-
-      {/* ── Loading ──────────────────────────────────── */}
-      {loading && (
-        <div className="mt-10 flex justify-center">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-border border-t-jersey-red" />
-        </div>
-      )}
-
-      {/* ── Comparison matrix ────────────────────────── */}
-      {data && !loading && (
-        <>
-          {/* Desktop table */}
-          <div className="mt-8 hidden md:block">
-            <div className="overflow-x-auto rounded-xl border border-border bg-white">
-              <table className="w-full border-collapse text-[13px]">
-                <thead>
-                  <tr className="border-b border-border bg-surface">
-                    <th className="sticky left-0 z-10 bg-surface px-5 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                      Issue
-                    </th>
-                    {data.candidates.map((c) => (
-                      <th
-                        key={c.id}
-                        className="min-w-[200px] border-l border-border px-5 py-4 text-left"
-                      >
-                        <Link
-                          href={`/candidates/${c.slug}`}
-                          className="font-semibold text-navy transition-colors hover:text-jersey-red"
-                        >
-                          {c.name}
-                        </Link>
-                        <div className="mt-0.5 text-[11px] font-normal text-muted-foreground">
-                          {c.district}
-                          {c.party ? ` · ${c.party}` : " · Independent"}
-                        </div>
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {allIssues.map((issue, idx) => (
-                    <tr
-                      key={issue.id}
-                      className={
-                        idx % 2 === 0 ? "bg-white" : "bg-surface/40"
-                      }
-                    >
-                      <td
-                        className={`sticky left-0 z-10 border-t border-border px-5 py-4 font-medium text-navy ${
-                          idx % 2 === 0 ? "bg-white" : "bg-surface/40"
-                        }`}
-                      >
-                        <span className="flex items-center gap-2">
-                          {issue.icon && (
-                            <span className="text-[14px]">{issue.icon}</span>
-                          )}
-                          {issue.displayName}
-                        </span>
-                      </td>
-                      {data.candidates.map((c) => {
-                        const pos = posMap.get(`${c.id}:${issue.id}`);
-                        const quoteKey = `${c.id}:${issue.id}`;
-                        return (
-                          <td
-                            key={c.id}
-                            className="border-l border-t border-border px-5 py-4 align-top"
-                          >
-                            {pos ? (
-                              <>
-                                <ConfidenceDot value={pos.confidence} />
-                                <p className="mt-1 leading-relaxed text-navy">
-                                  {pos.position}
-                                </p>
-                                <button
-                                  type="button"
-                                  onClick={() => toggleQuote(quoteKey)}
-                                  className="mt-2 text-[11px] font-medium text-gold transition-colors hover:text-jersey-red"
-                                >
-                                  {expandedQuotes.has(quoteKey)
-                                    ? "Hide source"
-                                    : "View source"}
-                                </button>
-                                {expandedQuotes.has(quoteKey) && (
-                                  <div className="mt-2 rounded-md border-l-2 border-jersey-red/30 bg-surface py-2 pl-3 pr-2">
-                                    <p className="text-[11px] italic leading-relaxed text-muted-foreground">
-                                      &ldquo;{pos.sourceQuote}&rdquo;
-                                    </p>
-                                  </div>
-                                )}
-                              </>
-                            ) : (
-                              <span className="text-[12px] italic text-muted-foreground/50">
-                                No data
-                              </span>
-                            )}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+              <input
+                type="text"
+                placeholder="Search candidates..."
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                className="w-full rounded-lg border border-gray-200 py-2 pl-9 pr-4 text-sm focus:border-[#A31621] focus:outline-none focus:ring-2 focus:ring-[#A31621]/30"
+              />
             </div>
           </div>
 
-          {/* Mobile cards */}
-          <div className="mt-8 space-y-4 md:hidden">
-            {allIssues.map((issue) => {
-              const hasAny = data.candidates.some((c) =>
-                posMap.has(`${c.id}:${issue.id}`),
+          {selectedCandidates.length > 0 && (
+            <div className="mb-4 flex flex-wrap gap-2">
+              {selectedCandidates.map((candidate) => (
+                <span
+                  key={candidate.id}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[#0D1B2A] px-3 py-1.5 text-sm text-[#F5E8C8]"
+                >
+                  {candidate.name}
+                  <button
+                    onClick={() => toggleCandidate(candidate.id)}
+                    className="ml-0.5 transition-colors hover:text-[#C8922A]"
+                    aria-label={`Remove ${candidate.name}`}
+                  >
+                    ✕
+                  </button>
+                </span>
+              ))}
+              {selectedIds.length < 4 && (
+                <span className="self-center text-xs text-gray-400">
+                  {4 - selectedIds.length} more can be added
+                </span>
+              )}
+            </div>
+          )}
+
+          <div className="grid max-h-72 grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {filteredCandidates.length === 0 ? (
+              <p className="col-span-full py-4 text-center text-sm text-gray-400">
+                No candidates found
+              </p>
+            ) : (
+              filteredCandidates.map((candidate) => {
+                const isSelected = selectedIds.includes(candidate.id);
+                const isDisabled = !isSelected && selectedIds.length >= 4;
+
+                return (
+                  <button
+                    key={candidate.id}
+                    onClick={() => {
+                      if (!isDisabled) toggleCandidate(candidate.id);
+                    }}
+                    disabled={isDisabled}
+                    className={`flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left text-sm transition-all ${
+                      isSelected
+                        ? "border-[#0D1B2A] bg-[#0D1B2A] text-[#F5E8C8]"
+                        : isDisabled
+                          ? "cursor-not-allowed border-gray-100 bg-gray-50 text-gray-300"
+                          : "border-gray-200 bg-white text-[#0D1B2A] hover:border-[#A31621] hover:bg-[#A31621]/5"
+                    }`}
+                  >
+                    <div
+                      className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                        isSelected
+                          ? "bg-[#C8922A] text-[#0D1B2A]"
+                          : "bg-gray-100 text-gray-600"
+                      }`}
+                    >
+                      {candidate.name
+                        .split(" ")
+                        .map((word) => word[0])
+                        .join("")
+                        .slice(0, 2)}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="truncate font-medium">{candidate.name}</div>
+                      <div
+                        className={`truncate text-xs ${
+                          isSelected ? "text-[#F5E8C8]/70" : "text-gray-400"
+                        }`}
+                      >
+                        {candidate.district}
+                      </div>
+                    </div>
+                    {isSelected && (
+                      <svg
+                        className="ml-auto h-4 w-4 flex-shrink-0 text-[#C8922A]"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    )}
+                  </button>
+                );
+              })
+            )}
+          </div>
+
+          <div className="mt-5 flex items-center justify-between">
+            <span className="text-xs text-gray-400">
+              {selectedIds.length} of 4 candidates selected
+            </span>
+            <button
+              onClick={loadComparison}
+              disabled={selectedIds.length < 2 || loading}
+              className="inline-flex items-center gap-2 rounded-xl bg-[#A31621] px-6 py-2.5 text-sm font-semibold text-[#F5E8C8] transition-colors hover:bg-[#6B1414] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {loading ? (
+                <>
+                  <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                    />
+                  </svg>
+                  Loading...
+                </>
+              ) : (
+                "Compare →"
+              )}
+            </button>
+          </div>
+        </div>
+
+        {comparisonData.length >= 2 && (
+          <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+            <div
+              className="grid border-b border-gray-200"
+              style={{
+                gridTemplateColumns: `200px repeat(${comparisonData.length}, 1fr)`,
+              }}
+            >
+              <div className="border-r border-gray-200 bg-gray-50 p-4" />
+              {comparisonData.map((candidate) => (
+                <div
+                  key={candidate.id}
+                  className="border-r border-gray-200 p-4 last:border-r-0"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[#A31621] text-xs font-bold text-[#F5E8C8]">
+                      {candidate.name
+                        .split(" ")
+                        .map((word) => word[0])
+                        .join("")
+                        .slice(0, 2)}
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold leading-tight text-[#0D1B2A]">
+                        {candidate.name}
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        {candidate.district}
+                      </div>
+                      {candidate.party && (
+                        <div className="text-xs font-medium text-[#A31621]">
+                          {candidate.party}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div
+              className="grid border-b border-gray-100"
+              style={{
+                gridTemplateColumns: `200px repeat(${comparisonData.length}, 1fr)`,
+              }}
+            >
+              <div className="flex items-start border-r border-gray-200 bg-gray-50 p-4">
+                <span className="text-xs font-bold uppercase tracking-wide text-gray-500">
+                  Summary
+                </span>
+              </div>
+              {comparisonData.map((candidate) => (
+                <div
+                  key={candidate.id}
+                  className="border-r border-gray-100 p-4 text-sm leading-relaxed text-gray-600 last:border-r-0"
+                >
+                  {candidate.ai_summary ? (
+                    <span>
+                      {candidate.ai_summary.length > 200
+                        ? `${candidate.ai_summary.substring(0, 200)}...`
+                        : candidate.ai_summary}
+                    </span>
+                  ) : (
+                    <span className="italic text-gray-300">No summary yet</span>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {ALL_ISSUES.map((issue, index) => {
+              const hasAnyData = comparisonData.some((candidate) =>
+                candidate.ai_issues?.some((item) => item.issue === issue),
               );
+              if (!hasAnyData) return null;
+
               return (
                 <div
-                  key={issue.id}
-                  className="rounded-xl border border-border bg-white p-5"
+                  key={issue}
+                  className={`grid border-b border-gray-100 last:border-b-0 ${
+                    index % 2 === 0 ? "bg-white" : "bg-gray-50/50"
+                  }`}
+                  style={{
+                    gridTemplateColumns: `200px repeat(${comparisonData.length}, 1fr)`,
+                  }}
                 >
-                  <h3 className="flex items-center gap-2 text-[15px] font-semibold text-navy">
-                    {issue.icon && (
-                      <span className="text-[16px]">{issue.icon}</span>
-                    )}
-                    {issue.displayName}
-                  </h3>
-                  {!hasAny ? (
-                    <p className="mt-3 text-[12px] italic text-muted-foreground/50">
-                      No candidate has data on this issue yet.
-                    </p>
-                  ) : (
-                    <div className="mt-3 space-y-3">
-                      {data.candidates.map((c) => {
-                        const pos = posMap.get(`${c.id}:${issue.id}`);
-                        const quoteKey = `m:${c.id}:${issue.id}`;
-                        return (
-                          <div
-                            key={c.id}
-                            className="rounded-lg border border-border bg-surface p-3"
-                          >
-                            <div className="flex items-center justify-between">
-                              <Link
-                                href={`/candidates/${c.slug}`}
-                                className="text-[13px] font-semibold text-navy hover:text-jersey-red"
-                              >
-                                {c.name}
-                              </Link>
-                              {pos && (
-                                <ConfidenceBadge value={pos.confidence} />
-                              )}
+                  <div className="flex items-start border-r border-gray-200 p-4">
+                    <span className="text-xs font-bold uppercase tracking-wide text-[#A31621]">
+                      {issue.replace(/_/g, " ")}
+                    </span>
+                  </div>
+
+                  {comparisonData.map((candidate) => {
+                    const issueData = candidate.ai_issues?.find(
+                      (item) => item.issue === issue,
+                    );
+
+                    return (
+                      <div
+                        key={candidate.id}
+                        className="border-r border-gray-100 p-4 last:border-r-0"
+                      >
+                        {issueData ? (
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-1.5">
+                              <div
+                                className={`h-2 w-2 flex-shrink-0 rounded-full ${
+                                  issueData.confidence > 0.8
+                                    ? "bg-green-500"
+                                    : issueData.confidence > 0.5
+                                      ? "bg-amber-500"
+                                      : "bg-red-400"
+                                }`}
+                              />
+                              <span className="text-xs text-gray-400">
+                                {issueData.confidence > 0.8
+                                  ? "High"
+                                  : issueData.confidence > 0.5
+                                    ? "Medium"
+                                    : "Low"}{" "}
+                                confidence
+                              </span>
                             </div>
-                            {pos ? (
-                              <>
-                                <p className="mt-1.5 text-[12px] leading-relaxed text-navy">
-                                  {pos.position}
-                                </p>
-                                <button
-                                  type="button"
-                                  onClick={() => toggleQuote(quoteKey)}
-                                  className="mt-2 text-[11px] font-medium text-gold hover:text-jersey-red"
-                                >
-                                  {expandedQuotes.has(quoteKey)
-                                    ? "Hide source"
-                                    : "View source"}
-                                </button>
-                                {expandedQuotes.has(quoteKey) && (
-                                  <div className="mt-2 rounded-md border-l-2 border-jersey-red/30 bg-white py-2 pl-3 pr-2">
-                                    <p className="text-[11px] italic leading-relaxed text-muted-foreground">
-                                      &ldquo;{pos.sourceQuote}&rdquo;
-                                    </p>
-                                  </div>
-                                )}
-                              </>
-                            ) : (
-                              <p className="mt-1 text-[12px] italic text-muted-foreground/50">
-                                No data
-                              </p>
+                            <p className="text-sm leading-relaxed text-gray-700">
+                              {issueData.position}
+                            </p>
+                            {issueData.source_quote && (
+                              <blockquote className="border-l-2 border-[#C8922A] pl-2 text-xs italic text-gray-400">
+                                "{issueData.source_quote}"
+                              </blockquote>
                             )}
                           </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                        ) : (
+                          <span className="text-xs italic text-gray-300">
+                            No position found
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               );
             })}
           </div>
-        </>
-      )}
+        )}
 
-      {/* ── Close dropdown on outside click ──────────── */}
-      {dropdownOpen && (
-        <div
-          className="fixed inset-0 z-20"
-          onClick={() => setDropdownOpen(false)}
-          aria-hidden
-        />
-      )}
+        {selectedIds.length >= 2 && comparisonData.length === 0 && !loading && (
+          <div className="py-12 text-center text-gray-400">
+            <p className="text-sm">
+              Click <strong className="text-[#A31621]">Compare →</strong> to see
+              the side-by-side comparison
+            </p>
+          </div>
+        )}
+      </div>
     </div>
-  );
-}
-
-// ── Helpers ─────────────────────────────────────────────────────────────────
-
-function ConfidenceDot({ value }: { value: number }) {
-  const color =
-    value >= 0.8 ? "bg-success" : value >= 0.5 ? "bg-gold" : "bg-jersey-red";
-  const label =
-    value >= 0.8 ? "High" : value >= 0.5 ? "Medium" : "Low";
-  return (
-    <span
-      className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground"
-      title={`${label} confidence (${Math.round(value * 100)}%)`}
-    >
-      <span className={`inline-block h-2 w-2 rounded-full ${color}`} />
-      {label}
-    </span>
-  );
-}
-
-function ConfidenceBadge({ value }: { value: number }) {
-  const level = value >= 0.8 ? "High" : value >= 0.5 ? "Med" : "Low";
-  const cls =
-    value >= 0.8
-      ? "border-success/30 bg-success/10 text-success"
-      : value >= 0.5
-        ? "border-gold/30 bg-gold/10 text-gold"
-        : "border-jersey-red/30 bg-jersey-red/10 text-jersey-red";
-  return (
-    <span
-      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${cls}`}
-    >
-      {level}
-    </span>
   );
 }

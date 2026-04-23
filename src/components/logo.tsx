@@ -1,3 +1,5 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 
@@ -7,12 +9,13 @@ interface LogoProps {
   href?: string;
   className?: string;
   wordmarkTheme?: "light" | "dark";
+  blendMode?: "normal" | "lighten";
 }
 
 const sizes = {
-  sm: 28,
-  md: 36,
-  lg: 48,
+  sm: 32,
+  md: 40,
+  lg: 56,
 };
 
 export function Logo({
@@ -21,6 +24,7 @@ export function Logo({
   href = "/",
   className = "",
   wordmarkTheme = "light",
+  blendMode = wordmarkTheme === "light" ? "lighten" : "normal",
 }: LogoProps) {
   const px = sizes[size];
   const wordmarkColors =
@@ -30,20 +34,27 @@ export function Logo({
 
   const content = (
     <div className={`flex items-center gap-2.5 ${className}`}>
-      <Image
-        src="/votepulse-icon.svg"
-        alt="VotePulse"
-        width={px}
-        height={px}
-        className="flex-shrink-0 rounded-xl shadow-sm"
-        priority
-      />
+      <div
+        className="flex-shrink-0 overflow-hidden rounded-xl shadow-sm"
+        style={{ width: px, height: px }}
+      >
+        <Image
+          src="/Logo__2_.png"
+          alt="VotePulse"
+          width={px}
+          height={px}
+          className={`h-full w-full object-cover ${
+            blendMode === "lighten" ? "mix-blend-lighten" : ""
+          }`}
+          priority
+        />
+      </div>
 
       {showWordmark && (
         <span
-          className="font-bold leading-none tracking-tight"
+          className="select-none font-bold leading-none tracking-tight"
           style={{
-            fontSize: px * 0.55,
+            fontSize: px * 0.5,
             fontFamily: "Archivo, sans-serif",
           }}
         >
@@ -58,7 +69,7 @@ export function Logo({
     return (
       <Link
         href={href}
-        className="rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+        className="rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C8922A]"
       >
         {content}
       </Link>

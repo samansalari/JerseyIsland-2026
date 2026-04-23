@@ -24,10 +24,14 @@ export const metadata: Metadata = {
   description:
     "Independent candidate, policy, and district tracking for Jersey's 2026 general election. Non-partisan. Sources cited.",
   icons: {
-    icon: "/votepulse-icon.svg",
-    shortcut: "/votepulse-icon.svg",
-    apple: "/votepulse-icon.svg",
+    icon: [
+      { url: "/favicons/votepulse_icon_navy.svg", type: "image/svg+xml" },
+      { url: "/Logo__2_.png", sizes: "1024x1024", type: "image/png" },
+    ],
+    apple: [{ url: "/Logo__2_.png", sizes: "1024x1024", type: "image/png" }],
+    other: [{ rel: "icon", url: "/favicons/votepulse_icon_navy.svg" }],
   },
+  manifest: "/favicons/site.webmanifest",
   applicationName: "VotePulse",
   keywords: [
     "Jersey election",
@@ -53,7 +57,7 @@ export const metadata: Metadata = {
       "Independent candidate, policy, and district tracking for Jersey's 2026 general election. Non-partisan. Sources cited.",
     images: [
       {
-        url: "/votepulse-icon.svg",
+        url: "/Logo__2_.png",
         width: 1024,
         height: 1024,
         alt: "VotePulse — Jersey 2026 election intelligence",
@@ -65,7 +69,7 @@ export const metadata: Metadata = {
     title: "Home | VotePulse — Jersey 2026 Election",
     description:
       "Independent candidate, policy, and district tracking for Jersey's 2026 general election.",
-    images: ["/votepulse-icon.svg"],
+    images: ["/Logo__2_.png"],
   },
   robots: { index: true, follow: true },
 };
@@ -79,6 +83,7 @@ export const viewport: Viewport = {
 const NAV_LINKS = [
   { href: "/", label: "Home" },
   { href: "/candidates", label: "Candidates" },
+  { href: "/districts", label: "Districts" },
   { href: "/compare", label: "Compare" },
   { href: "/trends", label: "Trends" },
   { href: "/about", label: "About" },
@@ -98,7 +103,13 @@ export default function RootLayout({
         {/* ── Header ────────────────────────────────────── */}
         <header className="sticky top-0 z-40 border-b border-[#0D1B2A]/10 bg-[#F5F5F0]/95 backdrop-blur-sm">
           <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-5">
-            <Logo size="md" showWordmark href="/" wordmarkTheme="dark" />
+            <Logo
+              size="md"
+              showWordmark
+              href="/"
+              wordmarkTheme="dark"
+              blendMode="normal"
+            />
 
             {/* Desktop nav */}
             <nav className="hidden items-center gap-1 md:flex" aria-label="Main">
@@ -121,7 +132,13 @@ export default function RootLayout({
             <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
               {/* Brand column */}
               <div className="max-w-xs">
-                <Logo size="sm" showWordmark href="/" />
+                <Logo
+                  size="sm"
+                  showWordmark
+                  href="/"
+                  wordmarkTheme="light"
+                  blendMode="lighten"
+                />
                 <p className="mt-3 text-[13px] leading-relaxed">
                   Independent election intelligence for Jersey&rsquo;s 2026
                   general election. Non-partisan. Open source. Sources cited.

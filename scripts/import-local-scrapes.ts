@@ -90,7 +90,15 @@ function extractBio(markdown: string, _name: string): string | null {
   }
 
   const bio = bioLines.join(" ").trim();
-  return bio.length > 50 ? bio.substring(0, 500) : null;
+  const cleanBio = bio
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/\*([^*]+)\*/g, "$1")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return cleanBio.length > 50 ? cleanBio.substring(0, 500) : null;
 }
 
 function cleanMarkdown(markdown: string): string {
@@ -226,7 +234,7 @@ async function main() {
         const merged = {
           ...existing,
           source_urls: [...new Set([...existing.source_urls, sourceUrl])],
-          bio: existing.bio || bio,
+          bio: bio || existing.bio,
           photo_url: existing.photo_url || photo_url,
           manifesto_raw:
             manifesto_raw.length > (existing.manifesto_raw?.length || 0)
@@ -275,7 +283,7 @@ async function main() {
             sourceUrls: [
               ...new Set([...(ex.sourceUrls || []), ...c.source_urls]),
             ],
-            bio: ex.bio || c.bio,
+            bio: c.bio || ex.bio,
             photoUrl: ex.photoUrl || c.photo_url,
             party: ex.party || c.party,
             manifestoRaw: c.manifesto_raw,

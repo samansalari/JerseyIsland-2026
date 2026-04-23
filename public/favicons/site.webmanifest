@@ -1,0 +1,22 @@
+{
+  "name": "VotePulse",
+  "short_name": "VotePulse",
+  "description": "Jersey 2026 Election Intelligence",
+  "icons": [
+    {
+      "src": "/Logo__2_.png",
+      "sizes": "1024x1024",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicons/votepulse_icon_navy.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "theme_color": "#0D1B2A",
+  "background_color": "#0D1B2A",
+  "display": "standalone",
+  "start_url": "/"
+}

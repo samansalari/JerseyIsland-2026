@@ -16,7 +16,12 @@ export default function manifest(): MetadataRoute.Manifest {
     lang: "en-GB",
     icons: [
       {
-        src: "/favicon.svg",
+        src: "/Logo__2_.png",
+        sizes: "1024x1024",
+        type: "image/png",
+      },
+      {
+        src: "/favicons/votepulse_icon_navy.svg",
         sizes: "any",
         type: "image/svg+xml",
         purpose: "any",
