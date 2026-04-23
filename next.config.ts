@@ -1,3 +1,4 @@
+import path from "node:path";
 import type { NextConfig } from "next";
 
 function supabaseImageHost(): { protocol: "https"; hostname: string }[] {
@@ -16,6 +17,7 @@ const nextConfig: NextConfig = {
   // Railway: standard Node server (do not set output: "export" here).
   reactStrictMode: true,
   poweredByHeader: false,
+  outputFileTracingRoot: path.resolve(__dirname),
   experimental: {
     serverActions: {
       bodySizeLimit: "1mb",
