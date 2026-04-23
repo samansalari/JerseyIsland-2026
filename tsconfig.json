@@ -22,10 +22,16 @@
   },
   "include": [
     "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts",
-    "drizzle.config.ts"
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "next.config.ts",
+    ".next/types/**/*.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    "drizzle.config.ts",
+    "load-env.ts",
+    "scripts/**/*.ts",
+    "drizzle/**/*.ts"
+  ]
 }
