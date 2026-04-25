@@ -41,7 +41,12 @@
     "fix:ai-issues": "npx tsx scripts/fix-ai-issues.ts",
     "clean:candidates": "npx tsx scripts/clean-candidates.ts",
     "clean:candidates:dry": "npx tsx scripts/clean-candidates.ts --dry-run",
-    "clean:candidates:all": "npx tsx scripts/clean-candidates.ts --all"
+    "clean:candidates:all": "npx tsx scripts/clean-candidates.ts --all",
+    "discover:social": "npx tsx scripts/discover-social-links.ts",
+    "discover:social:dry": "npx tsx scripts/discover-social-links.ts --dry-run",
+    "scrape:social": "npx tsx scripts/scrape-social.ts",
+    "scrape:social:dry": "npx tsx scripts/scrape-social.ts --dry-run",
+    "scrape:social:force": "npx tsx scripts/scrape-social.ts --force"
   },
   "dependencies": {
     "@fontsource/archivo": "^5.2.8",

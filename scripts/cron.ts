@@ -316,6 +316,23 @@ async function dailyCycle() {
   log("CRON: Daily maintenance complete\n");
 }
 
+async function socialScrapeCycle() {
+  log("CRON: Starting daily social scrape (06:00 Europe/London)");
+  const cycleStart = Date.now();
+
+  // 1. Discover any new social links embedded in manifesto text
+  await runTask("DISCOVER social links", "scripts/discover-social-links.ts");
+
+  // 2. Scrape all candidates that have scrapeable social URLs
+  await runTask("SCRAPE social pages", "scripts/scrape-social.ts");
+
+  // 3. Revalidate affected pages
+  await triggerRevalidation();
+
+  const total = ((Date.now() - cycleStart) / 1000).toFixed(0);
+  log(`CRON: Social scrape cycle complete (${total}s)\n`);
+}
+
 // ── Schedule ────────────────────────────────────────────────────────────────
 
 log("CRON: VotePulse orchestrator starting");
@@ -343,6 +360,20 @@ cron.schedule("0 3 * * *", () => {
     warn("CRON", `Daily cycle crashed: ${err instanceof Error ? err.message : err}`),
   );
 });
+
+// Daily at 06:00 Europe/London — scrape social media for policy updates
+cron.schedule(
+  "0 6 * * *",
+  () => {
+    socialScrapeCycle().catch((err) =>
+      warn(
+        "CRON",
+        `Social scrape cycle crashed: ${err instanceof Error ? err.message : err}`,
+      ),
+    );
+  },
+  { timezone: "Europe/London" },
+);
 
 // ── One-time: Official candidate list day — Monday 27 April 2026 ─────────────
 // vote.je and flow.je are expected to publish the official 2026 candidate list.
