@@ -1,246 +1,217 @@
+<div align="center">
+
+<img src="public/Logo__2_.png" alt="VotePulse Logo" width="120" />
+
 # VotePulse
 
-Public, non-partisan election intelligence for Jersey’s 2026 general election: candidate profiles (with **normalised social links** from `social_links` JSONB), AI-assisted manifesto summaries (with disclaimers), issue comparisons, the **Public Pulse** interactive dashboard on `/trends` (issue poll, community star ratings, live bars, AI insight text from the database), and news coverage. Sources are preserved and linked wherever possible.
+**Public, non-partisan election intelligence for Jersey's 2026 General Election**
 
-> **Screenshots:** add hero / candidates / compare captures under `public/` when you have production captures.
+[![Live Site](https://img.shields.io/badge/Live%20Site-votepulse.je-1a2b4a?style=for-the-badge&logo=vercel&logoColor=gold)](https://votepulse.je)
+[![Next.js](https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js)](https://nextjs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?style=for-the-badge&logo=typescript&logoColor=white)](https://typescriptlang.org)
+[![Railway](https://img.shields.io/badge/Hosted%20on-Railway-7b2fff?style=for-the-badge&logo=railway&logoColor=white)](https://railway.app)
+[![License: MIT](https://img.shields.io/badge/License-MIT-gold?style=for-the-badge)](LICENSE)
 
-## Features (at a glance)
+<img src="public/hero-banner.png" alt="VotePulse — The Power of One Vote" width="100%" style="border-radius:12px; margin: 24px 0;" />
 
-| Area | What to know |
-|------|----------------|
-| **Candidates** | Profiles with district, party, **Original Manifesto** (raw markdown), AI summary & issue stances. **Social links** in the navy hero from `social_links` (JSONB), rendered by `SocialLinks` + `buildSocialLinks()` (`src/lib/social-links.ts`). If there is no substantive 2026 manifesto text, an **amber notice** explains that the block is historical flow.je profile data. |
-| **Data pipeline** | **flow.je** JSON → `npm run import:local` (bio/manifesto extractors skip election tables & “Election History”). **vote.je** batch scraper (`scrape:vote`) merges profiles; **`scrape:manifestos`** maps/scrapes vote.je for richer 2026 manifesto pages when they exist. **`extract:social`** parses `manifesto_raw` (+ manifesto URL) into `social_links`. **`validate:social`** checks how many candidates produce at least one valid URL from `buildSocialLinks()`. |
-| **Compare** (`/compare`) | **Deep comparison table** for **2–4** candidates: header (photo/initials, name), **AI summary** (3-line clamp + expand, link to profile), **district & role**, **party**, **10 canonical issue rows** (housing → public_services) with **position + confidence badge + expandable source quote** from `candidates.ai_issues` JSONB, and **source links** (manifesto + `sourceUrls`). Fetches **`GET /api/compare?ids=<uuid,uuid>`** (order preserved; UUIDs validated). |
-| **Public Pulse** (`/trends`, nav **“Public Pulse”**) | Dashboard: `src/app/trends/pulse-client.tsx` + server `page.tsx` (`revalidate` 30s). **Issue poll:** Zod-validated issue keys (`src/lib/validate.ts`); one vote / 24h via fingerprint + httpOnly `vp_voted` (`/api/pulse/vote` GET+POST) + rate limit. **Ratings:** `POST /api/pulse/rate` (fingerprint, one rating per candidate / 24h) + rate limit. **Results:** `GET /api/pulse/results` (aggregates, leaderboard with ≥3 ratings). Client refetches **every 30s**. **Analysis:** `GET /api/pulse/insight` is **DB read-only**; rows written by **`generatePulseInsight()`** (`src/lib/pulse-insight.ts`, type `issue_summary`) via **6h cron** + **`POST /api/admin/regenerate-insight`**. |
-| **Admin** | Password + HTTP-only cookie (`ADMIN_SECRET`); scrapers, enrich, clear poll data, **regenerate pulse insight** (`/api/admin/regenerate-insight`). |
-| **Rate limiting** | `src/lib/rate-limit.ts` — ioredis + `REDIS_URL`; used by **pulse** vote/rate routes — if `REDIS_URL` unset, **fails open** (no limit). |
-| **Footer** | Global footer in `src/app/layout.tsx` + **Seenovate** credit (`src/components/seenovate-footer-credit.tsx`, client for link hover). |
-| **About** | Legal- and privacy-oriented copy; interactive mail/support buttons in `src/components/about-actions.tsx` (client). |
+</div>
 
-Full architecture notes, **change log for auditors**, and **LLM / human review checklists** live in [`docs/CODEBASE-REPORT.md`](docs/CODEBASE-REPORT.md) (see §0 and **§13 — Auditor & LLM review checklist**).
+---
+
+VotePulse is an open, independent platform that helps Jersey voters make informed decisions. It aggregates candidate profiles, AI-summarised manifestos, issue comparisons, and a live **Public Pulse** dashboard — all without partisan bias.
+
+> Sources are preserved and linked wherever possible. AI-generated content is clearly labelled with disclaimers.
+
+---
+
+## What's inside
+
+| Feature | Description |
+|---------|-------------|
+| **Candidate Profiles** | District, party, original manifesto (raw markdown), AI summary & issue stances. Social links extracted from `social_links` JSONB via `buildSocialLinks()`. Historical flow.je data shown with an amber notice when no 2026 manifesto exists. |
+| **Side-by-Side Compare** (`/compare`) | Deep comparison table for 2–4 candidates: photo, AI summary, party, district, and 10 canonical issue rows (housing → public services) with position, confidence badge, and expandable source quote. |
+| **Public Pulse** (`/trends`) | Live issue poll (one vote / 24h per fingerprint), community star ratings, real-time leaderboard, and AI-generated insight text refreshed every 6 hours via a Railway worker cron. |
+| **Data Pipeline** | flow.je JSON → `import:local` → `scrape:vote` → `scrape:manifestos` → `extract:social`. AI enrichment via xAI Grok. |
+| **Admin Panel** (`/admin`) | Password-gated internal tool for scrapers, batch enrichment, clearing poll data, and regenerating AI insights. |
+| **Rate Limiting** | ioredis-backed rate limits on Pulse vote/rate routes; fails open when `REDIS_URL` is unset. |
+
+---
 
 ## Tech stack
 
 | Layer | Choice |
 |-------|--------|
-| Web | Next.js 15 (App Router, TypeScript, ISR) |
-| Styling | Tailwind CSS 3, Jersey palette (`tailwind.config.ts` + `globals.css`) |
-| Fonts | Archivo (Google Fonts via `next/font`) |
-| Database | PostgreSQL via Drizzle ORM (`postgres` driver, `prepare: false` for Supabase pooler) |
-| Admin | Cookie gate via `ADMIN_SECRET` (internal `/admin` tool) |
-| AI | xAI Grok (`fetch` → `https://api.x.ai/v1/chat/completions`) |
-| Scraping | Firecrawl (`@mendable/firecrawl-js`) |
-| Production hosting | **Railway** — Web (Next.js) + Worker (`scripts/cron.ts`); see [Deployment](#deployment) |
-| Optional | Cloudflare Pages (`wrangler.toml` + `pages:build`) is not required for Railway |
-| Worker / cron | Railway worker service (`railway.worker.json` → `npx tsx scripts/cron.ts`) — includes **Public Pulse** insight job (`scripts/generate-pulse-insight.ts` → `src/lib/pulse-insight.ts`) in the 6-hour cycle |
-| Rate limit store | **ioredis** + `REDIS_URL` (standard TCP Redis; not Upstash REST) |
-| Polling / pulse | `issue_votes`, `candidate_ratings`, `pulse_insights` tables (Drizzle) |
+| Framework | **Next.js 15** — App Router, TypeScript, ISR |
+| Styling | **Tailwind CSS 3** — Jersey palette (`jersey-red`, `gold`, `navy`) |
+| Fonts | **Archivo** via `next/font/google` |
+| Database | **PostgreSQL** via Drizzle ORM (`postgres` driver, `prepare: false` for Supabase pooler) |
+| AI | **xAI Grok** — manifesto summaries, issue stances, article sentiment |
+| Scraping | **Firecrawl** (`@mendable/firecrawl-js`) |
+| Hosting | **Railway** — Web (Next.js) + Worker (`scripts/cron.ts`) |
+| Rate limits | **ioredis** + `REDIS_URL` |
+| Cron | Railway worker — 6h Pulse insight · 2h news · daily scrape · 27 Apr 08:00 official-list chain |
 
-A detailed audit lives in [`docs/CODEBASE-REPORT.md`](docs/CODEBASE-REPORT.md).
+---
 
-## Prerequisites
-
-- Node.js **20+**
-- A **PostgreSQL** database (local Docker, Railway, or **Supabase**)
-- **`ADMIN_SECRET`** in `.env.local` if you use `/admin`
-- **`REDIS_URL`** in production if you want API rate limits enforced (see `src/lib/rate-limit.ts`); optional locally
-- **xAI Grok** (`GROK_API_KEY` or `XAI_API_KEY`) and **Firecrawl** API keys for enrichment / scrapers
-
-## Local development
-
-1. **Clone** the repository and install dependencies:
-
-   ```bash
-   npm install
-   ```
-
-   The repo ships with `.npmrc` (`legacy-peer-deps=true`) because Next 15’s React RC and Drizzle’s peer metadata disagree on npm’s strict resolver.
-
-2. **Environment** — copy the example file and fill in values:
-
-   ```bash
-   cp .env.example .env.local
-   ```
-
-   At minimum set `DATABASE_URL` and `NEXT_PUBLIC_SITE_URL`. For `/admin`, set `ADMIN_SECRET`.
-
-3. **Database** — from the project root:
-
-   ```bash
-   npm run db:migrate
-   ```
-
-   This applies hand-written SQL in `drizzle/` (pgcrypto, RLS bootstrap, **`0002_add_social_links.sql`**, Public Pulse tables if present in `drizzle/`, etc.). **Public Pulse** needs **`issue_votes`**, **`candidate_ratings`**, **`pulse_insights`** (see `src/db/schema.ts`). If `npm run db:push` fails with a Drizzle Kit internal error on your Postgres version, prefer **`db:migrate`** or apply matching DDL in Supabase (see `docs/CODEBASE-REPORT.md` §4).
-
-4. **Seed issues** (taxonomy) and optionally candidates:
-
-   ```bash
-   npm run db:seed
-   npm run seed
-   ```
-
-5. **Dev server**
-
-   ```bash
-   npm run dev
-   ```
-
-   Open [http://localhost:3000](http://localhost:3000). A JSON health probe lives at [`/api/health`](http://localhost:3000/api/health).
-
-## npm scripts
-
-| Script | Description |
-|--------|-------------|
-| `dev` / `build` / `start` | Standard Next.js |
-| `typecheck` | `tsc --noEmit` |
-| `lint` | `next lint` |
-| `db:generate` / `db:push` / `db:migrate` / `db:studio` | Drizzle (`db:migrate` applies `drizzle/*.sql`, e.g. `social_links`) |
-| `db:seed` | Issues seed (`src/db/seed.ts`) |
-| `seed` / `seed:candidates` | `scripts/seed-candidates.ts` |
-| `enrich` / `enrich:batch` / `enrich:articles` | AI pipelines (Grok; `enrich:batch` = all candidates) |
-| `import:local` / `import:local-scrapes` | `data/flow.je/*.json` → `candidates` (`scripts/import-local-scrapes.ts`) |
-| `scrape:flow` / `scrape:vote` | Firecrawl scrapers for flow.je / vote.je |
-| `scrape:manifestos` | Map + scrape vote.je for 2026-style manifesto URLs (`scripts/scrapers/scrape-vote-je-manifestos.ts`) |
-| `extract:social` | Parse `manifesto_raw` (+ URL) → `social_links` (`scripts/extract-social-links.ts`) |
-| `validate:social` | Report resolvable social URLs (`scripts/validate-social-links.ts`) |
-| `ingest:news` | RSS / news ingest |
-| `cron` | Railway worker — 6h / 2h / daily jobs + **27 Apr 08:00 Europe/London** official-list chain |
-| `pages:build` / `pages:dev` | Optional Cloudflare adapter (not used on Railway) |
-
-## Deployment
-
-VotePulse is configured to run on **Railway** as **two services** from the same GitHub repository (no Cloudflare or Vercel required).
-
-### Prerequisites
-
-- [Railway](https://railway.app) account
-- [Supabase](https://supabase.com) project (Postgres)
-- [xAI](https://console.x.ai) Grok API key
-- [Firecrawl](https://firecrawl.dev) API key
-- This repository connected to Railway
-
-**Repo config files:** `railway.json` (Web), `railway.worker.json` (Worker), `nixpacks.toml` (Node 20 + build). In Railway, the **Worker** service should point at `railway.worker.json` (or set **Build** to `npm install` and **Start** to `npx tsx scripts/cron.ts` manually) so it does not run a full `npm run build` unless you want to.
-
-### Service 1 — Web (Next.js)
-
-1. **New Project** → **Deploy from GitHub** → select this repo.
-2. **Settings → Config as code:** `railway.json` (or let Railway detect Next.js and set **Build** `npm run build`, **Start** `npm start`).
-3. **Port:** leave default (Next listens on `PORT`; Railway sets it — `npm run start` uses it).
-4. **Healthcheck:** `GET /api/health` (30s timeout) — set in `railway.json` when that file is used.
-5. **Environment variables:** copy from `.env.example` — at minimum `DATABASE_URL`, `NEXT_PUBLIC_*` Supabase keys, `NEXT_PUBLIC_SITE_URL` (your `*.railway.app` or custom domain), `REVALIDATION_SECRET`, `ADMIN_SECRET` if you use `/admin`, `RESEND_API_KEY` if you use email. Add **`DATABASE_URL` before the first `npm run build`** on Railway if you want every `/candidates/[slug]` page **pre-generated** at build time; the build can still succeed without it (routes stay on-demand until you set it and rebuild).
-6. `SKIP_DB_HEALTHCHECK` should be `false` (or unset) in production so `/api/health` validates Postgres.
-
-### Service 2 — Worker (cron / scrapers / enrichment)
-
-1. In the **same** Railway project → **New** → **GitHub repo** (this repo again).
-2. **Build:** `npm install` only (see `railway.worker.json`). **Start:** `npx tsx scripts/cron.ts` (or `npm run cron`).
-3. **Environment:** mirror **server** secrets: `DATABASE_URL`, `GROK_API_KEY`, `GROK_MODEL`, `FIRECRAWL_API_KEY`, `FIRECRAWL_DAILY_CREDIT_LIMIT`, `REVALIDATION_SECRET`, `NEXT_PUBLIC_SITE_URL` (needed for revalidation fetches), `RESEND` if used. `NEXT_PUBLIC_*` vars are only required on the Web service for the UI; the worker can omit them if your worker code does not read them (this project’s `cron.ts` uses `NEXT_PUBLIC_SITE_URL` for revalidation).
-4. No separate build artifact — long-running `node-cron` process.
-
-### Environment variables (summary)
-
-| Variable | Web | Worker | Notes |
-|----------|-----|--------|--------|
-| `DATABASE_URL` | Yes | Yes | Supabase **pooler** (port 6543, `pgbouncer=true`) |
-| `NEXT_PUBLIC_SUPABASE_URL` | Yes | Optional | — |
-| `NEXT_PUBLIC_SUPABASE_*` (anon/publishable) | Yes | Optional | — |
-| `GROK_API_KEY` / `XAI_API_KEY` | If enriching from web | Yes for cron enrich | — |
-| `GROK_MODEL` | Optional | Optional | Default in code: `grok-4-1-fast-reasoning` |
-| `FIRECRAWL_API_KEY` | Optional | Yes for scrapers | — |
-| `NEXT_PUBLIC_SITE_URL` | Yes | Yes (revalidate) | Public site URL |
-| `REVALIDATION_SECRET` | Yes | Yes | ISR `POST /api/revalidate` |
-| `REDIS_URL` | Recommended | Recommended | `src/lib/rate-limit.ts` (ioredis); omit only if you accept no Redis-backed limits |
-| `ADMIN_SECRET` | If using `/admin` | No | — |
-| `NODE_ENV` | `production` | `production` | — |
-| `SKIP_DB_HEALTHCHECK` | `false` | — | Web healthcheck must hit DB in prod |
-
-### First deploy checklist
-
-- [ ] Supabase project created; **`npm run db:migrate`** applied (includes **`social_links`** and other `drizzle/*.sql` bootstrap); use **`db:push`** only if Kit works on your Postgres
-- [ ] `npm run db:seed` for issues taxonomy
-- [ ] Candidates: `npm run import:local` (flow.je JSON under `data/flow.je/`) and/or `npm run seed` — then **`npm run extract:social`** so profile hero links populate
-- [ ] Web service: deploy succeeds; `GET /api/health` returns `200` with `database: "connected"`
-- [ ] Worker service: logs show `CRON: VotePulse orchestrator starting`
-- [ ] `/admin/login` works if you set admin auth env vars
-
-### Supabase (database)
-
-1. Create a project at [https://supabase.com](https://supabase.com).
-2. Use the **pooler** connection string (port `6543`, `pgbouncer=true`) for `DATABASE_URL` in Railway and local server contexts.
-3. **RLS** — see `drizzle/*` and Supabase policies if you expose the DB beyond the app server.
-4. Set **`ADMIN_SECRET`** on the web host if you use `/admin`.
-
-### Cloudflare Pages (optional)
-
-1. See `wrangler.toml` and `npm run pages:build` if you use the Cloudflare adapter; otherwise prefer Railway for the main app.
-
-## Operations
-
-### Add or edit candidates
-
-- Use `scripts/seed-candidates.ts` / `data/candidates.json` as a starting point, or insert directly with Drizzle Studio (`npm run db:studio`).
-- **flow.je bulk path:** place Firecrawl JSON under `data/flow.je/`, then `npm run import:local` (updates `bio`, `manifesto_raw`, clears `ai_summary` / `last_enriched_at` on update so enrichment re-runs clean).
-- **vote.je:** `npm run scrape:vote` (batch profiles) and, when 2026 manifesto URLs exist, `npm run scrape:manifestos`.
-- **Social links:** after any scrape/import, run `npm run extract:social` to refresh `social_links` from markdown (and inline URLs). Optional: `npx tsx scripts/validate-social-links.ts` checks resolvable URLs.
-- Keep `source_urls` accurate; treat `manifesto_raw` as editorial source text (AI writes to `ai_summary` / `candidate_issues`, not over raw manifesto).
-
-### Run AI enrichment
-
-VotePulse uses **xAI Grok** (Chat Completions API) to summarise manifestos, extract issue stances, and classify article sentiment. Set `GROK_API_KEY` (or `XAI_API_KEY`) and optional `GROK_MODEL` in `.env.local` (see [xAI API docs](https://docs.x.ai/docs/guides/chat)).
-
-```bash
-npm run enrich
-npm run enrich:articles
-```
-
-### Update scrapers
-
-- Implement or extend files under `scripts/scrapers/`, then wire them in `scripts/cron.ts`.
-- A **policy.je** scraper is still outstanding — see `docs/CODEBASE-REPORT.md`.
-
-### Public Pulse (worker + APIs)
-
-- The **6-hour** cron run executes `scripts/generate-pulse-insight.ts`, which calls `generatePulseInsight()` in `src/lib/pulse-insight.ts` and writes to `pulse_insights` (type `issue_summary`).
-- **`GET /api/pulse/insight`** only reads the database — it does **not** call Grok on request. It returns the latest row where `insight_type` is `issue_summary` or `issue_analysis`.
-- **`GET /api/pulse/results`**, **`POST /api/pulse/vote`**, **`POST /api/pulse/rate`** — see `src/app/api/pulse/*/route.ts` (Zod on vote/rate bodies where applicable; rate limits when `REDIS_URL` is set).
-- **Issue votes** use cookie `vp_voted` + server-side fingerprint; see `src/app/api/pulse/vote/route.ts`.
-- **DB tables:** `issue_votes`, `candidate_ratings`, `pulse_insights` (defined in `src/db/schema.ts`) — must exist in every environment (Drizzle push/migrate or Supabase SQL).
-
-### Official list day (cron)
-
-- **`scripts/cron.ts`** schedules a **one-time** job: **08:00 Europe/London, 27 April** (yearly cron expression — review annually). It runs: `scrape-vote-je-manifestos` → `scrape-flow-je` → `import-local-scrapes` → `extract-social-links` → `enrich --batch` → ISR revalidation.
-- Intended for when vote.je / flow.je publish the official 2026 candidate list; adjust or remove the schedule if the date changes.
-
-## Architecture (text)
+## Architecture
 
 ```
-Browser ──► Next.js on Railway (Web service)
+Browser ──► Next.js on Railway (Web)
               │
-              ├──► PostgreSQL (Supabase pooler)
+              ├──► PostgreSQL (Supabase pooler, port 6543)
               │
               └──► Railway Worker (cron.ts)
-                      ├── Firecrawl / RSS / scrapers
-                      ├── Grok enrichment
+                      ├── Firecrawl / RSS scrapers
+                      ├── xAI Grok enrichment
                       └── POST /api/revalidate (ISR)
 ```
 
+---
+
+## Getting started
+
+### Prerequisites
+
+- Node.js **20+**
+- PostgreSQL (local Docker, Railway, or Supabase)
+- `ADMIN_SECRET` for `/admin`
+- `REDIS_URL` for production rate limiting (optional locally)
+- xAI Grok API key (`GROK_API_KEY`) + Firecrawl API key for scrapers
+
+### Local setup
+
+```bash
+# 1. Install
+npm install
+
+# 2. Environment
+cp .env.example .env.local
+# Set DATABASE_URL, NEXT_PUBLIC_SITE_URL, and optional keys
+
+# 3. Database
+npm run db:migrate     # applies drizzle/*.sql — social_links, Pulse tables, etc.
+
+# 4. Seed
+npm run db:seed        # issue taxonomy
+npm run seed           # candidates
+
+# 5. Dev server
+npm run dev
+# → http://localhost:3000   health: /api/health
+```
+
+### Useful scripts
+
+| Script | What it does |
+|--------|-------------|
+| `dev` / `build` / `start` | Standard Next.js |
+| `typecheck` / `lint` | `tsc --noEmit` / `next lint` |
+| `db:generate` / `db:push` / `db:migrate` / `db:studio` | Drizzle ORM |
+| `db:seed` | Issues taxonomy |
+| `import:local` | flow.je JSON → candidates |
+| `scrape:vote` | vote.je batch profiles |
+| `scrape:manifestos` | 2026 manifesto URLs from vote.je |
+| `extract:social` | `manifesto_raw` → `social_links` |
+| `validate:social` | Report resolvable social URLs |
+| `enrich` / `enrich:batch` | xAI Grok enrichment |
+| `ingest:news` | RSS / news ingest |
+| `cron` | Railway worker — full job orchestrator |
+
+---
+
+## Deployment (Railway)
+
+VotePulse runs as **two Railway services** from this repo — no Vercel or Cloudflare required.
+
+### Service 1 — Web (Next.js)
+
+1. **New Project → Deploy from GitHub** → select this repo.
+2. Railway auto-detects Next.js; or point to `railway.json`.
+3. **Health check:** `GET /api/health` (30 s timeout).
+4. Set all environment variables before the first build (especially `DATABASE_URL` for pre-rendered candidate pages).
+
+### Service 2 — Worker (cron)
+
+1. Same Railway project → **New → GitHub repo** (this repo again).
+2. **Build:** `npm install` only. **Start:** `npx tsx scripts/cron.ts`.
+3. Mirror server-side secrets: `DATABASE_URL`, `GROK_API_KEY`, `FIRECRAWL_API_KEY`, `NEXT_PUBLIC_SITE_URL`, `REVALIDATION_SECRET`.
+
+### Environment variables
+
+| Variable | Web | Worker | Notes |
+|----------|:---:|:------:|-------|
+| `DATABASE_URL` | ✅ | ✅ | Supabase pooler (port 6543, `pgbouncer=true`) |
+| `NEXT_PUBLIC_SUPABASE_URL` | ✅ | — | |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | ✅ | — | |
+| `GROK_API_KEY` / `XAI_API_KEY` | optional | ✅ | xAI Grok |
+| `GROK_MODEL` | optional | optional | Default: `grok-4-1-fast-reasoning` |
+| `FIRECRAWL_API_KEY` | — | ✅ | Scrapers |
+| `NEXT_PUBLIC_SITE_URL` | ✅ | ✅ | Public URL (ISR revalidation) |
+| `REVALIDATION_SECRET` | ✅ | ✅ | `POST /api/revalidate` |
+| `REDIS_URL` | recommended | recommended | ioredis rate limiting |
+| `ADMIN_SECRET` | ✅ | — | Cookie-gated admin panel |
+| `NODE_ENV` | `production` | `production` | |
+
+### First-deploy checklist
+
+- [ ] Supabase project created; `npm run db:migrate` applied
+- [ ] `npm run db:seed` for issues taxonomy
+- [ ] `npm run import:local` (flow.je JSON) + `npm run extract:social`
+- [ ] `GET /api/health` returns `{ database: "connected" }`
+- [ ] Worker logs show `CRON: VotePulse orchestrator starting`
+- [ ] `/admin/login` works with `ADMIN_SECRET`
+
+---
+
+## Public Pulse — how it works
+
+- **Voting:** `POST /api/pulse/vote` — Zod-validated issue key, one vote per fingerprint per 24h via `vp_voted` cookie + server fingerprint. Redis-backed rate limit.
+- **Ratings:** `POST /api/pulse/rate` — one rating per candidate per 24h.
+- **Results:** `GET /api/pulse/results` — aggregates + leaderboard (candidates with ≥ 3 ratings).
+- **AI Insight:** `GET /api/pulse/insight` — **DB read only**. Rows written by `generatePulseInsight()` every 6 hours (cron) or via `POST /api/admin/regenerate-insight`. Never calls Grok on request.
+- **DB tables:** `issue_votes`, `candidate_ratings`, `pulse_insights` (see `src/db/schema.ts`).
+
+---
+
+## For auditors & reviewers
+
+- **Compare data source:** `/compare` reads `candidates.ai_issues` (JSONB). The `candidate_issues` junction table may be empty in some deployments.
+- **Social links:** `buildSocialLinks()` only emits URLs that pass `new URL()`. Re-run `validate:social` after bulk imports.
+- **AI layer:** enrichment is **xAI Grok** only (`src/lib/grok.ts`). Anthropic / OpenAI are not used.
+- **Rate limiting:** Redis-backed via ioredis. Routes fail open when `REDIS_URL` is unset.
+- **Official list cron:** one-time job at `08:00 Europe/London on 27 April` — runs full scrape → import → enrich → revalidate chain. Adjust annually.
+- Full audit trail: [`docs/CODEBASE-REPORT.md`](docs/CODEBASE-REPORT.md) (§0 changelog · §13 LLM/human review checklist).
+
+---
+
 ## Design tokens
 
-Canonical colours live in `tailwind.config.ts` (`jersey-red`, `gold`, `navy`, `surface`, `on-primary`, `success`) and in `globals.css` CSS variables. Prefer Tailwind utilities (`bg-jersey-red`, `text-on-primary`) over ad-hoc hex in components.
+Canonical colours in `tailwind.config.ts` and `globals.css`:
 
-## For auditors & code reviewers
+| Token | Colour |
+|-------|--------|
+| `jersey-red` | `#8B1A1A` |
+| `navy` | `#1a2b4a` |
+| `gold` | `#C9A84C` |
+| `surface` | off-white |
+| `on-primary` | text on dark backgrounds |
 
-- **Data model for compare / AI issues:** Stances shown on `/compare` and in much of the UI come from **`candidates.ai_issues`** (JSONB on the row). The **`candidate_issues`** junction table may be empty in some deployments; do not assume it is populated for the public compare view.
-- **Compare API contract:** `GET /api/compare?ids=` expects **2–4 UUIDs**, returns **camelCase** fields including `aiIssues`, `manifestoUrl`, `sourceUrls`, `manifestoRaw`, `bio`, `photoUrl`. See `src/app/api/compare/route.ts`.
-- **Social links:** `candidates.social_links` is untrusted string data — **`buildSocialLinks()`** only emits URLs that pass `new URL()`; unknown platform keys are ignored. Re-run **`validate:social`** after bulk imports.
-- **Public Pulse:** Do not add Grok calls to `GET /api/pulse/insight`; keep generation in `generatePulseInsight` (cron + admin). Verify **`REDIS_URL`** if production must enforce rate limits.
-- **AI layer:** **Anthropic** is not used; enrichment is **xAI Grok** via `src/lib/grok.ts` and `scripts/enrich*.ts`.
-- Deeper checklists: **`docs/CODEBASE-REPORT.md` §0 (what changed) and §13**.
+Prefer Tailwind utilities (`bg-jersey-red`, `text-gold`) over inline hex.
+
+---
 
 ## Contributing
 
-Issues and PRs are welcome. Keep changes focused; match existing formatting and patterns.
+Issues and pull requests are welcome. Keep changes focused and match existing formatting and patterns. For large changes, open an issue first to discuss approach.
+
+---
 
 ## Licence
 
-MIT
+[MIT](LICENSE) — open-source, non-partisan, built for Jersey.
+
+---
+
+<div align="center">
+<sub>Built by <a href="https://seenovate.com">Seenovate</a> · <a href="https://votepulse.je">votepulse.je</a></sub>
+</div>
