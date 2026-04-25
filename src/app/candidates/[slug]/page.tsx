@@ -13,6 +13,7 @@ import {
   truncateMetaDescription,
 } from "@/lib/seo";
 import { SocialLinks } from "@/components/social-links";
+import { safeDisplayName } from "@/lib/candidate-utils";
 
 export const revalidate = 21600;
 
@@ -88,10 +89,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const siteUrl = siteBase();
   const url = canonicalUrl(`/candidates/${slug}`);
-  const titleAbsolute = `${c.name} — Jersey 2026 election | VotePulse`;
+  const displayName = safeDisplayName(c.name);
+  const titleAbsolute = `${displayName} — Jersey 2026 election | VotePulse`;
 
   const description = [
-    `${c.name} is standing in ${c.district}`,
+    `${displayName} is standing in ${c.district}`,
     `in Jersey's 2026 general election on 7 June 2026`,
     c.party ? `representing ${c.party}` : "as an Independent",
     c.aiSummary
@@ -105,9 +107,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: { absolute: titleAbsolute },
     description,
     keywords: [
-      c.name,
-      `${c.name} Jersey`,
-      `${c.name} 2026 election`,
+      displayName,
+      `${displayName} Jersey`,
+      `${displayName} 2026 election`,
       c.district,
       "Jersey election 2026",
       "Jersey candidates",
@@ -127,7 +129,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
           url: ogImageUrl,
           width: 1200,
           height: 630,
-          alt: `${c.name} — Jersey 2026 Election | VotePulse`,
+          alt: `${displayName} — Jersey 2026 Election | VotePulse`,
           type: "image/png",
         },
       ],
@@ -160,7 +162,8 @@ export default async function CandidatePage({ params }: Props) {
     getRelatedArticles(candidate.id),
   ]);
 
-  const initials = candidate.name
+  const candidateDisplayName = safeDisplayName(candidate.name);
+  const initials = candidateDisplayName
     .split(" ")
     .map((word) => word[0] ?? "")
     .join("")
@@ -211,7 +214,7 @@ export default async function CandidatePage({ params }: Props) {
               {candidate.photoUrl ? (
                 <img
                   src={candidate.photoUrl}
-                  alt={candidate.name}
+                  alt={candidateDisplayName}
                   className="h-20 w-20 rounded-full border-2 border-gold object-cover"
                 />
               ) : (
@@ -223,7 +226,7 @@ export default async function CandidatePage({ params }: Props) {
 
             <div className="min-w-0 flex-1">
               <h1 className="text-3xl font-bold leading-tight text-on-primary [text-wrap:balance]">
-                {candidate.name}
+                {candidateDisplayName}
               </h1>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-sm text-on-primary">

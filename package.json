@@ -37,7 +37,10 @@
     "pages:dev": "npx wrangler pages dev .vercel/output/static",
     "validate:social": "npx tsx scripts/validate-social-links.ts",
     "seed:topics": "npx tsx scripts/seed-topics.ts",
-    "generate:topics": "npx tsx scripts/enrich.ts --topics-only"
+    "generate:topics": "npx tsx scripts/enrich.ts --topics-only",
+    "clean:candidates": "npx tsx scripts/clean-candidates.ts",
+    "clean:candidates:dry": "npx tsx scripts/clean-candidates.ts --dry-run",
+    "clean:candidates:all": "npx tsx scripts/clean-candidates.ts --all"
   },
   "dependencies": {
     "@fontsource/archivo": "^5.2.8",

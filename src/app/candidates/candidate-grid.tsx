@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import type { CandidateCard } from "./page";
+import { safeDisplayName } from "@/lib/candidate-utils";
 
 export function CandidateGrid({
   candidates,
@@ -145,7 +146,8 @@ export function CandidateGrid({
 // ── Card ────────────────────────────────────────────────────────────────────
 
 function CandidateCardItem({ candidate: c }: { candidate: CandidateCard }) {
-  const initials = c.name
+  const displayName = safeDisplayName(c.name);
+  const initials = displayName
     .split(" ")
     .map((w) => w[0])
     .join("")
@@ -179,7 +181,7 @@ function CandidateCardItem({ candidate: c }: { candidate: CandidateCard }) {
       <div className="min-w-0 flex-1">
         {/* Name */}
         <p className="text-[15px] font-semibold text-navy group-hover:text-jersey-red transition-colors">
-          {c.name}
+          {displayName}
         </p>
 
         {/* District + Party */}

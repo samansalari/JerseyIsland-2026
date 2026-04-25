@@ -19,6 +19,10 @@ import {
   logTokenUsageToJsonl,
   tokenTracker,
 } from "../src/lib/token-tracker";
+import {
+  cleanCandidateData,
+  looksLikeDirtyData,
+} from "../src/lib/candidate-cleaner";
 
 /**
  * VotePulse — Candidate Enrichment Pipeline
@@ -226,13 +230,62 @@ ${manifestoRaw.substring(0, 3000)}
 type CandidateRow = (typeof candidates.$inferSelect);
 
 async function enrichOneCandidate(
-  candidate: CandidateRow,
+  candidateArg: CandidateRow,
   issueMap: Map<string, string>,
 ): Promise<"processed" | "failed" | "skipped"> {
+  let candidate = candidateArg;
   const t0 = Date.now();
   console.log(
     `[enrich] Processing: ${candidate.name} (${candidate.district})`,
   );
+
+  // ── Step 1: Data Quality Gate ─────────────────────────────────────────────
+  // Before enrichment, strip website boilerplate, emails, nav text, and URLs
+  // that Firecrawl may have captured alongside the actual candidate content.
+  if (looksLikeDirtyData(candidate.name, candidate.bio, candidate.manifestoRaw)) {
+    console.log(`  [cleaner] Dirty data detected — running AI clean`);
+    try {
+      const cleaned = await cleanCandidateData({
+        rawName: candidate.name,
+        rawBio: candidate.bio,
+        rawManifesto: candidate.manifestoRaw,
+        sourceUrl:
+          candidate.manifestoUrl ?? (candidate.sourceUrls?.[0] ?? null),
+      });
+
+      if (cleaned.wasModified) {
+        if (cleaned.issues.length > 0) {
+          console.log(`  [cleaner] Fixed: ${cleaned.issues.join(", ")}`);
+        }
+        await db
+          .update(candidates)
+          .set({
+            name: cleaned.name,
+            bio: cleaned.bio,
+            manifestoRaw: cleaned.manifestoRaw,
+            updatedAt: new Date(),
+          })
+          .where(eq(candidates.id, candidate.id));
+
+        // Reload with clean data so the enrichment step sees it
+        const [refreshed] = await db
+          .select()
+          .from(candidates)
+          .where(eq(candidates.id, candidate.id))
+          .limit(1);
+        if (refreshed) {
+          candidate = { ...candidate, ...refreshed };
+        }
+      } else {
+        console.log(`  [cleaner] No changes needed`);
+      }
+      await sleep(1000);
+    } catch (cleanErr) {
+      console.warn(
+        `  [cleaner] Warning — cleaner failed (continuing): ${cleanErr instanceof Error ? cleanErr.message : cleanErr}`,
+      );
+    }
+  }
 
   if (!candidate.manifestoRaw) {
     console.log(`  ⏭ Skipped — no manifesto_raw`);
