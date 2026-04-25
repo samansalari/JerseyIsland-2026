@@ -447,7 +447,9 @@ async function generateTopicSummaries() {
       manifestoUrl: candidates.manifestoUrl,
     })
     .from(candidates)
-    .where(isNotNull(candidates.aiIssues));
+    .where(
+      sqlTag`${candidates.aiIssues} IS NOT NULL AND jsonb_array_length(${candidates.aiIssues}) > 0`,
+    );
 
   for (const issue of ISSUE_NAMES) {
     const positions: CandidatePosition[] = [];

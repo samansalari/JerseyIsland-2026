@@ -213,5 +213,5 @@ Issues and pull requests are welcome. Keep changes focused and match existing fo
 ---
 
 <div align="center">
-<sub>Built by <a href="https://seenovate.com">Seenovate</a> · <a href="https://votepulse.je">votepulse.je</a></sub>
+<sub>Built by <a href="https://seenovate.co.uk">Seenovate ltd</a> · <a href="https://votepulse.je">votepulse.je</a></sub>
 </div>
