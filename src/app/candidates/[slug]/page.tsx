@@ -136,8 +136,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     robots: { index: true, follow: true },
     other: {
-      "article:section": "Election candidates",
-      "article:tag": `Jersey 2026, ${c.district}, ${c.party ?? "Independent"}`,
+      "article:section": "Election Candidates",
+      "article:tag": `Jersey 2026, ${c.district ?? "Jersey"}, ${c.party ?? "Independent"}`,
+      "geo.region": "JE",
+      "geo.placename": `${c.district ?? "Jersey"}, Jersey, Channel Islands`,
+      "geo.position": "49.2144;-2.1312",
+      ICBM: "49.2144, -2.1312",
     },
   };
 }
@@ -159,7 +163,10 @@ export default async function CandidatePage({ params }: Props) {
     .slice(0, 2)
     .toUpperCase();
 
-  const jsonLd = generateCandidateJsonLd(candidate, slug);
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
+    "https://votepulse.je";
+  const jsonLd = generateCandidateJsonLd(candidate, siteUrl);
 
   const manifestoFor2026Check = candidate.manifestoRaw ?? "";
   const has2026Content =
@@ -462,46 +469,19 @@ export default async function CandidatePage({ params }: Props) {
 
         <footer className="border-t border-border pt-5 text-[12px] text-muted-foreground">
           <div className="flex flex-wrap items-center gap-4 [font-variant-numeric:tabular-nums]">
-            <span>
-              Last scraped:{" "}
-              {candidate.lastScrapedAt
-                ? new Date(candidate.lastScrapedAt).toLocaleDateString(
-                    "en-GB",
-                    {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    },
-                  )
-                : "-"}
-            </span>
             {candidate.lastEnrichedAt && (
               <span>
-                AI enriched:{" "}
+                Last updated:{" "}
                 {new Date(candidate.lastEnrichedAt).toLocaleDateString(
                   "en-GB",
                   {
                     day: "numeric",
                     month: "short",
                     year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
                   },
                 )}
               </span>
             )}
-            <span>
-              Record updated:{" "}
-              {new Date(candidate.updatedAt).toLocaleDateString("en-GB", {
-                day: "numeric",
-                month: "short",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </span>
           </div>
         </footer>
       </div>
