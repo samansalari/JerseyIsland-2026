@@ -137,31 +137,50 @@ function SummaryCell({
   const [expanded, setExpanded] = useState(false);
   if (!summary) {
     return (
-      <span className="text-xs italic text-gray-300">
-        Summary not yet generated
-      </span>
-    );
-  }
-  return (
-    <div className="text-sm leading-relaxed text-gray-600">
-      <p className={expanded ? "" : "line-clamp-3"}>{summary}</p>
-      {summary.length > 180 ? (
-        <button
-          type="button"
-          onClick={() => setExpanded((v) => !v)}
-          className="mt-2 text-xs font-medium text-[#A31621] hover:underline"
-        >
-          {expanded ? "Show less" : "Show more"}
-        </button>
-      ) : null}
-      <div className="mt-2">
+      <div className="flex flex-col gap-2">
+        <p className="text-xs italic text-gray-300">
+          No AI summary available for this candidate yet.
+        </p>
         <Link
           href={`/candidates/${slug}`}
           className="text-xs font-medium text-[#A31621] hover:underline"
         >
-          Full profile →
+          View profile →
         </Link>
       </div>
+    );
+  }
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-1.5">
+        <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-600">
+          AI Summary
+        </span>
+        <span
+          className="rounded-full px-1.5 py-px text-[10px] font-medium"
+          style={{ backgroundColor: "rgba(200,146,42,0.12)", color: "#C8922A" }}
+        >
+          AI
+        </span>
+      </div>
+      <p className={`text-sm leading-relaxed text-gray-700 ${expanded ? "" : "line-clamp-3"}`}>
+        {summary}
+      </p>
+      {summary.length > 180 ? (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="text-xs font-medium text-[#A31621] hover:underline"
+        >
+          {expanded ? "Show less" : "Show more"}
+        </button>
+      ) : null}
+      <Link
+        href={`/candidates/${slug}`}
+        className="block text-xs font-medium text-[#A31621] hover:underline"
+      >
+        Full profile →
+      </Link>
     </div>
   );
 }
@@ -269,6 +288,15 @@ export function ComparisonTable({ candidates }: { candidates: CandidateCompare[]
                     >
                       {c.name}
                     </Link>
+                    {c.party ? (
+                      <span className="mt-0.5 block truncate text-xs font-medium text-[#A31621]">
+                        {c.party}
+                      </span>
+                    ) : (
+                      <span className="mt-0.5 block text-xs italic text-gray-400">
+                        Independent
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -280,11 +308,15 @@ export function ComparisonTable({ candidates }: { candidates: CandidateCompare[]
             className="grid border-b border-gray-100"
             style={{ gridTemplateColumns: gridCols }}
           >
-            <div
-              className="flex items-center border-r border-gray-200 bg-[#fafafa] p-4"
-            >
+            <div className="flex flex-col justify-center gap-1 border-r border-gray-200 bg-[#fafafa] p-4">
               <span className="text-xs font-bold uppercase tracking-wide text-gray-500">
                 Summary
+              </span>
+              <span
+                className="w-fit rounded-full px-1.5 py-px text-[10px] font-medium"
+                style={{ backgroundColor: "rgba(200,146,42,0.12)", color: "#C8922A" }}
+              >
+                AI-generated
               </span>
             </div>
             {candidates.map((c) => (
