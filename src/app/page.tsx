@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { db } from "@/db";
 import { candidates, issues } from "@/db/schema";
+import { ElectionCountdown } from "@/components/election-countdown";
 import { generateHomepageJsonLd } from "@/lib/homepage-jsonld";
 import { buildPublicPageMetadata } from "@/lib/seo";
 
@@ -67,49 +68,58 @@ export default async function Home() {
         />
 
         <div className="relative mx-auto max-w-6xl px-5 pb-16 pt-20 md:pb-20 md:pt-28">
-          <div className="flex items-center gap-2">
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-jersey-red" />
-            <span className="text-[12px] font-semibold uppercase tracking-[0.2em] text-on-primary/50">
-              Jersey 2026 General Election
-            </span>
-          </div>
+          <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-jersey-red" />
+                <span className="text-[12px] font-semibold uppercase tracking-[0.2em] text-on-primary/50">
+                  Jersey 2026 General Election
+                </span>
+              </div>
 
-          <h1 className="mt-5 max-w-2xl text-[clamp(2rem,5vw,3.5rem)] font-bold leading-[1.1] tracking-tight text-on-primary">
-            Election Intelligence
-            <br />
-            <span className="text-gold">for every voter.</span>
-          </h1>
+              <h1 className="mt-5 max-w-2xl text-[clamp(2rem,5vw,3.5rem)] font-bold leading-[1.1] tracking-tight text-on-primary">
+                Election Intelligence
+                <br />
+                <span className="text-gold">for every voter.</span>
+              </h1>
 
-          <p className="mt-5 max-w-lg text-[16px] leading-relaxed text-on-primary/60 md:text-[17px]">
-            Understand your candidates. Compare their plans. Make an informed
-            vote — backed by original sources and transparent AI analysis.
-          </p>
+              <p className="mt-5 max-w-lg text-[16px] leading-relaxed text-on-primary/60 md:text-[17px]">
+                Understand your candidates. Compare their plans. Make an
+                informed vote — backed by original sources and transparent AI
+                analysis.
+              </p>
 
-          {/* CTAs */}
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link
-              href="/candidates"
-              className="inline-flex items-center gap-2 rounded-md bg-jersey-red px-5 py-2.5 text-[14px] font-semibold text-on-primary transition-colors hover:bg-jersey-red-dark"
-            >
-              Browse Candidates
-              <svg
-                viewBox="0 0 16 16"
-                className="h-4 w-4"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M3 8h10M9 4l4 4-4 4" />
-              </svg>
-            </Link>
-            <Link
-              href="/compare"
-              className="inline-flex items-center gap-2 rounded-md border border-on-primary/20 px-5 py-2.5 text-[14px] font-semibold text-on-primary/80 transition-colors hover:border-on-primary/40 hover:text-on-primary"
-            >
-              Compare Issues
-            </Link>
+              {/* CTAs */}
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Link
+                  href="/candidates"
+                  className="inline-flex items-center gap-2 rounded-md bg-jersey-red px-5 py-2.5 text-[14px] font-semibold text-on-primary transition-colors hover:bg-jersey-red-dark"
+                >
+                  Browse Candidates
+                  <svg
+                    viewBox="0 0 16 16"
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M3 8h10M9 4l4 4-4 4" />
+                  </svg>
+                </Link>
+                <Link
+                  href="/compare"
+                  className="inline-flex items-center gap-2 rounded-md border border-on-primary/20 px-5 py-2.5 text-[14px] font-semibold text-on-primary/80 transition-colors hover:border-on-primary/40 hover:text-on-primary"
+                >
+                  Compare Issues
+                </Link>
+              </div>
+            </div>
+
+            <div className="flex justify-center lg:justify-end">
+              <ElectionCountdown />
+            </div>
           </div>
         </div>
       </section>
