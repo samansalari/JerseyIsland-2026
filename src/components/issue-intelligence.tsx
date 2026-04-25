@@ -11,86 +11,123 @@ export interface TopicData {
   displayName: string;
   icon: string;
   aiSummary: string | null;
-  candidateCount: number;    // live count from candidates.ai_issues
-  samplePosition: string | null; // highest-confidence sample quote from ai_issues
+  candidateCount: number;
+  samplePosition: string | null;
   upvoteCount: number;
   topParties: { party: string; count: number }[] | null;
 }
+
+type LiveIssueRow = {
+  issue: string;
+  candidate_count: string;
+  sample_position: string | null;
+};
 
 export async function IssueIntelligence() {
   let topics: TopicData[] = [];
 
   try {
-    const [summaries, upvoteCounts, issueCounts] = await Promise.all([
+    // ── Step 1: always-safe Drizzle queries ─────────────────────────────────
+    // These two never fail in normal operation and always return data.
+    const [summaries, upvoteCounts] = await Promise.all([
       db.select().from(topicSummaries),
-
       db
         .select({ issue: topicUpvotes.issue, total: count() })
         .from(topicUpvotes)
         .groupBy(topicUpvotes.issue),
-
-      // Live candidate counts direct from ai_issues jsonb — works even when
-      // topic_summaries.candidate_count is 0 (not yet synced).
-      pgClient<
-        { issue: string; candidate_count: string; sample_position: string | null }[]
-      >`
-        SELECT
-          issue_item->>'issue'  AS issue,
-          COUNT(*)::text        AS candidate_count,
-          (
-            SELECT elem->>'position'
-            FROM   candidates c2,
-                   jsonb_array_elements(c2.ai_issues) elem
-            WHERE  elem->>'issue' = issue_item->>'issue'
-              AND  (elem->>'confidence')::float > 0.6
-            ORDER  BY (elem->>'confidence')::float DESC
-            LIMIT  1
-          ) AS sample_position
-        FROM   candidates,
-               jsonb_array_elements(ai_issues) AS issue_item
-        WHERE  ai_issues IS NOT NULL
-          AND  ai_issues != '[]'::jsonb
-          AND  (issue_item->>'confidence')::float >= 0.4
-        GROUP  BY issue_item->>'issue'
-      `,
     ]);
 
     const upvoteMap = new Map(
       upvoteCounts.map((u) => [u.issue, Number(u.total)]),
     );
 
-    const issueCountMap = new Map(
-      issueCounts.map((r) => [
-        r.issue,
-        {
-          count: Number(r.candidate_count),
-          samplePosition: r.sample_position ?? null,
-        },
-      ]),
-    );
+    // ── Step 2: live candidate counts from ai_issues jsonb ──────────────────
+    // Wrapped in its OWN try/catch so a SQL error never hides the tiles.
+    // If this fails we fall back to topic_summaries.candidate_count (stored value).
+    let issueCountMap = new Map<
+      string,
+      { count: number; samplePosition: string | null }
+    >();
 
+    try {
+      // CTE approach: expand once, count + pick best position without a correlated subquery.
+      // DISTINCT ON in the best_pos CTE avoids the 42803 ungrouped-column error.
+      const issueCounts = await pgClient<LiveIssueRow[]>`
+        WITH rows AS (
+          SELECT
+            issue_item->>'issue'    AS issue,
+            issue_item->>'position' AS position,
+            (issue_item->>'confidence')::numeric AS confidence
+          FROM   candidates,
+                 jsonb_array_elements(ai_issues) AS issue_item
+          WHERE  ai_issues IS NOT NULL
+            AND  jsonb_typeof(ai_issues) = 'array'
+            AND  jsonb_array_length(ai_issues) > 0
+            AND  (issue_item->>'confidence')::numeric >= 0.4
+        ),
+        best_pos AS (
+          SELECT DISTINCT ON (issue)
+            issue,
+            position AS sample_position
+          FROM   rows
+          ORDER  BY issue, confidence DESC
+        )
+        SELECT
+          r.issue,
+          COUNT(*)::text  AS candidate_count,
+          bp.sample_position
+        FROM   rows r
+        JOIN   best_pos bp ON bp.issue = r.issue
+        GROUP  BY r.issue, bp.sample_position
+      `;
+
+      issueCountMap = new Map(
+        issueCounts.map((r) => [
+          r.issue,
+          {
+            count: Number(r.candidate_count),
+            samplePosition: r.sample_position ?? null,
+          },
+        ]),
+      );
+    } catch (sqlErr) {
+      console.error(
+        "[IssueIntelligence] live ai_issues count query failed — " +
+          "falling back to topic_summaries.candidate_count:",
+        sqlErr,
+      );
+      // issueCountMap stays empty; topics will render using stored counts below
+    }
+
+    // ── Step 3: always build topics from summaries (10 rows guaranteed) ──────
+    // Even if the live count query failed, all 10 tiles must render.
     topics = summaries.map((s) => {
-      const live = issueCountMap.get(s.issue) ?? { count: 0, samplePosition: null };
+      const live = issueCountMap.get(s.issue);
       return {
         issue: s.issue,
         displayName: s.displayName,
         icon: s.icon,
         aiSummary: s.aiSummary,
-        // Prefer live count from ai_issues; fall back to stored value
-        candidateCount: live.count > 0 ? live.count : (s.candidateCount ?? 0),
-        samplePosition: live.samplePosition,
+        // Prefer live count; fall back to stored value; minimum 0 (never hides tile)
+        candidateCount: live
+          ? live.count
+          : (s.candidateCount ?? 0),
+        samplePosition: live?.samplePosition ?? null,
         upvoteCount: upvoteMap.get(s.issue) ?? 0,
         topParties: s.topParties as { party: string; count: number }[] | null,
       };
     });
 
-    // Most upvoted / most discussed first; break ties by candidate count
+    // Most upvoted first; break ties by candidate count
     topics.sort(
       (a, b) =>
         b.upvoteCount - a.upvoteCount || b.candidateCount - a.candidateCount,
     );
-  } catch {
-    // Allows next build when Postgres is not reachable (CI / preview)
+  } catch (err) {
+    // Only reached if the Drizzle queries (topicSummaries / topicUpvotes) fail —
+    // e.g. DB unreachable during CI build. Log it so it's visible.
+    console.error("[IssueIntelligence] fatal — could not load topics:", err);
+    // topics stays [] — section renders header + empty grid rather than crashing
   }
 
   return (
@@ -113,7 +150,7 @@ export async function IssueIntelligence() {
         </p>
       </div>
 
-      {/* Topic grid */}
+      {/* Topic grid — always renders 10 tiles if DB is reachable */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {topics.map((topic) => (
           <IssueSheet key={topic.issue} topic={topic} />
