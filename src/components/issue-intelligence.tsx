@@ -1,7 +1,7 @@
 // Server component — fetches topic data at ISR render time
 // The interactive sheet/drawer opens client-side via IssueSheet
 
-import { db } from "@/db";
+import { db, sql as pgClient } from "@/db";
 import { topicSummaries, topicUpvotes } from "@/db/schema";
 import { count } from "drizzle-orm";
 import { IssueSheet } from "./issue-sheet";
@@ -11,7 +11,8 @@ export interface TopicData {
   displayName: string;
   icon: string;
   aiSummary: string | null;
-  candidateCount: number;
+  candidateCount: number;    // live count from candidates.ai_issues
+  samplePosition: string | null; // highest-confidence sample quote from ai_issues
   upvoteCount: number;
   topParties: { party: string; count: number }[] | null;
 }
@@ -20,32 +21,74 @@ export async function IssueIntelligence() {
   let topics: TopicData[] = [];
 
   try {
-    const summaries = await db.select().from(topicSummaries);
+    const [summaries, upvoteCounts, issueCounts] = await Promise.all([
+      db.select().from(topicSummaries),
 
-    const upvoteCounts = await db
-      .select({
-        issue: topicUpvotes.issue,
-        total: count(),
-      })
-      .from(topicUpvotes)
-      .groupBy(topicUpvotes.issue);
+      db
+        .select({ issue: topicUpvotes.issue, total: count() })
+        .from(topicUpvotes)
+        .groupBy(topicUpvotes.issue),
+
+      // Live candidate counts direct from ai_issues jsonb — works even when
+      // topic_summaries.candidate_count is 0 (not yet synced).
+      pgClient<
+        { issue: string; candidate_count: string; sample_position: string | null }[]
+      >`
+        SELECT
+          issue_item->>'issue'  AS issue,
+          COUNT(*)::text        AS candidate_count,
+          (
+            SELECT elem->>'position'
+            FROM   candidates c2,
+                   jsonb_array_elements(c2.ai_issues) elem
+            WHERE  elem->>'issue' = issue_item->>'issue'
+              AND  (elem->>'confidence')::float > 0.6
+            ORDER  BY (elem->>'confidence')::float DESC
+            LIMIT  1
+          ) AS sample_position
+        FROM   candidates,
+               jsonb_array_elements(ai_issues) AS issue_item
+        WHERE  ai_issues IS NOT NULL
+          AND  ai_issues != '[]'::jsonb
+          AND  (issue_item->>'confidence')::float >= 0.4
+        GROUP  BY issue_item->>'issue'
+      `,
+    ]);
 
     const upvoteMap = new Map(
       upvoteCounts.map((u) => [u.issue, Number(u.total)]),
     );
 
-    topics = summaries.map((s) => ({
-      issue: s.issue,
-      displayName: s.displayName,
-      icon: s.icon,
-      aiSummary: s.aiSummary,
-      candidateCount: s.candidateCount ?? 0,
-      upvoteCount: upvoteMap.get(s.issue) ?? 0,
-      topParties: s.topParties as { party: string; count: number }[] | null,
-    }));
+    const issueCountMap = new Map(
+      issueCounts.map((r) => [
+        r.issue,
+        {
+          count: Number(r.candidate_count),
+          samplePosition: r.sample_position ?? null,
+        },
+      ]),
+    );
 
-    // Most upvoted / most discussed first
-    topics.sort((a, b) => b.upvoteCount - a.upvoteCount);
+    topics = summaries.map((s) => {
+      const live = issueCountMap.get(s.issue) ?? { count: 0, samplePosition: null };
+      return {
+        issue: s.issue,
+        displayName: s.displayName,
+        icon: s.icon,
+        aiSummary: s.aiSummary,
+        // Prefer live count from ai_issues; fall back to stored value
+        candidateCount: live.count > 0 ? live.count : (s.candidateCount ?? 0),
+        samplePosition: live.samplePosition,
+        upvoteCount: upvoteMap.get(s.issue) ?? 0,
+        topParties: s.topParties as { party: string; count: number }[] | null,
+      };
+    });
+
+    // Most upvoted / most discussed first; break ties by candidate count
+    topics.sort(
+      (a, b) =>
+        b.upvoteCount - a.upvoteCount || b.candidateCount - a.candidateCount,
+    );
   } catch {
     // Allows next build when Postgres is not reachable (CI / preview)
   }

@@ -148,35 +148,64 @@ export function IssueSheet({ topic }: { topic: TopicData }) {
         className="group flex w-full flex-col items-start gap-3 rounded-2xl border border-border bg-white p-4 text-left shadow-sm transition-all hover:border-gold/50 hover:shadow-md"
         aria-label={`Open ${topic.displayName} plans`}
       >
-        <div className="text-3xl">{topic.icon}</div>
-
-        <div>
-          <div className="text-[13px] font-bold text-navy transition-colors group-hover:text-jersey-red">
-            {topic.displayName}
-          </div>
-          {topic.candidateCount > 0 ? (
-            <div className="mt-0.5 text-[11px] text-muted-foreground">
-              {topic.candidateCount} candidates
-            </div>
-          ) : (
-            <div className="mt-0.5 text-[11px] text-muted-foreground/50">
-              No data yet
-            </div>
+        {/* Icon row + candidate count badge */}
+        <div className="flex w-full items-start justify-between">
+          <span className="text-3xl">{topic.icon}</span>
+          {topic.candidateCount > 0 && (
+            <span className="flex-shrink-0 rounded-full bg-navy px-2 py-0.5 text-[11px] font-semibold text-[#F5E8C8]">
+              {topic.candidateCount}
+            </span>
           )}
         </div>
 
-        {topic.aiSummary && (
-          <p className="line-clamp-2 text-[12px] leading-relaxed text-muted-foreground">
-            {topic.aiSummary}
-          </p>
-        )}
+        {/* Title */}
+        <div className="text-[13px] font-bold text-navy transition-colors group-hover:text-jersey-red">
+          {topic.displayName}
+        </div>
 
+        {/* Content: three states */}
+        <div className="min-h-[52px] w-full">
+          {topic.aiSummary ? (
+            /* STATE A: Full AI summary available */
+            <p className="line-clamp-2 text-[12px] leading-relaxed text-muted-foreground">
+              {topic.aiSummary}
+            </p>
+          ) : topic.candidateCount > 0 ? (
+            /* STATE B: No summary yet, but candidates have positions */
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-jersey-red">
+                {topic.candidateCount} candidate
+                {topic.candidateCount !== 1 ? "s" : ""} have positions
+              </p>
+              {topic.samplePosition && (
+                <p className="mt-1 line-clamp-2 text-[11px] italic leading-relaxed text-muted-foreground">
+                  &ldquo;
+                  {topic.samplePosition.length > 90
+                    ? topic.samplePosition.slice(0, 90) + "…"
+                    : topic.samplePosition}
+                  &rdquo;
+                </p>
+              )}
+            </div>
+          ) : (
+            /* STATE C: Genuinely no data */
+            <p className="text-[11px] italic text-muted-foreground/50">
+              No candidate positions found yet
+            </p>
+          )}
+        </div>
+
+        {/* Footer */}
         <div className="mt-auto flex w-full items-center justify-between border-t border-border pt-2">
           <span className="text-[11px] text-muted-foreground">
-            {upvoteCount > 0 ? `${upvoteCount} interested` : ""}
+            {upvoteCount > 0
+              ? `${upvoteCount} interested`
+              : topic.candidateCount > 0
+                ? "Be first to upvote"
+                : ""}
           </span>
           <span className="text-[12px] font-medium text-gold transition-transform group-hover:translate-x-0.5">
-            Explore →
+            {topic.candidateCount > 0 ? "See positions →" : "Explore →"}
           </span>
         </div>
       </button>
@@ -221,6 +250,17 @@ export function IssueSheet({ topic }: { topic: TopicData }) {
                 </div>
               ) : data ? (
                 <>
+                  {/* Amber banner: no AI summary yet, but candidate data exists */}
+                  {!data.summary?.aiSummary && data.total > 0 && (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                      <p className="text-[13px] text-amber-700">
+                        <strong>Full policy synthesis coming April 27.</strong>{" "}
+                        Below are individual candidate positions extracted from
+                        their current campaign materials.
+                      </p>
+                    </div>
+                  )}
+
                   {/* AI Summary */}
                   {data.summary?.aiSummary && (
                     <section>
