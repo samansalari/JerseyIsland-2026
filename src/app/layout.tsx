@@ -8,6 +8,7 @@ import { JERSEY_RED_PRIMARY_HEX } from "@/lib/brand-metadata";
 import { Logo } from "@/components/logo";
 import { Navbar } from "@/components/navbar";
 import { PWAInstallButton } from "@/components/pwa-install-button";
+import { SeenovateFooterCredit } from "@/components/seenovate-footer-credit";
 
 const GOOGLE_TAG_ID = "G-4WZWNNE0LP";
 
@@ -232,6 +233,7 @@ export default function RootLayout({
               <p className="mt-2 text-[11px] text-on-primary/25">
                 &copy; {new Date().getFullYear()} VotePulse &middot; Jersey 2026
               </p>
+              <SeenovateFooterCredit />
             </div>
           </div>
         </footer>

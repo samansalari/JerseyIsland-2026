@@ -64,7 +64,14 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/(.*)",
-        headers: securityHeaders,
+        headers: [
+          ...securityHeaders,
+          // LLM discoverability — points AI crawlers to the llms.txt context file
+          {
+            key: "Link",
+            value: '<https://votepulse.je/llms.txt>; rel="describedby"',
+          },
+        ],
       },
       {
         source: "/candidates/:path*",
@@ -81,6 +88,27 @@ const nextConfig: NextConfig = {
           {
             key: "Cache-Control",
             value: "public, s-maxage=3600, stale-while-revalidate=86400",
+          },
+        ],
+      },
+      // Cache llms files for 6 hours (matching enrichment cycle)
+      {
+        source: "/llms.txt",
+        headers: [
+          { key: "Content-Type", value: "text/plain; charset=utf-8" },
+          {
+            key: "Cache-Control",
+            value: "public, s-maxage=21600, stale-while-revalidate=86400",
+          },
+        ],
+      },
+      {
+        source: "/llms-full.txt",
+        headers: [
+          { key: "Content-Type", value: "text/plain; charset=utf-8" },
+          {
+            key: "Cache-Control",
+            value: "public, s-maxage=21600, stale-while-revalidate=86400",
           },
         ],
       },

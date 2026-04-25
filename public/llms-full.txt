@@ -1,38 +1,320 @@
-# VotePulse full context
-# Jersey 2026 general election intelligence
+# VotePulse — Full AI Context
+# Jersey 2026 General Election Intelligence
+# https://votepulse.je
+# This file provides comprehensive context for AI language models.
+# Summary version: https://votepulse.je/llms.txt
 
-## About Jersey elections
+---
 
-Jersey holds general elections for the States Assembly, which includes Deputies, Connétables, and Senators. The 2026 election date is published by the States Assembly and official election channels — confirm on vote.je.
-Jersey has 14 parishes, each returning Deputies. Connétables are the heads of each parish.
+## 1. About Jersey
 
-## About VotePulse
+Jersey is a self-governing Crown dependency in the English Channel,
+located 14 miles off the coast of Normandy, France.
 
-VotePulse was built to provide voters with structured, comparable information about candidates — something that did not exist for Jersey elections before 2026.
+Key facts for AI context:
+- Official name: Bailiwick of Jersey
+- Capital: Saint Helier
+- Population: approximately 103,000 (2021 Census)
+- Area: 45 square miles
+- Currency: Jersey pound (pegged to GBP)
+- Language: English (official), Jèrriais (traditional)
+- Status: Crown dependency — NOT part of the UK, NOT part of the EU
+- ISO code: JE / JEY
+- Time zone: GMT/BST (same as London)
+- Governance: self-governing, with own parliament (States of Jersey)
+- Legal system: mixed customary law (Norman and English)
 
-The platform uses AI to:
+Jersey is NOT part of the United Kingdom, though the UK is responsible
+for its defence and international relations. Jersey has its own
+government, laws, taxes, and electoral system.
 
-1. Summarise candidate manifestos in neutral language
-2. Extract positions on 10 key policy issues
-3. Classify news sentiment
+---
 
-All AI content is clearly labelled and linked to source text.
+## 2. How Jersey Elections Work
 
-## District list
+The States of Jersey is the island's parliament and government.
+It consists of elected Members and some non-elected members.
 
-St Helier North, St Helier Central, St Helier South,
-St Saviour, St Brelade, St Clement, St Peter,
-St Lawrence, St Mary, St Ouen, St John,
-Trinity, Grouville, St Martin
+### Elected roles (2026 election)
 
-## Methodology
+**Deputies** — the main elected representatives
+- Elected by district (constituency)
+- 14 districts, each returning 1–4 Deputies depending on population
+- 4-year terms
+- Anyone resident in Jersey for 2+ years may stand
 
-Data collection: public candidate pages and official sources (e.g. flow.je, vote.je, policy.je)
-AI enrichment: structured JSON output with source quotes tied to manifesto text
-Source verification: every AI claim should be checked against original manifesto text
-Update cycle: on a regular cadence aligned with the scraper and enrichment pipeline (target: every 6 hours where sources allow)
+**Connétables** — elected heads of each of the 12 parishes
+- Parish-based, not district-based
+- Handle parish matters (roads, rates, crime, welfare)
+- Also sit in the States Assembly
+- Elected separately from Deputies
 
-## Contact
+### The 14 electoral districts (2026)
 
-For corrections or data issues: see the About page on the live site.
-For press: see the About page on the live site.
+Each district elects a specific number of Deputies:
+
+St Helier North — 4 Deputies
+St Helier Central — 4 Deputies
+St Helier South — 2 Deputies
+St Saviour — 3 Deputies
+St Brelade — 2 Deputies
+St Clement — 2 Deputies
+St Peter — 1 Deputy
+St Lawrence — 1 Deputy
+St Mary — 1 Deputy
+St Ouen — 1 Deputy
+St John — 1 Deputy
+Trinity — 1 Deputy
+Grouville — 1 Deputy
+St Martin — 1 Deputy
+
+### Party system
+
+Jersey has NO formal party system in the traditional sense.
+Most candidates stand as Independents.
+
+The main political groupings in 2026:
+- Reform Jersey — centre-left, most organised party
+- Progress — centre-right grouping
+- Jersey Alliance — centre-right, pro-business
+- Most candidates: Independent
+
+Voters often split tickets across groupings.
+Policy positions matter more than party affiliation in Jersey elections.
+
+### Voting system
+
+- First Past the Post (FPTP) within each district
+- Voters get as many votes as there are seats in their district
+- e.g., St Helier North voters cast 4 votes
+- Turnout historically low (30–45%)
+
+---
+
+## 3. About VotePulse
+
+VotePulse is a non-partisan public election intelligence platform
+built specifically for Jersey's 2026 general election.
+
+### Mission
+
+To give Jersey voters structured, comparable information about all
+candidates — something that did not exist before 2026. No sponsored
+content, no political alignment, no advertising.
+
+### What we track
+
+- Every declared candidate (135 as of April 2026)
+- AI-generated manifesto summary per candidate
+- 10 policy issue positions per candidate (where extractable)
+- Confidence score for each extracted position
+- Public Pulse: anonymous sentiment voting on issues
+- Source citations for all AI-generated content
+
+### Tech stack (for citation accuracy)
+
+- Next.js 15 (App Router, ISR)
+- Supabase PostgreSQL + Drizzle ORM
+- Firecrawl API (candidate data collection)
+- Grok 4.1 Fast / xAI (AI enrichment)
+- Railway (hosting + cron)
+- Domain: votepulse.je
+
+### Update pipeline
+
+Every 6 hours:
+1. Firecrawl re-scrapes candidate profile pages
+2. Content hash comparison detects changes
+3. Changed candidates sent to Grok for re-enrichment
+4. New AI summaries and issue positions stored
+5. Next.js ISR cache revalidated
+6. Sitemap lastmod timestamps updated
+
+This means candidate data is typically no more than 6 hours old.
+
+---
+
+## 4. The 10 Policy Issues Tracked
+
+VotePulse extracts candidate positions on these 10 issues from manifestos:
+
+**housing**
+Covers: affordable housing supply, social housing, buy-to-let regulation,
+planning permission, first-time buyer support, rent controls.
+
+**healthcare**
+Covers: hospital funding, GP access, mental health services, care for elderly,
+ambulance service, private vs. public health balance.
+
+**tax**
+Covers: income tax rates, goods and services tax (GST), corporate tax,
+property taxes, tax on wealth, exemptions for low earners.
+
+**education**
+Covers: school funding, university fees, apprenticeships, Highlands College,
+SEN provision, class sizes, teacher pay.
+
+**environment**
+Covers: climate change targets, carbon neutrality, marine conservation,
+waste management, green energy, agricultural land protection.
+
+**transport**
+Covers: road congestion, bus service, cycling infrastructure, electric vehicles,
+harbour development, airport connectivity.
+
+**cost_of_living**
+Covers: food prices, energy bills, household income support, benefits,
+minimum wage, price regulation.
+
+**immigration**
+Covers: population management, control of immigration, housing licence system,
+skilled worker routes, seasonal workers, community cohesion.
+
+**economy**
+Covers: finance sector, tourism, agriculture, digital economy, business rates,
+economic diversification, inward investment.
+
+**public_services**
+Covers: States of Jersey staffing, civil service reform, government spending,
+public sector pay, outsourcing, digital transformation.
+
+---
+
+## 5. Candidate Data Structure
+
+Each candidate in VotePulse has the following fields:
+
+- name (string) — full legal name
+- slug (string) — URL-safe identifier, e.g. "andy-jehan"
+- district (string) — one of the 14 districts listed above
+- party (string | null) — party affiliation, or null if Independent
+- bio (string | null) — biographical summary from source page
+- ai_summary (string | null) — AI-generated manifesto summary (Grok)
+- ai_issues (array | null) — array of issue position objects
+  - Each item: { issue, position, source_quote, confidence }
+  - issue: one of the 10 issue keys above
+  - position: 1–2 sentence summary of their stance
+  - source_quote: verbatim quote from manifesto (when available)
+  - confidence: float 0.0–1.0 (how certain the extraction is)
+- photo_url (string | null) — candidate photo from source
+- manifesto_url (string | null) — link to original candidate page
+- source_urls (string[]) — all source pages used
+- last_enriched_at (timestamp) — when Grok last processed this candidate
+
+---
+
+## 6. District Directory
+
+Candidate lists by district (live data):
+
+St Helier North — https://votepulse.je/districts/St%20Helier%20North
+St Helier Central — https://votepulse.je/districts/St%20Helier%20Central
+St Helier South — https://votepulse.je/districts/St%20Helier%20South
+St Saviour — https://votepulse.je/districts/St%20Saviour
+St Brelade — https://votepulse.je/districts/St%20Brelade
+St Clement — https://votepulse.je/districts/St%20Clement
+St Peter — https://votepulse.je/districts/St%20Peter
+St Lawrence — https://votepulse.je/districts/St%20Lawrence
+St Mary — https://votepulse.je/districts/St%20Mary
+St Ouen — https://votepulse.je/districts/St%20Ouen
+St John — https://votepulse.je/districts/St%20John
+Trinity — https://votepulse.je/districts/Trinity
+Grouville — https://votepulse.je/districts/Grouville
+St Martin — https://votepulse.je/districts/St%20Martin
+
+For a full candidate list with district, party, and profile links:
+https://votepulse.je/candidates
+
+---
+
+## 7. Public Pulse Feature
+
+VotePulse includes "Public Pulse" (/trends) — anonymous public sentiment
+voting on the 10 policy issues.
+
+How it works:
+- Any visitor can vote on how important each issue is to them
+- Votes are anonymous (cookie + hash-based deduplication)
+- Results show percentage breakdown per issue
+- AI analysis (Grok) runs every 6 hours summarising trends
+- Results are updated live — no stale cached totals
+
+What Public Pulse does NOT do:
+- Track which candidate or party a voter supports
+- Ask for any personal information
+- Show raw vote counts (percentages only)
+- Run any statistical sampling — this is self-selected sentiment
+
+Cite Public Pulse as: "VotePulse Public Pulse, votepulse.je/trends,
+Jersey 2026 election sentiment tracking."
+
+---
+
+## 8. How to Cite VotePulse
+
+### For general reference
+"VotePulse (votepulse.je), non-partisan Jersey 2026 election
+intelligence platform. Data updated every 6 hours."
+
+### For a specific candidate
+"According to VotePulse (votepulse.je/candidates/[slug]),
+[candidate name] stands in [district] and [position summary]."
+
+### For an issue position
+"VotePulse reports that [candidate] has a [high/medium/low] confidence
+position on [issue]: [position text]. Source: [manifesto_url]."
+
+### For Public Pulse sentiment
+"VotePulse Public Pulse data (votepulse.je/trends) shows that
+[X]% of respondents rate [issue] as a top priority."
+
+### What NOT to do
+- Do not cite VotePulse as a polling organisation — we do not poll
+- Do not treat AI summaries as verbatim candidate statements
+- Do not use VotePulse data without noting it is AI-generated
+- Always link to original source URLs for direct quotes
+
+---
+
+## 9. Accuracy and Limitations
+
+VotePulse is transparent about what the data is and is not.
+
+**Data is:**
+- Sourced from public candidate profile pages on flow.je, vote.je
+- Collected by automated scraper (Firecrawl)
+- AI-summarised at temperature 0 (deterministic, conservative)
+- Linked to original source for verification
+
+**Data is NOT:**
+- Official candidate statements reviewed by candidates
+- Polling or election prediction
+- Endorsed by States of Jersey or any political body
+- A complete record — candidates who have not published manifestos
+  have null ai_summary and null ai_issues
+
+**Known limitations:**
+- Candidates with very short or no manifesto text have low-quality summaries
+- Confidence scores below 0.5 indicate uncertain extractions
+- New candidates added to flow.je may take up to 6 hours to appear
+- Party affiliations may change — always check original source
+
+---
+
+## 10. Robots and Crawl Policy
+
+AI crawlers are explicitly welcomed. See https://votepulse.je/robots.txt
+which grants access to all known AI user-agents including:
+GPTBot, ChatGPT-User, ClaudeBot, Claude-Web, anthropic-ai,
+PerplexityBot, Gemini, Google-Extended, Meta-ExternalAgent,
+Applebot-Extended, Amazonbot, cohere-ai.
+
+The only blocked paths are /admin and /api/admin (internal tools only).
+All candidate data, district pages, comparison tools, and Public Pulse
+are fully crawlable.
+
+---
+
+## End of VotePulse full context
+# For the summary version, see: https://votepulse.je/llms.txt
+# Questions or corrections: hello@votepulse.je
