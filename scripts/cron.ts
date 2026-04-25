@@ -254,7 +254,10 @@ async function sixHourCycle() {
     state.lastEnrichmentResult = "fail";
   }
 
-  // 3. ISR revalidation
+  // 3. Public Pulse summary (Grok → DB only; /api/pulse/insight reads cache)
+  await runTask("PULSE insight", "scripts/generate-pulse-insight.ts");
+
+  // 4. ISR revalidation
   await triggerRevalidation();
 
   saveState(state);

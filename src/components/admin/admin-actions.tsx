@@ -52,7 +52,7 @@ const ACTIONS: Action[] = [
   },
   {
     label: "Regenerate Insight",
-    description: "Force-regenerate the Grok pulse insight now",
+    description: "Regenerate the Public Pulse analysis from current poll data",
     endpoint: "/api/admin/regenerate-insight",
     color: "#0D1B2A",
     icon: "⚡",

@@ -109,7 +109,7 @@ type NewsSource = { headline: string; url: string; source: string }
 export function PublicPulseClient({ candidates }: { candidates: Candidate[] }) {
   const [results, setResults] = useState<PulseResults | null>(null)
   const [selectedIssue, setSelectedIssue] = useState<string | null>(null)
-  const [voteSubmitted, setVoteSubmitted] = useState(false)
+  const [hasVoted, setHasVoted] = useState(false)
   const [voteError, setVoteError] = useState<string | null>(null)
   const [insight, setInsight] = useState<string | null>(null)
   const [insightSources, setInsightSources] = useState<NewsSource[]>([])
@@ -131,8 +131,11 @@ export function PublicPulseClient({ candidates }: { candidates: Candidate[] }) {
   const fetchInsight = useCallback(async () => {
     setInsightLoading(true)
     try {
-      const res = await fetch('/api/pulse/insight')
-      const data = await res.json() as { insight: string | null; sources: NewsSource[] }
+      const res = await fetch('/api/pulse/insight', { cache: 'no-store' })
+      const data = (await res.json()) as {
+        insight: string | null
+        sources?: NewsSource[]
+      }
       setInsight(data.insight)
       setInsightSources(data.sources ?? [])
     } catch {
@@ -143,9 +146,20 @@ export function PublicPulseClient({ candidates }: { candidates: Candidate[] }) {
   }, [])
 
   useEffect(() => {
-    fetchResults()
-    fetchInsight()
-    const interval = setInterval(fetchResults, 30_000)
+    void fetch('/api/pulse/vote', { cache: 'no-store' })
+      .then((r) => r.json() as Promise<{ hasVoted?: boolean }>)
+      .then((data) => {
+        if (data.hasVoted) setHasVoted(true)
+      })
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    void fetchResults()
+    void fetchInsight()
+    const interval = setInterval(() => {
+      void fetchResults()
+    }, 30_000)
     return () => clearInterval(interval)
   }, [fetchResults, fetchInsight])
 
@@ -158,16 +172,20 @@ export function PublicPulseClient({ candidates }: { candidates: Candidate[] }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ issue: selectedIssue }),
       })
-      const data = await res.json() as { error?: string }
-      if (!res.ok) {
-        if (data.error === 'already_voted') {
-          setVoteError("You've already shared your view today. Come back tomorrow!")
-        } else {
-          setVoteError('Something went wrong. Please try again.')
-        }
+      const data = (await res.json()) as {
+        error?: string
+        alreadyVoted?: boolean
+      }
+      if (res.status === 409 && data.alreadyVoted) {
+        setHasVoted(true)
+        void fetchResults()
         return
       }
-      setVoteSubmitted(true)
+      if (!res.ok) {
+        setVoteError('Something went wrong. Please try again.')
+        return
+      }
+      setHasVoted(true)
       void fetchResults()
     } catch {
       setVoteError('Something went wrong. Please try again.')
@@ -217,10 +235,7 @@ export function PublicPulseClient({ candidates }: { candidates: Candidate[] }) {
             className="rounded-full px-3 py-1 text-xs font-bold uppercase tracking-widest"
             style={{ backgroundColor: 'rgba(163,22,33,0.1)', color: '#A31621' }}
           >
-            ● Live
-          </span>
-          <span className="text-xs" style={{ color: 'rgba(13,27,42,0.4)' }}>
-            Updates every 30 seconds
+            Live
           </span>
         </div>
         <h1 className="mb-2 text-4xl font-bold" style={{ color: '#0D1B2A' }}>
@@ -228,11 +243,6 @@ export function PublicPulseClient({ candidates }: { candidates: Candidate[] }) {
         </h1>
         <p style={{ color: 'rgba(13,27,42,0.55)', fontSize: '1rem' }}>
           What matters most to Jersey voters? Share your view — anonymous, non-binding.
-          {results && results.totalVotes > 0 && (
-            <span className="ml-2 font-semibold" style={{ color: '#A31621' }}>
-              {results.totalVotes.toLocaleString()} voices so far.
-            </span>
-          )}
         </p>
       </div>
 
@@ -278,7 +288,7 @@ export function PublicPulseClient({ candidates }: { candidates: Candidate[] }) {
               Pick the issue you care about most for Jersey 2026.
             </p>
 
-            {!voteSubmitted ? (
+            {!hasVoted ? (
               <>
                 <div className="mb-6 space-y-2">
                   {ISSUES.map((issue) => (
@@ -333,17 +343,26 @@ export function PublicPulseClient({ candidates }: { candidates: Candidate[] }) {
                   className="mt-3 text-center text-xs"
                   style={{ color: 'rgba(13,27,42,0.35)' }}
                 >
-                  Anonymous · Non-binding · One response per day
+                  Anonymous · Non-binding · One response per browser
                 </p>
               </>
             ) : (
-              <div className="py-8 text-center">
-                <div className="mb-4 text-5xl">🎉</div>
-                <h3 className="mb-2 text-lg font-bold" style={{ color: '#0D1B2A' }}>
-                  Thank you!
-                </h3>
-                <p className="text-sm" style={{ color: 'rgba(13,27,42,0.5)' }}>
-                  Your view has been counted. See the live results →
+              <div
+                className="rounded-2xl p-6 text-center"
+                style={{
+                  backgroundColor: 'rgba(26,107,58,0.06)',
+                  border: '1px solid rgba(26,107,58,0.2)',
+                }}
+              >
+                <div className="mb-2 text-2xl">✓</div>
+                <p className="text-sm font-medium" style={{ color: '#1A6B3A' }}>
+                  Your voice has been counted
+                </p>
+                <p
+                  className="mt-1 text-xs"
+                  style={{ color: 'rgba(13,27,42,0.4)' }}
+                >
+                  Results update automatically
                 </p>
               </div>
             )}
@@ -358,21 +377,13 @@ export function PublicPulseClient({ candidates }: { candidates: Candidate[] }) {
               boxShadow: '0 2px 16px rgba(0,0,0,0.04)',
             }}
           >
-            <div className="mb-5 flex items-center justify-between">
-              <h2 className="text-lg font-bold" style={{ color: '#0D1B2A' }}>
+            <div className="mb-5">
+              <h3
+                className="font-semibold"
+                style={{ color: '#0D1B2A' }}
+              >
                 Live Results
-              </h2>
-              {results && results.totalVotes > 0 && (
-                <span
-                  className="rounded-full px-2 py-1 text-xs font-medium"
-                  style={{
-                    backgroundColor: 'rgba(26,107,58,0.1)',
-                    color: '#1A6B3A',
-                  }}
-                >
-                  {results.totalVotes} votes
-                </span>
-              )}
+              </h3>
             </div>
 
             {!results || results.totalVotes === 0 ? (
@@ -419,7 +430,7 @@ export function PublicPulseClient({ candidates }: { candidates: Candidate[] }) {
               </div>
             )}
 
-            {/* Grok Insight */}
+            {/* Pulse analysis (from DB; generated on schedule) */}
             {(insight !== null || insightLoading) && (
               <div
                 className="mt-6 rounded-xl p-4"
@@ -429,12 +440,11 @@ export function PublicPulseClient({ candidates }: { candidates: Candidate[] }) {
                 }}
               >
                 <div className="mb-2 flex items-center gap-2">
-                  <span style={{ color: '#C8922A' }}>⚡</span>
                   <span
                     className="text-xs font-bold uppercase tracking-wide"
                     style={{ color: '#C8922A' }}
                   >
-                    Grok Analysis
+                    ⚡ Analysis
                   </span>
                 </div>
                 {insightLoading ? (
@@ -473,7 +483,7 @@ export function PublicPulseClient({ candidates }: { candidates: Candidate[] }) {
                       className="mt-2 text-xs"
                       style={{ color: 'rgba(13,27,42,0.3)' }}
                     >
-                      ⚠ AI-generated · cross-checked with news sources · verify independently
+                      For reference only — check official and primary sources
                     </p>
                   </>
                 )}

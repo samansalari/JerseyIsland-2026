@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db";
-import { pulseInsights } from "@/db/schema";
+import { generatePulseInsight } from "@/lib/pulse-insight";
 import { requireAdmin } from "@/lib/admin-guard";
 
 export async function POST(req: NextRequest) {
@@ -8,10 +7,8 @@ export async function POST(req: NextRequest) {
   if (denied) return denied;
 
   try {
-    await db.delete(pulseInsights);
-    return NextResponse.json({
-      message: "Cached insights cleared. Next visit to /trends will regenerate.",
-    });
+    await generatePulseInsight();
+    return NextResponse.json({ message: "Insight regenerated" });
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }

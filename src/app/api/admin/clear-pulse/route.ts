@@ -10,7 +10,10 @@ export async function POST(req: NextRequest) {
   try {
     await db.delete(issueVotes);
     await db.delete(candidateRatings);
-    return NextResponse.json({ message: "Poll data cleared successfully." });
+    return NextResponse.json({
+      message:
+        "Poll votes and ratings cleared. The Public Pulse text insight is refreshed on the 6-hour schedule or via Regenerate insight in admin.",
+    });
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }
