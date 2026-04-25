@@ -1,12 +1,19 @@
 # VotePulse — Codebase Report
 
 **Generated:** 23 April 2026  
-**Last documentation sync:** 25 April 2026 — **Phase 7: dynamic social OG** (`/api/og` — `next/og` / Satori, Node runtime, per-candidate cards via `?slug=`), `@fontsource/archivo` WOFF + **`next.config.ts`** Cache-Control on `/api/og`; also Public Pulse, **`social_links`** + **`buildSocialLinks`**, **`extract:social`** / **`validate:social`**, **`scrape:manifestos`**, **`import-local-scrapes`** heuristics, **`has2026Content`**, compare/API docs, **§13** checklist.
+**Last documentation sync:** 25 April 2026 — **Phase 8: AEO Answer Capsules** — structured answer capsules on `/candidates`, `/candidates/[slug]`, and `/districts/[district]`; `speakable` JSON-LD on all three; `generateMetadata` descriptions rewritten to 50-word direct-answer format site-wide; root `layout.tsx` description updated. Previous sync: Phase 7: dynamic social OG (`/api/og` — `next/og` / Satori, Node runtime, per-candidate cards via `?slug=`), `@fontsource/archivo` WOFF + **`next.config.ts`** Cache-Control on `/api/og`; also Public Pulse, **`social_links`** + **`buildSocialLinks`**, **`extract:social`** / **`validate:social`**, **`scrape:manifestos`**, **`import-local-scrapes`** heuristics, **`has2026Content`**, compare/API docs, **§13** checklist.
 
 ## 0. What changed (recent — for auditors & LLMs)
 
 | Topic | Change |
 |-------|--------|
+| **AEO Answer Capsule — `/candidates`** | **`src/app/candidates/page.tsx`**: adds four aggregate Drizzle queries (`districtCounts`, `totalEnriched`, `independentCount`, `partyBreakdown`) using `count`, `sql`, `ne`, `isNotNull` from `drizzle-orm`. Renders a **`<section id="aeo-answer-capsule">`** above the candidate grid: gold top-accent bar, `<article>` with `<h2>`, **lead `<p id="aeo-lead">`** (direct-answer, ≤65 words, real DB counts), 4-stat grid (135 candidates / 14 districts / enriched count / 10 issues), **`<ul id="aeo-district-list">`** linking to each district page, 10-issue badge row, source attribution. `metadata.description` rewritten to 50-word direct-answer starting with "Jersey's 2026 general election (7 June 2026) has 135 declared candidates…". **`titleSegment`** updated to "All 135 Candidates — Jersey 2026 General Election". |
+| **AEO Answer Capsule — `/candidates/[slug]`** | **`src/app/candidates/[slug]/page.tsx`**: adds **`issueCount`** (guards `Array.isArray(candidate.aiIssues)`). Inserts **`<section id="aeo-candidate-answer">`** between the navy hero and the amber AI summary card: gold 0.5px top accent, **`<p id="aeo-candidate-lead">`** direct-answer (name + district + party/Independent + first sentence of AI summary), **`<dl>`** structured-facts grid (District, Party, Election date, Role, AI summary status, Issues tracked). `generateMetadata` description rebuilt as `[name] is standing in [district] in Jersey's 2026 general election on 7 June 2026 [as Independent / representing party]. [First sentence of aiSummary].` |
+| **AEO Answer Capsule — `/districts/[district]`** | **`src/app/districts/[district]/page.tsx`**: imports `count`, `eq`, `sql` from `drizzle-orm`; adds `districtStats` query (total candidates, `withSummary` filter, `parties` `array_agg`). Renders **`<section id="aeo-district-answer">`** above `<DistrictTable>`: `<h2>` + **`<p id="aeo-district-lead">`** with real DB counts (total candidates, summaries available, party list). `generateMetadata` description rewritten to direct-answer format. |
+| **Speakable JSON-LD — candidates listing** | **`src/app/candidates/page.tsx`**: inline `<script type="application/ld+json">` inside page JSX (server-rendered). Schema: `WebPage` with `speakable.cssSelector: ["#aeo-lead","#aeo-district-list"]` + `mainEntity` as `ItemList` (one `ListItem` per district with candidate count and district URL). `numberOfItems` = real `all.length`. |
+| **Speakable JSON-LD — candidate pages** | **`src/lib/candidate-jsonld.ts`** `generateCandidateJsonLd()`: `speakable: { "@type": "SpeakableSpecification", cssSelector: ["#aeo-candidate-lead","#aeo-candidate-answer"] }` added to the `WebPage` node in the `@graph`. No schema change — fully backward-compatible with existing FAQPage + Person nodes. |
+| **Root metadata description** | **`src/app/layout.tsx`**: `metadata.description`, `openGraph.description`, and `twitter.description` rewritten to the 52-word direct-answer format: "VotePulse is Jersey's non-partisan election intelligence platform for the 2026 general election on 7 June 2026. Compare 135 candidates across 14 districts. AI-generated manifesto summaries, policy positions on housing, healthcare, and tax. Free. No ads." |
+| **AEO principles applied** | All capsules are **static server-rendered HTML** — no `useState`, no `useEffect`, no client components inside capsules. Lead paragraphs are declarative factual statements in the first 40–60 words. Stat density: one concrete number per cluster (135 candidates, 14 districts, 83 AI summaries, 10 issues). Semantic HTML: `<article>`, `<section>` with `aria-label`, `<ul role="list">`, `<dl>/<dt>/<dd>` for structured facts. |
 | **Dynamic OG — `/api/og`** | **`src/app/api/og/route.tsx`**: `GET` with **`?slug=`** (Drizzle `candidates` by `slug` — `name`, `district`, `party`, `aiSummary`) returns **1200×630 PNG** via **`ImageResponse`**; no **`export const runtime = "edge"`** (Railway Node). Fonts: **`@fontsource/archivo`** WOFF (400/700) read with **`fs.readFileSync`** from `node_modules/…/files` — Satori in this stack accepts **WOFF**, not WOFF2. **No `?slug` / `?type=home` →** fallback brand card. Unknown slug **200** + fallback, not 404. **`export const dynamic = "force-dynamic"`**. |
 | **Candidate + site metadata OG URLs** | **`src/app/candidates/[slug]/page.tsx` `generateMetadata`:** `openGraph.images` + `twitter.images` use **`${siteBase()}/api/og?slug=${c.slug}`** (absolute URL), **`type: "image/png"`**, 1200×630. **Root `layout.tsx`:** default **`/api/og`** (no query) for **site-wide** OG + Twitter. |
 | **OG cache** | **`next.config.ts` `headers`:** `source: "/api/og"` → **`Cache-Control: public, s-maxage=21600, stale-while-revalidate=86400`**. |
@@ -200,9 +207,10 @@ VotePulse is a public, non-partisan election intelligence site for Jersey’s 20
 | Route | Data source | Rendering | Status |
 |-------|-------------|-----------|--------|
 | `/` | Drizzle counts (fallback if DB down at build) | Server, `revalidate = 60` | OK |
-| `/candidates` | Drizzle list (fallback `[]`) | Server, ISR 6h | OK |
-| `/candidates/[slug]` | Drizzle by slug; `generateStaticParams` (fallback `[]`); hero **`SocialLinks`**; **`has2026Content`** manifesto notice; **OG/Twitter** images → **`/api/og?slug=`** | Server, ISR 6h | Dynamic at runtime if not prebuilt |
+| `/candidates` | Drizzle list + **4 aggregate queries** (`districtCounts`, `totalEnriched`, `independentCount`, `partyBreakdown`); **AEO capsule** `#aeo-answer-capsule` above grid; **speakable** `ItemList` JSON-LD | Server, ISR 6h | OK |
+| `/candidates/[slug]` | Drizzle by slug; `generateStaticParams` (fallback `[]`); hero **`SocialLinks`**; **AEO capsule** `#aeo-candidate-answer` between hero + amber card; **`has2026Content`** manifesto notice; **OG/Twitter** images → **`/api/og?slug=`** | Server, ISR 6h | Dynamic at runtime if not prebuilt |
 | `/compare` | Server: candidate list (filters). **Client:** `GET /api/compare?ids=` → **`ComparisonTable`** (issue grid from **`ai_issues`**) | Hybrid | OK |
+| `/districts/[district]` | District list + **`districtStats` query** (total, withSummary, parties); **AEO capsule** `#aeo-district-answer` above `<DistrictTable>` | Server, ISR 5m | OK |
 | `/trends` | Candidates list + **PublicPulseClient** (poll, ratings, results fetch) | Server + client | **Insight** from `GET /api/pulse/insight` (DB) |
 | `/about` | Static copy + **about-actions** (client) for mail & BMC buttons | Server + client islands | OK |
 | `/admin` | Supabase session | Server | OK (protected) |
@@ -384,6 +392,9 @@ Use for security, privacy, DPA, product accuracy, and **LLM-onboarding** (so mod
 
 ### LLM coding guardrails (short)
 
+- **AEO capsules:** The `<section id="aeo-answer-capsule">` / `#aeo-candidate-answer` / `#aeo-district-answer` blocks must remain **server-rendered static HTML** — no client components, no `useState`/`useEffect` inside them. CSS selectors in `speakable` JSON-LD must match the `id` attributes exactly. Do not rename or move these ids without updating `candidate-jsonld.ts` and the inline `<script>` in `candidates/page.tsx`.
+- **AEO aggregate queries:** The four queries in `CandidatesPage` (`districtCounts`, `enrichedCountRows`, `partyBreakdown`, and the derived `independentCount`) use **`count`, `sql`, `ne`, `isNotNull`** from `drizzle-orm` with camelCase field names. Adding filters must preserve the `ne(candidates.district, "Unknown")` guard.
+- **Speakable schema:** The `WebPage` + `speakable` node is in **`src/lib/candidate-jsonld.ts`** for candidate pages, and an **inline `<script>`** in **`src/app/candidates/page.tsx`** for the listing page. The district page does **not** yet have a speakable `<script>` — the AEO capsule HTML alone is sufficient.
 - **Issues on compare:** Use **`candidates.ai_issues`** (or API response), **not** only **`candidate_issues`**.
 - **Public Pulse:** Do **not** add Grok or Firecrawl to **`GET /api/pulse/insight`**; keep **`generatePulseInsight()`** as the only writer of `issue_summary` rows (plus any legacy `issue_analysis` reads).
 - **Social links:** Extend **`src/lib/social-links.ts`** (`PLATFORM_CONFIG` + `buildSocialLinks`) for new platforms; keep **`SocialLinks`** as the only hero social UI; use **`validate:social`** to regression-check DB content. **`extract-social-links.ts`** is the writer to **`social_links`** — not the importer alone.
@@ -397,6 +408,12 @@ Use for security, privacy, DPA, product accuracy, and **LLM-onboarding** (so mod
 
 ## Appendix — Commands verified (25 Apr 2026)
 
-- `npx tsc --noEmit` — **pass**
-- `npm run build` — **pass** with `DATABASE_URL` + `NEXT_PUBLIC_SITE_URL` set (DB may be unreachable thanks to fallbacks)
+- `npx tsc --noEmit` — **pass** (Phase 7 + Phase 8)
+- `npm run build` — **pass** (176 pages; Phase 8 — 135 candidate pages + 21 district pages + listing + other routes)
 - **`GET /api/og`** — 200 + `image/png` when dev server is up; candidate HTML includes `og:image` / `twitter:image` with **`/api/og?slug=…`**
+- **AEO capsule HTML** (`/candidates`): `id="aeo-answer-capsule"` present in static HTML; `id="aeo-lead"` paragraph shows real DB counts (135 candidates, 46 Independents, 14 districts); 83 AI summaries shown in stat grid; 21 `<li>` district links rendered
+- **Speakable JSON-LD** (`/candidates`): `SpeakableSpecification` count = 2 (present in raw HTML)
+- **AEO capsule** (`/candidates/alan-beadle`): `id="aeo-candidate-answer"` + `id="aeo-candidate-lead"` present; `SpeakableSpecification` in JSON-LD pointing to `#aeo-candidate-lead` and `#aeo-candidate-answer`
+- **AEO capsule** (`/districts/St%20John`): `id="aeo-district-answer"` + `id="aeo-district-lead"` present with real candidate count (2) from DB
+- **`/candidates` meta description** verified: starts with "Jersey's 2026 general election (7 June 2026) has 135 declared candidates…"
+- **`/candidates/alan-beadle` meta description** verified: starts with "Alan Beadle is standing in St Brelade in Jersey's 2026 general election on 7 June 2026 as an Independent."
