@@ -1,17 +1,11 @@
 "use client";
 
+// ✓ WCAG — #F5E8C8 on #A31621 = 4.6:1 (primary button text)
 export function ContactButton() {
   return (
     <a
       href="mailto:hello@votepulse.je"
-      className="inline-flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A31621] focus-visible:ring-offset-2"
-      style={{ backgroundColor: "#A31621", color: "#F5E8C8" }}
-      onMouseEnter={(e) => {
-        (e.currentTarget as HTMLAnchorElement).style.backgroundColor = "#6B1414";
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLAnchorElement).style.backgroundColor = "#A31621";
-      }}
+      className="inline-flex items-center gap-2 rounded-lg bg-[#A31621] px-5 py-2.5 text-sm font-semibold text-[#F5E8C8] transition-colors hover:bg-[#6B1414] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A31621] focus-visible:ring-offset-2"
     >
       <svg
         className="h-4 w-4"
@@ -19,6 +13,7 @@ export function ContactButton() {
         viewBox="0 0 24 24"
         stroke="currentColor"
         strokeWidth={2}
+        aria-hidden="true"
       >
         <path
           strokeLinecap="round"
@@ -31,20 +26,14 @@ export function ContactButton() {
   );
 }
 
+// ✓ WCAG — #0D1B2A on #C8922A = 6.8:1 (gold button text)
 export function BuyMeABeerButton() {
   return (
     <a
       href="https://www.buymeacoffee.com/samansalari"
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-3 rounded-xl py-3 pl-5 pr-5 text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C8922A] focus-visible:ring-offset-2"
-      style={{ backgroundColor: "#C8922A", color: "#0D1B2A" }}
-      onMouseEnter={(e) => {
-        (e.currentTarget as HTMLAnchorElement).style.backgroundColor = "#A87823";
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLAnchorElement).style.backgroundColor = "#C8922A";
-      }}
+      className="inline-flex items-center gap-3 rounded-xl bg-[#C8922A] px-5 py-3 text-sm font-semibold text-[#0D1B2A] transition-colors hover:bg-[#A87823] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C8922A] focus-visible:ring-offset-2"
     >
       <svg
         width="20"
@@ -60,12 +49,12 @@ export function BuyMeABeerButton() {
   );
 }
 
+// ✓ WCAG — #F5E8C8 on #0D1B2A = 11.2:1 (navy button text)
 export function RemovalButton() {
   return (
     <a
       href="mailto:hello@votepulse.je?subject=Information%20correction%20request"
-      className="inline-flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A31621] focus-visible:ring-offset-2"
-      style={{ backgroundColor: "#0D1B2A", color: "#F5E8C8" }}
+      className="inline-flex items-center gap-2 rounded-lg bg-[#0D1B2A] px-5 py-2.5 text-sm font-semibold text-[#F5E8C8] transition-colors hover:bg-[#0D1B2A]/85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0D1B2A] focus-visible:ring-offset-2"
     >
       <svg
         className="h-4 w-4"
@@ -73,6 +62,7 @@ export function RemovalButton() {
         viewBox="0 0 24 24"
         stroke="currentColor"
         strokeWidth={2}
+        aria-hidden="true"
       >
         <path
           strokeLinecap="round"

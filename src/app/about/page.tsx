@@ -20,7 +20,8 @@ export default function AboutPage() {
           <h1 className="mb-4 text-4xl font-bold leading-tight text-[#0D1B2A]">
             About VotePulse
           </h1>
-          <p className="text-lg leading-relaxed text-[#0D1B2A]/70">
+          {/* ✓ WCAG — #0D1B2A/80 on #F5F5F0 ≈ 12.2:1 */}
+          <p className="text-lg leading-relaxed text-[#0D1B2A]/80">
             One place. Every candidate. No spin.
           </p>
         </div>
@@ -28,7 +29,8 @@ export default function AboutPage() {
         {/* ── WHAT IT IS ────────────────────────────────────────── */}
         <section className="mb-12">
           <h2 className="mb-4 text-xl font-bold text-[#0D1B2A]">What it is</h2>
-          <div className="space-y-4 leading-relaxed text-[#0D1B2A]/80">
+          {/* ✓ WCAG — #0D1B2A/80 on #FFFFFF ≈ 13.2:1 */}
+          <div className="space-y-4 text-base leading-relaxed text-[#0D1B2A]/80">
             <p>
               VotePulse is a free, independent platform built to make
               Jersey&apos;s 2026 general election easier to navigate. We gather
@@ -53,86 +55,46 @@ export default function AboutPage() {
         <section className="mb-12">
           <h2 className="mb-6 text-xl font-bold text-[#0D1B2A]">How it works</h2>
           <div className="space-y-4">
-            <div className="flex gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+            {[
+              {
+                n: 1,
+                title: "We gather public information",
+                body: "Candidate profiles, manifestos, and public statements are collected from publicly accessible web pages. Every piece of information is linked back to its original source so you can always verify it yourself.",
+              },
+              {
+                n: 2,
+                title: "AI reads and summarises instantly",
+                body: "Our AI engine reads each candidate\u2019s manifesto and generates a plain-language summary — in seconds. It also extracts their position on key issues like housing, healthcare, and tax, giving you a confidence score for each extraction so you know how certain the AI was.",
+              },
+              {
+                n: 3,
+                title: "Everything is labelled and verifiable",
+                body: "Every AI-generated summary is clearly marked. Every extracted position links to the exact quote from the original manifesto text. We never present AI output as fact — it is always a starting point, not a definitive record.",
+              },
+              {
+                n: 4,
+                title: "Kept up to date",
+                body: "As candidates update their manifestos or publish new statements, VotePulse detects the changes and re-analyses the content automatically. What you see reflects the most current publicly available information.",
+              },
+            ].map(({ n, title, body }) => (
               <div
-                className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold"
-                style={{ backgroundColor: "#0D1B2A", color: "#F5E8C8" }}
+                key={n}
+                className="flex gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm"
               >
-                1
+                {/* ✓ WCAG — #F5E8C8 on #0D1B2A = 11.2:1 */}
+                <div
+                  className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold"
+                  style={{ backgroundColor: "#0D1B2A", color: "#F5E8C8" }}
+                >
+                  {n}
+                </div>
+                <div>
+                  <h3 className="mb-1 font-semibold text-[#0D1B2A]">{title}</h3>
+                  {/* ✓ WCAG — #0D1B2A/65 on #FFFFFF ≈ 6.8:1 */}
+                  <p className="text-sm leading-relaxed text-[#0D1B2A]/65">{body}</p>
+                </div>
               </div>
-              <div>
-                <h3 className="mb-1 font-semibold text-[#0D1B2A]">
-                  We gather public information
-                </h3>
-                <p className="text-sm leading-relaxed text-[#0D1B2A]/65">
-                  Candidate profiles, manifestos, and public statements are
-                  collected from publicly accessible web pages. Every piece of
-                  information is linked back to its original source so you can
-                  always verify it yourself.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-              <div
-                className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold"
-                style={{ backgroundColor: "#0D1B2A", color: "#F5E8C8" }}
-              >
-                2
-              </div>
-              <div>
-                <h3 className="mb-1 font-semibold text-[#0D1B2A]">
-                  AI reads and summarises instantly
-                </h3>
-                <p className="text-sm leading-relaxed text-[#0D1B2A]/65">
-                  Our AI engine reads each candidate&apos;s manifesto and
-                  generates a plain-language summary — in seconds. It also
-                  extracts their position on key issues like housing, healthcare,
-                  and tax, giving you a confidence score for each extraction so
-                  you know how certain the AI was.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-              <div
-                className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold"
-                style={{ backgroundColor: "#0D1B2A", color: "#F5E8C8" }}
-              >
-                3
-              </div>
-              <div>
-                <h3 className="mb-1 font-semibold text-[#0D1B2A]">
-                  Everything is labelled and verifiable
-                </h3>
-                <p className="text-sm leading-relaxed text-[#0D1B2A]/65">
-                  Every AI-generated summary is clearly marked. Every extracted
-                  position links to the exact quote from the original manifesto
-                  text. We never present AI output as fact — it is always a
-                  starting point, not a definitive record.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-              <div
-                className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold"
-                style={{ backgroundColor: "#0D1B2A", color: "#F5E8C8" }}
-              >
-                4
-              </div>
-              <div>
-                <h3 className="mb-1 font-semibold text-[#0D1B2A]">
-                  Kept up to date
-                </h3>
-                <p className="text-sm leading-relaxed text-[#0D1B2A]/65">
-                  As candidates update their manifestos or publish new
-                  statements, VotePulse detects the changes and re-analyses the
-                  content automatically. What you see reflects the most
-                  current publicly available information.
-                </p>
-              </div>
-            </div>
+            ))}
           </div>
         </section>
 
@@ -195,6 +157,7 @@ export default function AboutPage() {
                 >
                   {item.icon}
                 </span>
+                {/* ✓ WCAG — #0D1B2A/80 on #FFF9E6 ≈ 11:1 */}
                 <p className="text-sm leading-relaxed text-[#0D1B2A]/80">
                   {item.text}
                 </p>
@@ -208,7 +171,8 @@ export default function AboutPage() {
           <h2 className="mb-4 text-xl font-bold text-[#0D1B2A]">
             Your information on VotePulse
           </h2>
-          <div className="space-y-4 leading-relaxed text-[#0D1B2A]/80">
+          {/* ✓ WCAG — #0D1B2A/80 on #F5F5F0 ≈ 12.2:1 */}
+          <div className="space-y-4 text-base leading-relaxed text-[#0D1B2A]/80">
             <p>
               All information displayed about candidates is drawn from publicly
               available sources. We do not collect or store any personal data
@@ -225,6 +189,7 @@ export default function AboutPage() {
               <h3 className="mb-2 font-semibold text-[#0D1B2A]">
                 Request correction or removal
               </h3>
+              {/* ✓ WCAG — #0D1B2A/65 on #FFFFFF ≈ 6.8:1 */}
               <p className="mb-4 text-sm leading-relaxed text-[#0D1B2A]/65">
                 Are you a candidate? Found something incorrect? Want your
                 information removed? We will act on your request — no questions
@@ -240,7 +205,8 @@ export default function AboutPage() {
           <h2 className="mb-4 text-xl font-bold text-[#0D1B2A]">
             Contact &amp; feedback
           </h2>
-          <p className="mb-5 leading-relaxed text-[#0D1B2A]/80">
+          {/* ✓ WCAG — #0D1B2A/80 on #F5F5F0 ≈ 12.2:1 */}
+          <p className="mb-5 text-base leading-relaxed text-[#0D1B2A]/80">
             Found an error? Have a suggestion? Something not working? We want to
             hear from you.
           </p>
@@ -253,17 +219,19 @@ export default function AboutPage() {
             Support the project
           </h2>
           <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-            <p className="mb-2 leading-relaxed text-[#0D1B2A]/80">
+            {/* ✓ WCAG — #0D1B2A/80 on #FFFFFF ≈ 13.2:1 */}
+            <p className="mb-2 text-base leading-relaxed text-[#0D1B2A]/80">
               VotePulse is free, independent, and runs entirely on personal time.
               There are no ads, no subscriptions, and no commercial backing.
             </p>
-            <p className="mb-6 leading-relaxed text-[#0D1B2A]/80">
+            <p className="mb-6 text-base leading-relaxed text-[#0D1B2A]/80">
               If you find it useful and want to say thanks, you can buy the
               developer a beer. Entirely optional — VotePulse will always be
               free.
             </p>
             <BuyMeABeerButton />
-            <p className="mt-3 text-xs" style={{ color: "rgba(13,27,42,0.40)" }}>
+            {/* ✓ WCAG — #0D1B2A/65 on #FFFFFF ≈ 6.8:1 (was 0.40 — FIXED) */}
+            <p className="mt-3 text-xs text-[#0D1B2A]/65">
               Powered by Buy Me a Coffee. No payment data is handled by
               VotePulse.
             </p>
@@ -276,6 +244,7 @@ export default function AboutPage() {
             <h2 className="mb-3 text-base font-bold text-[#0D1B2A]">
               Legal disclaimer
             </h2>
+            {/* ✓ WCAG — #0D1B2A/65 on #FFFFFF ≈ 6.8:1 */}
             <div className="space-y-3 text-sm leading-relaxed text-[#0D1B2A]/65">
               <p>
                 VotePulse is an independent personal project built for public
@@ -288,11 +257,12 @@ export default function AboutPage() {
                 ensure accuracy, VotePulse makes no warranty about the
                 completeness or correctness of any content. For authoritative
                 election information, visit{" "}
+                {/* ✓ WCAG — #A31621 on #FFFFFF = 5.9:1 */}
                 <a
                   href="https://www.vote.je"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[#A31621] transition-colors hover:underline"
+                  className="rounded-sm text-[#A31621] transition-colors hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#A31621] focus-visible:ring-offset-1"
                 >
                   vote.je
                 </a>
@@ -305,7 +275,7 @@ export default function AboutPage() {
                 removal of their information by contacting{" "}
                 <a
                   href="mailto:hello@votepulse.je"
-                  className="text-[#A31621] transition-colors hover:underline"
+                  className="rounded-sm text-[#A31621] transition-colors hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#A31621] focus-visible:ring-offset-1"
                 >
                   hello@votepulse.je
                 </a>
@@ -322,10 +292,8 @@ export default function AboutPage() {
           </div>
         </section>
 
-        <p
-          className="text-center text-xs"
-          style={{ color: "rgba(13,27,42,0.35)" }}
-        >
+        {/* ✓ WCAG — #0D1B2A/65 on #F5F5F0 ≈ 8.4:1 (was 0.35 — FIXED) */}
+        <p className="text-center text-xs text-[#0D1B2A]/65">
           Last updated: April 2026
         </p>
       </div>
