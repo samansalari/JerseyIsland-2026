@@ -104,8 +104,12 @@ export default async function Home() {
       {/* ── Issue Intelligence ────────────────────────────── */}
       <IssueIntelligence />
 
+      {/* Full-width divider — removes the dead gap between sections */}
+      <div className="border-t border-[#0D1B2A]/10" aria-hidden />
+
       {/* ── How it works ──────────────────────────────────── */}
-      <section className="mx-auto max-w-6xl px-5 py-16 md:py-20">
+      <section className="py-16">
+        <div className="mx-auto max-w-6xl px-5">
         <div className="flex items-center gap-2">
           <div className="h-px flex-1 bg-border" />
           <h2 className="flex-shrink-0 text-[12px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
@@ -158,6 +162,7 @@ export default async function Home() {
               </p>
             </div>
           </div>
+        </div>
         </div>
       </section>
 

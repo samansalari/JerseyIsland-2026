@@ -25,6 +25,18 @@ const config: Config = {
         "on-primary": "#F5E8C8",
         success: "#1A6B3A",
 
+        // Brand aliases — shorthand for design-system token access
+        // Usage: bg-brand-red, text-brand-cream, etc.
+        brand: {
+          red:     "#A31621",  // Jersey red — primary brand
+          dark:    "#6B1414",  // Red hover state
+          gold:    "#C8922A",  // Gold accent (backgrounds/icons only — fails contrast as text on white)
+          navy:    "#0D1B2A",  // Dark navy
+          cream:   "#F5E8C8",  // Text on dark backgrounds — 11.2:1 on navy
+          surface: "#F5F5F0",  // Page background
+          success: "#1A6B3A",  // Success green
+        },
+
         // Semantic aliases → CSS vars (so shadcn-style recipes can plug in later)
         background: "var(--color-background)",
         foreground: "var(--color-foreground)",

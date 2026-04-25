@@ -1,12 +1,17 @@
 # VotePulse — Codebase Report
 
 **Generated:** 23 April 2026  
-**Last documentation sync:** 25 April 2026 — **Phase 9: Supabase admin auth** — `ADMIN_SECRET` and HMAC admin cookie **removed**; admin uses **Supabase** `signInWithPassword` via **server action** `src/app/admin/login/actions.ts` + **HttpOnly session cookies** (`@supabase/ssr`); **middleware** in `src/middleware.ts` calls `updateSession` from `src/lib/supabase/middleware.ts` (refreshes session + protects `/admin/*` and `/api/admin/*`); **route group** `src/app/admin/(protected)/` holds dashboard + `candidates` with auth-checking layout; **`src/app/admin/layout.tsx`** is a minimal shell so `/admin/login` is not caught by the same `redirect` as protected pages. **`src/lib/admin-guard.ts`** uses Supabase `getUser()` (not cookies). **Navbar:** server component **`src/components/admin-nav-button.tsx`**, passed as `adminButton` prop from **`layout.tsx`** into client **`Navbar`**. **Logout:** `POST /api/admin/logout` calls `supabase.auth.signOut()`. **Helpers:** `src/lib/supabase/server.ts` + `client.ts` re-export `src/utils/supabase/*`. Previous sync: **Phase 8: AEO Answer Capsules** — capsules on listing/district; candidate page uses `#aeo-candidate-lead` on the amber summary section (redundant full capsule removed in UI cleanup); `speakable` + metadata as documented in §0 rows below. Earlier: Phase 7 dynamic OG, Public Pulse, social links, compare.
+**Last documentation sync:** 26 April 2026 — **Policy Intelligence (homepage) + analytics + SQL hardening** — **Home** (`src/app/page.tsx`, ISR `revalidate = 21600`) renders **`IssueIntelligence`** (`src/components/issue-intelligence.tsx`): Drizzle loads **`topic_summaries`** + grouped **`topic_upvotes`** counts; a **raw Postgres** query uses **`jsonb_array_elements(candidates.ai_issues)`** in a **CTE** (`rows` + `best_pos` with `DISTINCT ON (issue)`) to compute live **per-issue candidate counts** and a **sample position** (highest-confidence `position` text). **`jsonb_typeof(ai_issues) = 'array'`** guards bad JSON. The live query runs in a **nested `try/catch`** with **`console.error('[IssueIntelligence] …')`**; on failure, tiles still render using **`topic_summaries.candidate_count`** (never an empty grid). An earlier design used a **correlated subquery** under `GROUP BY` and triggered PostgreSQL **42803** (*subquery uses ungrouped column "issue_item.value" from outer query*) — **fixed** by the CTE pattern. **`IssueSheet` (`issue-sheet.tsx`)** — three **tile** states (AI summary / live counts + italic teaser / empty), **"See positions →"** CTA, amber banner in drawer when summary missing but positions exist. **API:** `GET/POST /api/topics/[issue]/*` (summary + candidates, upvote, feedback). **Tables:** `topic_summaries`, `topic_upvotes`, `topic_feedback` in `src/db/schema.ts`. **Scripts:** `npm run seed:topics`, `npm run generate:topics` (`scripts/seed-topics.ts`, `scripts/generate-topics.ts`). **Admin dashboard:** `src/app/admin/(protected)/page.tsx` — `dynamic = 'force-dynamic'`, live stats from `candidates` + topic tables. **Social:** `discover-social-links.ts`, `scrape-social.ts`, cron **`socialScrapeCycle()`** at **06:00 `Europe/London`**. **RLS (Supabase):** enabled on six public tables; `anon` SELECT where applicable; `topic_feedback` has no `anon` policy; app `DATABASE_URL` **bypasses** RLS. **Analytics:** **Google Analytics 4** (`G-4WZWNNE0LP`) + **Microsoft Clarity** (`whg4c7n340`) — both **`next/script`**, `strategy="afterInteractive"`, in **`src/app/layout.tsx`**. Reconcile public copy (e.g. cookies/analytics) with these tags. Previous sync: **Phase 9: Supabase admin auth** — `ADMIN_SECRET` removed; Supabase `signInWithPassword`, middleware, `(protected)/admin`, `admin-guard`. Earlier: AEO capsules, dynamic OG, compare, Public Pulse.
 
 ## 0. What changed (recent — for auditors & LLMs)
 
 | Topic | Change |
 |-------|--------|
+| **Policy Intelligence — homepage** | **`src/app/page.tsx`**: `IssueIntelligence` server section; **`revalidate = 21600`**. **`src/components/issue-intelligence.tsx`**: `topicSummaries` + upvotes + optional raw SQL for live counts/sample quote; **nested** SQL `catch` + fallback. **`src/components/issue-sheet.tsx`**: client drawer, fetches `GET /api/topics/[issue]`, upvote/feedback POST. **DB:** `topic_summaries`, `topic_upvotes`, `topic_feedback` (`src/db/schema.ts`). **Enrichment / ops:** `scripts/seed-topics.ts`, `scripts/generate-topics.ts` (`npm run seed:topics`, `generate:topics`). **SQL note:** CTE with `DISTINCT ON (issue) ORDER BY issue, confidence DESC` replaces a **broken** correlated `jsonb_array_elements` subquery that caused **42803**. |
+| **Admin dashboard — live stats** | **`src/app/admin/(protected)/page.tsx`**: `export const dynamic = 'force-dynamic'`, `metadata` (title, `robots: noindex`). **Supabase** `getUser()`; redirect to login if absent. **Parallel Drizzle** queries: totals for candidates, `aiSummary`, non-empty **`aiIssues`**, `manifestoRaw`, **`topicSummaries`** (count + with-summary filter), **`topicUpvotes`**, **`topicFeedback`**, enrichment %, **last enriched** row. Replaced legacy six-card view (`issue_votes` / `articles` headline stats). |
+| **Social pipeline (discovery + scrape)** | **`scripts/discover-social-links.ts`**: manifesto regex for extra social URLs when `social_links` empty; **`--dry-run`**, **`--slug=`**. **`scripts/scrape-social.ts`**: Firecrawl **`scrapeUrl`**, Grok JSON merge into **`ai_issues`** / **`ai_summary`**; targets facebook / website / linkedin only. **`scripts/cron.ts`**: **`socialScrapeCycle()`** — cron **`0 6 * * *`**, **`Europe/London`**, runs discover + scrape + **`triggerRevalidation`**. **npm:** `discover:social`, `discover:social:dry`, `scrape:social`, `scrape:social:dry`, `scrape:social:force`. |
+| **RLS (Supabase production)** | **`issue_votes`**, **`candidate_ratings`**, **`pulse_insights`**, **`topic_summaries`**, **`topic_upvotes`**, **`topic_feedback`**: RLS **enabled**; **`anon` SELECT** policies on the first five; **`topic_feedback`**: no **`anon`** policy. Next.js app uses **`DATABASE_URL`** and **bypasses** RLS. Policy SQL is **not** in `drizzle/` — replicate in Supabase SQL Editor for new projects. |
+| **Microsoft Clarity** | **`src/app/layout.tsx`**: inline Clarity bootstrap (`CLARITY_PROJECT_ID` / `whg4c7n340`) after GA, **`id="microsoft-clarity"`**, `afterInteractive`. |
 | **Supabase admin auth (Phase 9)** | **`ADMIN_SECRET` removed** from `src/lib/env.ts` and the codebase. **Login:** `src/app/admin/login/page.tsx` — server component, email + password, **`action={login}`** from **`src/app/admin/login/actions.ts`** (`signInWithPassword`). **Middleware:** `src/lib/supabase/middleware.ts` — `getUser()` then redirect unauthenticated `/admin/*` (except `/admin/login`) to login; redirect authenticated `/admin/login` → `/admin`; unauthenticated `GET/POST` under `/api/admin/*` → **401** JSON. **Protected UI:** `src/app/admin/(protected)/layout.tsx` — `getUser()` + `redirect` + **`AdminNav`**; URLs stay `/admin`, `/admin/candidates`. **API:** `src/lib/admin-guard.ts` — `createServerClient` + `getUser()` for `requireAdmin`. **Legacy:** `src/app/api/admin/login/route.ts` returns **410**; `src/lib/admin-auth.ts` **unused** (HMAC cookie helpers retained in repo but not imported). |
 | **AEO Answer Capsule — `/candidates`** | **`src/app/candidates/page.tsx`**: adds four aggregate Drizzle queries (`districtCounts`, `totalEnriched`, `independentCount`, `partyBreakdown`) using `count`, `sql`, `ne`, `isNotNull` from `drizzle-orm`. Renders a **`<section id="aeo-answer-capsule">`** above the candidate grid: gold top-accent bar, `<article>` with `<h2>`, **lead `<p id="aeo-lead">`** (direct-answer, ≤65 words, real DB counts), 4-stat grid (135 candidates / 14 districts / enriched count / 10 issues), **`<ul id="aeo-district-list">`** linking to each district page, 10-issue badge row, source attribution. `metadata.description` rewritten to 50-word direct-answer starting with "Jersey's 2026 general election (7 June 2026) has 135 declared candidates…". **`titleSegment`** updated to "All 135 Candidates — Jersey 2026 General Election". |
 | **AEO — `/candidates/[slug]`** | **`src/app/candidates/[slug]/page.tsx`**: `generateMetadata` direct-answer description (name, district, party/Independent, first sentence of `aiSummary`). **`id="aeo-candidate-lead"`** on the amber AI summary section for speakable targeting. The separate full **`<section id="aeo-candidate-answer">`** capsule (duplicate hero facts) was **removed** in UI cleanup; JSON-LD speakable uses **`#aeo-candidate-lead`** only. |
@@ -44,7 +49,7 @@ VotePulse is a public, non-partisan election intelligence site for Jersey’s 20
 
 **Tech stack (actual):** Next.js **15** (App Router, TypeScript, ISR on several routes), Tailwind CSS **3.4** (not v4), Drizzle ORM + `postgres` driver, Zod-validated `DATABASE_URL` / `NEXT_PUBLIC_SITE_URL`, **xAI Grok** (OpenAI-compatible HTTP to `api.x.ai`), Firecrawl, RSS ingestion scripts, Supabase-oriented connection settings (`prepare: false` for pooler). **ioredis** for optional Redis rate limits. **Social cards:** per-candidate and default site **`og:image` / `twitter:image`** via **`/api/og`** (`next/og` on the **Node** server, not edge). **Untitled UI is not installed**; the UI is custom Tailwind aligned to a Jersey palette.
 
-**Current state:** Public pages, **compare** (deep table + `ai_issues` from JSONB), **pulse** routes, `src/lib/rate-limit.ts`, API routes listed in §6, and scripts (scrapers, enrich, import-local-scrapes, **generate-pulse-insight**, cron) are implemented. **Admin** uses **Supabase Auth** (email + password, no self-registration): **server action** sign-in, **HttpOnly** session cookies via **`@supabase/ssr`**, **`src/middleware.ts`** + `src/lib/supabase/middleware.ts` for session refresh and route protection, **`requireAdmin`** in `src/lib/admin-guard.ts` (Supabase `getUser()`). **`ADMIN_SECRET` is not used.** **`src/lib/admin-auth.ts`** (legacy HMAC cookie) is **unreferenced** but may remain on disk. **RLS** for anon DB access is still **to do** if clients ever talk to Postgres directly. **`npm run build` succeeds** when `DATABASE_URL` and `NEXT_PUBLIC_SITE_URL` are set; listing pages may tolerate a **down database at build time** via try/catch fallbacks.
+**Current state:** Public pages, **compare** (deep table + `ai_issues` from JSONB), **pulse** routes, `src/lib/rate-limit.ts`, API routes listed in §6, and scripts (scrapers, enrich, import-local-scrapes, **generate-pulse-insight**, cron) are implemented. **Admin** uses **Supabase Auth** (email + password, no self-registration): **server action** sign-in, **HttpOnly** session cookies via **`@supabase/ssr`**, **`src/middleware.ts`** + `src/lib/supabase/middleware.ts` for session refresh and route protection, **`requireAdmin`** in `src/lib/admin-guard.ts` (Supabase `getUser()`). **`ADMIN_SECRET` is not used.** **`src/lib/admin-auth.ts`** (legacy HMAC cookie) is **unreferenced** but may remain on disk. **RLS** is **on** in Supabase for six public tables (`issue_votes`, `candidate_ratings`, `pulse_insights`, `topic_summaries`, `topic_upvotes`, `topic_feedback`); the app’s **`DATABASE_URL`** connection **bypasses** RLS — policies protect direct **PostgREST / `anon` key** use only. **`npm run build` succeeds** when `DATABASE_URL` and `NEXT_PUBLIC_SITE_URL` are set; listing pages may tolerate a **down database at build time** via try/catch fallbacks.
 
 ---
 
@@ -78,6 +83,8 @@ VotePulse is a public, non-partisan election intelligence site for Jersey’s 20
 │   ├── import-local-scrapes.ts
 │   ├── ingest-news.ts
 │   ├── extract-social-links.ts
+│   ├── discover-social-links.ts   # extra social URLs from manifesto when social_links empty
+│   ├── scrape-social.ts           # Firecrawl + Grok merge (facebook/website/linkedin)
 │   ├── validate-social-links.ts
 │   ├── seed-candidates.ts
 │   └── scrapers/
@@ -108,12 +115,13 @@ VotePulse is a public, non-partisan election intelligence site for Jersey’s 20
     │   │   ├── admin/* (login, logout, health, candidates, scrapers, enrich, clear-pulse, regenerate-insight, …)
     │   │   ├── pulse/ (vote GET+POST, results, rate, insight)
     │   │   ├── compare/route.ts
+    │   │   ├── topics/[issue]/ (route, upvote, feedback)  # Policy Intelligence
     │   │   ├── og/route.tsx        # next/og ImageResponse — Node; ?slug= candidate card
     │   │   ├── health/route.ts
     │   │   ├── districts/ …
     │   │   └── revalidate/route.ts
     │   ├── candidates/ …
-    ├── components/ (navbar, logo, seenovate-footer-credit, about-actions, social-links, admin/*, …)
+    ├── components/ (navbar, logo, **issue-intelligence**, **issue-sheet**, seenovate-footer-credit, about-actions, social-links, admin/*, …)
     ├── db/ (index, schema, migrate, seed, seed-candidates)
     └── lib/ (env, grok, firecrawl, rate-limit, pulse-insight, **social-links**, brand-metadata, **admin-guard** (Supabase), **supabase** — `server.ts`/`client.ts` re-export `utils/supabase/`, `middleware.ts` for root middleware, **admin-auth.ts** legacy unused, validate, …)
 ```
@@ -123,7 +131,7 @@ VotePulse is a public, non-partisan election intelligence site for Jersey’s 20
 - `scripts/scrapers/scrape-policy-je.ts` — **not present** (no `scrape:policy` script) — may still be commented in `cron.ts`.
 - Tailwind **v4** + `@theme` + Untitled UI packages — **not present**.
 - Candidate **`opengraph-image`** — **may still exist** under `candidates/[slug]/`; **primary social preview** is **`/api/og?slug=…`** in **`generateMetadata`** (and root **`/api/og`** for the site default).
-- Supabase **RLS SQL** — **not in repo**.
+- Supabase **RLS** — **enabled in production DB**; policy SQL is **not** checked into `drizzle/` (documented in **§4** / **§0** — replicate in SQL Editor for new projects).
 
 **📝 TODO comments in TS/TSX:** none found.
 
@@ -160,10 +168,13 @@ VotePulse is a public, non-partisan election intelligence site for Jersey’s 20
 | `issue_votes` | id, issue, voter_fingerprint, created_at | Indexes on issue, fingerprint — **Public Pulse** issue poll |
 | `candidate_ratings` | id, candidate_id FK, rating 1–5, voter_fingerprint, created_at | **Public Pulse** star ratings |
 | `pulse_insights` | id, insight_type, content, sources jsonb optional, generated_at | Cached **Analysis** text (`issue_summary` / legacy `issue_analysis`) |
+| `topic_summaries` | id, **issue** (unique), display_name, icon, **ai_summary**, **candidate_count**, **top_parties** / **sources_cited** jsonb, generated_at, updated_at | **Policy Intelligence** — one row per canonical issue (housing … public_services); refreshed by `generate:topics` / enrichment |
+| `topic_upvotes` | id, **issue**, **fingerprint**, created_at | Unique **`(issue, fingerprint)`** — anonymous topic upvotes |
+| `topic_feedback` | id, issue, feedback_type, content, fingerprint, created_at | Anonymous feedback per topic |
 
-**Connection:** `src/db/index.ts` uses `postgres(DATABASE_URL, { prepare: false, max: … })` — suitable for **Supabase pooler**.
+**Connection:** `src/db/index.ts` uses `postgres(DATABASE_URL, { prepare: false, max: … })` — suitable for **Supabase pooler**. **`sql` export** (postgres-js tagged template) is also used for the homepage live **`ai_issues`** aggregation in `issue-intelligence.tsx`.
 
-**RLS:** **Not defined** in this repository (must be added in Supabase SQL or noted as “server-only access” risk if anon keys ever hit DB).
+**RLS:** **Enabled in Supabase** (not in `drizzle/*.sql`) on **`issue_votes`**, **`candidate_ratings`**, **`pulse_insights`**, **`topic_summaries`**, **`topic_upvotes`**, **`topic_feedback`** — `anon` **SELECT** on the first five; **no** `anon` policy on **`topic_feedback`**. The Next.js app uses **`DATABASE_URL`** and **bypasses** RLS; policies matter for **PostgREST / `anon` key** access only. Re-apply the same SQL when cloning the project.
 
 **Migrations:** Bootstrap SQL in **`drizzle/0000_*.sql` … `0002_add_social_links.sql`** runs via **`npm run db:migrate`** (`src/db/migrate.ts`). **`candidates.social_links`** is added in **`0002_add_social_links.sql`**. If **`drizzle-kit push`** fails during introspection (known **`checkValue.replace`** bug on some DBs), use **`db:migrate`** or apply equivalent DDL in Supabase. Also ensure **`issue_votes`**, **`candidate_ratings`**, **`pulse_insights`** exist if using Public Pulse.
 
@@ -173,7 +184,7 @@ VotePulse is a public, non-partisan election intelligence site for Jersey’s 20
 
 | Item | Status |
 |------|--------|
-| **Admin panel** | **Supabase Auth** — `signInWithPassword` in **`src/app/admin/login/actions.ts`**; session in **HttpOnly** cookies via **`@supabase/ssr`**. No **`ADMIN_SECRET`**. |
+| **Admin panel** | **Supabase Auth** — `signInWithPassword` in **`src/app/admin/login/actions.ts`**; session in **HttpOnly** cookies via **`@supabase/ssr`**. No **`ADMIN_SECRET`**. **Dashboard** (`/admin`, **`(protected)/page.tsx`**) — `dynamic = 'force-dynamic'`, live stats (candidates, AI fields, topic tables, enrichment %, last enriched). |
 | `src/lib/admin-guard.ts` | **Yes** — `createServerClient` + **`getUser()`**; returns **401** if no user. Used by `POST/GET` admin API routes (health, enrich, etc.). |
 | `src/lib/admin-auth.ts` | **Legacy / unused** — HMAC `votepulse_admin` cookie; **not imported** after Phase 9. Safe to delete in a later cleanup. |
 | Supabase packages | **`@supabase/ssr`**, **`@supabase/supabase-js`**; **`src/lib/supabase/server.ts`** and **`client.ts`** re-export **`src/utils/supabase/*`** (shared env helpers). |
@@ -203,6 +214,9 @@ VotePulse is a public, non-partisan election intelligence site for Jersey’s 20
 | POST | `/api/admin/login` | **Deprecated** | **410** — use `/admin/login` + server action |
 | POST | `/api/admin/logout` | `signOut()` | **Session** required for meaningful sign-out; returns JSON **{ ok: true }** |
 | GET | `/api/districts`, `/api/districts/[district]` | District listings | Public |
+| GET | `/api/topics/[issue]` | Topic summary + candidates with `ai_issues` stance for that issue | Public |
+| POST | `/api/topics/[issue]/upvote` | Insert upvote; dedupe by issue + fingerprint; returns total | Public |
+| POST | `/api/topics/[issue]/feedback` | Anonymous feedback row | Public |
 | … | … | See `src/app/api/` for full list | — |
 
 **Rate limiting:** `checkRateLimit` in `src/lib/rate-limit.ts` (requires **`REDIS_URL`** + ioredis for enforcement).
@@ -213,7 +227,7 @@ VotePulse is a public, non-partisan election intelligence site for Jersey’s 20
 
 | Route | Data source | Rendering | Status |
 |-------|-------------|-----------|--------|
-| `/` | Drizzle counts (fallback if DB down at build) | Server, `revalidate = 60` | OK |
+| `/` | **`IssueIntelligence`** + hero + how-it-works; `topic_summaries` + upvotes + raw SQL on **`ai_issues`**; fallback if SQL fails | Server, `revalidate = 21600` (6h) | OK |
 | `/candidates` | Drizzle list + **4 aggregate queries** (`districtCounts`, `totalEnriched`, `independentCount`, `partyBreakdown`); **AEO capsule** `#aeo-answer-capsule` above grid; **speakable** `ItemList` JSON-LD | Server, ISR 6h | OK |
 | `/candidates/[slug]` | Drizzle by slug; `generateStaticParams` (fallback `[]`); hero **`SocialLinks`**; **`id="aeo-candidate-lead"`** on amber AI card (speakable); **`has2026Content`** manifesto notice; **OG/Twitter** images → **`/api/og?slug=`** | Server, ISR 6h | Dynamic at runtime if not prebuilt |
 | `/compare` | Server: candidate list (filters). **Client:** `GET /api/compare?ids=` → **`ComparisonTable`** (issue grid from **`ai_issues`**) | Hybrid | OK |
@@ -239,7 +253,7 @@ VotePulse is a public, non-partisan election intelligence site for Jersey’s 20
 
 | Script | Purpose | Run command | Status |
 |--------|---------|-------------|--------|
-| `cron.ts` | Schedules 6h / 2h / daily jobs; **includes** `scripts/generate-pulse-insight.ts` in 6h cycle; **one-off yearly job** **27 Apr 08:00 `Europe/London`** (manifestos → flow → import → extract social → enrich batch → revalidate); SIGINT/TERM → `process.exit(0)` | `npm run cron` | OK |
+| `cron.ts` | Schedules 6h / 2h / daily jobs; **`socialScrapeCycle()`** at **06:00 `Europe/London` daily** (`discover-social-links` → `scrape-social` → revalidate); **includes** `scripts/generate-pulse-insight.ts` in 6h cycle; **one-off yearly job** **27 Apr 08:00 `Europe/London`** (manifestos → flow → import → extract social → enrich batch → revalidate); SIGINT/TERM → `process.exit(0)` | `npm run cron` | OK |
 | `generate-pulse-insight.ts` | Calls `generatePulseInsight()` from `src/lib/pulse-insight.ts` | Invoked by cron (and can be run manually) | OK |
 | `bootstrap-env.ts` | Loads `.env.local` first; imported by `enrich*.ts` | (side-effect import) | OK |
 | `enrich.ts` | Candidate AI enrichment (Grok) | `npm run enrich` | OK |
@@ -247,8 +261,11 @@ VotePulse is a public, non-partisan election intelligence site for Jersey’s 20
 | `ingest-news.ts` | News ingest | `npm run ingest:news` | OK |
 | `import-local-scrapes.ts` | **`data/flow.je/*.json`** → **`candidates`** (bio/manifesto extractors; clears AI fields on update) | `npm run import:local` or `import:local-scrapes` | OK |
 | `extract-social-links.ts` | Parse manifesto text → `candidates.social_links` | `npm run extract:social` | OK |
+| `discover-social-links.ts` | Regex pass on `manifesto_raw` for URLs when `social_links` null/empty | `discover:social` / `discover:social:dry` | OK |
+| `scrape-social.ts` | `scrapeUrl` + `grokChatCompletionJson` — merge policy into `ai_issues` / `ai_summary` | `scrape:social` / `*:dry` / `scrape:social:force` | OK |
 | `validate-social-links.ts` | Audit: how many candidates get ≥1 URL from `buildSocialLinks()` | `npm run validate:social` | OK |
 | `seed-candidates.ts` | Seed candidates | `npm run seed` / `seed:candidates` | OK |
+| `seed-topics.ts` / `generate-topics.ts` | **`topic_summaries`** seed + Grok refresh | `npm run seed:topics`, `generate:topics` | OK |
 | `scrape-flow-je.ts` | flow.je | `npm run scrape:flow` | OK |
 | `scrape-vote-je.ts` | vote.je | `npm run scrape:vote` | OK |
 | `scrape-vote-je-manifestos.ts` | Map + scrape vote.je URLs filtered for **`/2026/`**, **`/candidates/`**, etc.; merge longer **`manifesto_raw`** | `npm run scrape:manifestos` | OK (may no-op until pages exist) |
@@ -293,7 +310,7 @@ VotePulse is a public, non-partisan election intelligence site for Jersey’s 20
 
 - **Schema:** push/migrate via Drizzle.
 - **Auth:** enable Email provider; create admin users in dashboard.
-- **RLS:** **to do** before exposing any client-side DB paths (currently app uses server + connection string).
+- **RLS:** **enabled** in Supabase for the six public tables above (see **§4**). Still use **server + `DATABASE_URL`** for app writes; RLS is defense-in-depth for the Data API.
 
 ---
 
@@ -346,7 +363,7 @@ VotePulse is a public, non-partisan election intelligence site for Jersey’s 20
 - [x] Supabase Auth wiring for admin (env-dependent)
 - [x] Middleware protects `/admin` except `/admin/login`
 - [x] Public routes require no login
-- [ ] Database migrated on Supabase + **RLS** designed (including **`social_links`** column — **`0002_add_social_links.sql`**)
+- [x] Database migrated on Supabase; **`social_links`** via **`0002_add_social_links.sql`**; **RLS** on six public tables (see **§4**) — apply in SQL Editor, not in `drizzle/`
 - [x] `.env.example` expanded
 - [x] `wrangler.toml` + `railway.json` stubs
 - [x] No `localhost` in committed runtime config (only examples in docs / defaults)
@@ -377,7 +394,7 @@ Use for security, privacy, DPA, product accuracy, and **LLM-onboarding** (so mod
 | 2 | **Public Pulse — insight:** `GET /api/pulse/insight` must **not** call Grok; generation only in **`generatePulseInsight`** (cron + admin **regenerate-insight**). |
 | 3 | **Public Pulse — votes:** Cookie `vp_voted` + 24h fingerprint; **409** when already voted; **`GET /api/pulse/vote`** exposes cookie state for UI. Confirm matches product copy. |
 | 4 | **Admin APIs:** All mutation routes use **`requireAdmin`** (Supabase **`getUser()`** on the request). Middleware also returns **401** for `/api/admin/*` without a session. No **`ADMIN_SECRET`**. |
-| 5 | **About / privacy copy:** “No cookies / no analytics” claims — **reconcile** with `layout.tsx` and pulse/**Supabase session** / admin cookies. |
+| 5 | **About / privacy copy:** “No cookies / no analytics” claims — **reconcile** with **`layout.tsx`** (**GA4** + **Microsoft Clarity**), pulse/**Supabase session** / admin cookies, and **`vp_voted`**. |
 | 6 | **Candidate pages:** Only one **`SocialLinks`** block in hero. **`buildSocialLinks()`** must stay **XSS-safe** (only known platforms; `new URL()` validation) — treat `social_links` as **untrusted** DB text. Run **`npm run validate:social`** after bulk imports. |
 | 7 | **Worker `cron.ts`:** Long-running; must **not** use synchronous **`process.exit(0)`** at end of file; shutdown is **SIGINT/SIGTERM**. |
 | 8 | **Data subjects:** About + mailto for correction/removal — operational process matches copy. |
@@ -415,7 +432,7 @@ Use for security, privacy, DPA, product accuracy, and **LLM-onboarding** (so mod
 
 ---
 
-## Appendix — Commands verified (25 Apr 2026)
+## Appendix — Commands verified (26 Apr 2026)
 
 - `npx tsc --noEmit` — **pass** (through Phase 9 — Supabase admin auth)
 - `npm run build` — **pass** (176 pages; includes admin route group)

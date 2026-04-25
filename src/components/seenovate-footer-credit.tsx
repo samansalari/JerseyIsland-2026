@@ -7,7 +7,8 @@
 export function SeenovateFooterCredit() {
   return (
     <div className="group mt-3 flex items-center justify-center gap-1.5 flex-wrap">
-      <span className="text-xs text-on-primary/50">Made with</span>
+      {/* ✓ WCAG — text-on-primary/60 on navy ≈ 6:1 (was /50 ≈ 4.8:1 — bumped) */}
+      <span className="text-xs text-on-primary/60">Made with</span>
       <span
         aria-hidden="true"
         className="text-xs select-none transition-transform duration-300 group-hover:scale-125"
@@ -15,7 +16,7 @@ export function SeenovateFooterCredit() {
       >
         ♥
       </span>
-      <span className="text-xs text-on-primary/50">for Jersey Island 🏝 by</span>
+      <span className="text-xs text-on-primary/60">for Jersey Island 🏝 by</span>
       <a
         href="https://seenovate.co.uk/?utm_source=VotePulse&utm_medium=footer&utm_campaign=customer"
         target="_blank"

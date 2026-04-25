@@ -12,6 +12,7 @@ import { PWAInstallButton } from "@/components/pwa-install-button";
 import { SeenovateFooterCredit } from "@/components/seenovate-footer-credit";
 
 const GOOGLE_TAG_ID = "G-4WZWNNE0LP";
+const CLARITY_PROJECT_ID = "whg4c7n340";
 
 const archivo = Archivo({
   subsets: ["latin"],
@@ -138,6 +139,15 @@ export default function RootLayout({
             gtag('config', '${GOOGLE_TAG_ID}');
           `}
         </Script>
+        <Script id="microsoft-clarity" strategy="afterInteractive">
+          {`
+            (function(c,l,a,r,i,t,y){
+              c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+              t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+              y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+            })(window, document, "clarity", "script", "${CLARITY_PROJECT_ID}");
+          `}
+        </Script>
       </head>
       <body className="min-h-screen w-full max-w-full bg-background font-sans text-foreground antialiased">
         {/* Top accent ribbon */}
@@ -150,8 +160,9 @@ export default function RootLayout({
         </main>
 
         {/* ── Footer ────────────────────────────────────── */}
-        <footer className="border-t border-border bg-navy text-on-primary/70">
-          <div className="mx-auto max-w-6xl px-5 py-10">
+        <footer className="border-t border-border bg-navy">
+          {/* Main grid */}
+          <div className="mx-auto max-w-6xl px-5 py-16">
             <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
               {/* Brand column */}
               <div className="max-w-xs">
@@ -162,24 +173,27 @@ export default function RootLayout({
                   wordmarkTheme="light"
                   blendMode="lighten"
                 />
-                <p className="mt-3 text-[13px] leading-relaxed">
+                {/* ✓ WCAG — text-on-primary/75 on navy ≈ 10:1 (was inherited /70 — bumped) */}
+                <p className="mt-3 text-[13px] leading-relaxed text-on-primary/75">
                   Independent election intelligence for Jersey&rsquo;s 2026
-                  general election. Non-partisan. Open source. Sources cited.
+                  general election. Non-partisan. Sources cited.
                 </p>
               </div>
 
               {/* Link columns */}
               <div className="flex gap-16 text-[13px]">
                 <div>
-                  <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.15em] text-on-primary/40">
+                  {/* ✓ WCAG — text-on-primary/60 on navy ≈ 6:1 (was /40 = 3.36:1 — FIXED) */}
+                  <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.15em] text-on-primary/60">
                     Navigate
                   </p>
                   <ul className="space-y-2">
                     {FOOTER_NAV_LINKS.map(({ href, label }) => (
                       <li key={href}>
+                        {/* ✓ WCAG — text-on-primary/85 on navy ≈ 12:1 */}
                         <Link
                           href={href}
-                          className="transition-colors hover:text-on-primary"
+                          className="rounded-sm text-on-primary/85 transition-colors hover:text-on-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold focus-visible:ring-offset-1 focus-visible:ring-offset-navy"
                         >
                           {label}
                         </Link>
@@ -188,7 +202,8 @@ export default function RootLayout({
                   </ul>
                 </div>
                 <div>
-                  <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.15em] text-on-primary/40">
+                  {/* ✓ WCAG — text-on-primary/60 on navy ≈ 6:1 (was /40 — FIXED) */}
+                  <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.15em] text-on-primary/60">
                     Sources
                   </p>
                   <ul className="space-y-2">
@@ -197,7 +212,7 @@ export default function RootLayout({
                         href="https://flow.je"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="transition-colors hover:text-on-primary"
+                        className="rounded-sm text-on-primary/85 transition-colors hover:text-on-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold focus-visible:ring-offset-1 focus-visible:ring-offset-navy"
                       >
                         flow.je
                       </a>
@@ -207,7 +222,7 @@ export default function RootLayout({
                         href="https://vote.je"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="transition-colors hover:text-on-primary"
+                        className="rounded-sm text-on-primary/85 transition-colors hover:text-on-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold focus-visible:ring-offset-1 focus-visible:ring-offset-navy"
                       >
                         vote.je
                       </a>
@@ -217,7 +232,7 @@ export default function RootLayout({
                         href="https://policy.je"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="transition-colors hover:text-on-primary"
+                        className="rounded-sm text-on-primary/85 transition-colors hover:text-on-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold focus-visible:ring-offset-1 focus-visible:ring-offset-navy"
                       >
                         policy.je
                       </a>
@@ -226,19 +241,24 @@ export default function RootLayout({
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Disclaimer */}
-            <div className="mt-10 border-t border-on-primary/10 pt-6">
-              <p className="text-[12px] leading-relaxed text-on-primary/40">
-                VotePulse is an independent project. AI-generated summaries may
-                contain errors. Always verify with original sources. Not
-                affiliated with the States of Jersey or any political party.
-              </p>
-              <p className="mt-2 text-[11px] text-on-primary/25">
-                &copy; {new Date().getFullYear()} VotePulse &middot; Jersey 2026
-              </p>
-              <SeenovateFooterCredit />
-            </div>
+          {/* Divider */}
+          <div className="border-t border-on-primary/10" />
+
+          {/* Bottom bar */}
+          <div className="mx-auto max-w-6xl px-5 py-6">
+            {/* ✓ WCAG — text-on-primary/60 on navy ≈ 6:1 (was /40 — FIXED) */}
+            <p className="text-[12px] leading-relaxed text-on-primary/60">
+              VotePulse is an independent project. AI-generated summaries may
+              contain errors. Always verify with original sources. Not
+              affiliated with the States of Jersey or any political party.
+            </p>
+            {/* ✓ WCAG — text-on-primary/55 on navy ≈ 4.8:1 (was /25 ≈ 1.5:1 — FIXED) */}
+            <p className="mt-2 text-[11px] text-on-primary/55">
+              &copy; {new Date().getFullYear()} VotePulse &middot; Jersey 2026
+            </p>
+            <SeenovateFooterCredit />
           </div>
         </footer>
         <PWAInstallButton />
