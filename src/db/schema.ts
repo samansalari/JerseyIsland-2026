@@ -182,6 +182,67 @@ export const snapshots = pgTable(
   }),
 );
 
+// ── Issue poll votes ────────────────────────────────────────────────────────
+export const issueVotes = pgTable(
+  "issue_votes",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    issue: text("issue").notNull(),
+    voterFingerprint: text("voter_fingerprint").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  },
+  (t) => ({
+    issueIdx: index("issue_votes_issue_idx").on(t.issue),
+    fingerprintIdx: index("issue_votes_fingerprint_idx").on(t.voterFingerprint),
+  }),
+);
+
+// ── Candidate community ratings ──────────────────────────────────────────────
+export const candidateRatings = pgTable(
+  "candidate_ratings",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    candidateId: uuid("candidate_id")
+      .notNull()
+      .references(() => candidates.id, { onDelete: "cascade" }),
+    rating: integer("rating").notNull(), // 1–5
+    voterFingerprint: text("voter_fingerprint").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  },
+  (t) => ({
+    candidateIdx: index("candidate_ratings_candidate_idx").on(t.candidateId),
+    fingerprintIdx: index("candidate_ratings_fingerprint_idx").on(
+      t.voterFingerprint,
+    ),
+  }),
+);
+
+// ── Grok insight cache ───────────────────────────────────────────────────────
+export const pulseInsights = pgTable(
+  "pulse_insights",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    insightType: text("insight_type").notNull(), // 'issue_analysis' | 'candidate_alignment'
+    content: text("content").notNull(),
+    sources: jsonb("sources").$type<
+      Array<{ headline: string; url: string; source: string }>
+    >(),
+    generatedAt: timestamp("generated_at", {
+      withTimezone: true,
+    }).defaultNow(),
+  },
+  (t) => ({
+    typeIdx: index("pulse_insights_type_idx").on(t.insightType),
+    generatedIdx: index("pulse_insights_generated_idx").on(t.generatedAt),
+  }),
+);
+
 // ── Typed row helpers ───────────────────────────────────────────────────────
 export type Candidate = typeof candidates.$inferSelect;
 export type NewCandidate = typeof candidates.$inferInsert;
@@ -206,3 +267,12 @@ export type ArticleSentiment = "positive" | "negative" | "neutral";
 
 /** Allowed values for `snapshots.entity_type`. */
 export type SnapshotEntityType = "candidate" | "article";
+
+export type IssueVote = typeof issueVotes.$inferSelect;
+export type NewIssueVote = typeof issueVotes.$inferInsert;
+
+export type CandidateRating = typeof candidateRatings.$inferSelect;
+export type NewCandidateRating = typeof candidateRatings.$inferInsert;
+
+export type PulseInsight = typeof pulseInsights.$inferSelect;
+export type NewPulseInsight = typeof pulseInsights.$inferInsert;

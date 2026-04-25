@@ -238,11 +238,6 @@ export default async function CandidatePage({ params }: Props) {
                   {stripMarkdown(candidate.bio)}
                 </p>
               )}
-
-              {candidate.socialLinks &&
-                Object.keys(candidate.socialLinks).length > 0 && (
-                  <SocialLinkPills links={candidate.socialLinks as Record<string, string>} />
-                )}
             </div>
 
             <div className="flex-shrink-0">
@@ -508,66 +503,6 @@ export default async function CandidatePage({ params }: Props) {
           </div>
         </footer>
       </div>
-    </div>
-  );
-}
-
-const SOCIAL_ICONS: Record<string, string> = {
-  twitter: "𝕏",
-  x: "𝕏",
-  facebook: "f",
-  website: "🌐",
-  wikipedia: "W",
-  youtube: "▶",
-  linkedin: "in",
-};
-
-function resolveSocialUrl(platform: string, value: string): string | null {
-  if (value.startsWith("http")) return value;
-  const p = platform.toLowerCase();
-  const handle = value.replace(/^@/, "");
-  if (p === "twitter" || p === "x") return `https://x.com/${handle}`;
-  if (p === "facebook") return `https://www.facebook.com/${handle}`;
-  if (p === "wikipedia")
-    return `https://en.wikipedia.org/wiki/${encodeURIComponent(handle)}`;
-  if (p === "youtube") return `https://youtube.com/@${handle}`;
-  if (p === "linkedin") return `https://linkedin.com/in/${handle}`;
-  if (p === "website") return `https://${handle}`;
-  return null;
-}
-
-function SocialLinkPills({ links }: { links: Record<string, string> }) {
-  const entries = Object.entries(links).filter(([platform, value]) => {
-    const url = resolveSocialUrl(platform, value);
-    return url !== null;
-  });
-
-  if (entries.length === 0) return null;
-
-  return (
-    <div className="mt-4 flex flex-wrap items-center gap-2">
-      {entries.map(([platform, value]) => {
-        const url = resolveSocialUrl(platform, value)!;
-        const icon = SOCIAL_ICONS[platform.toLowerCase()] ?? "🔗";
-        const label = platform.charAt(0).toUpperCase() + platform.slice(1);
-        return (
-          <a
-            key={platform}
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors hover:bg-white/10"
-            style={{
-              border: "1px solid rgba(245,232,200,0.25)",
-              color: "#F5E8C8",
-              backgroundColor: "rgba(245,232,200,0.08)",
-            }}
-          >
-            <span aria-hidden>{icon}</span>
-            <span className="capitalize">{label}</span>
-          </a>
-        );
-      })}
     </div>
   );
 }

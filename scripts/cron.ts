@@ -368,5 +368,15 @@ sixHourCycle().catch((err) =>
   warn("CRON", `Initial cycle crashed: ${err instanceof Error ? err.message : err}`),
 );
 
-// Keep process alive
+// Keep process alive. Do not call `process.exit(0)` at the end of this file — that
+// would tear down the event loop and stop all scheduled crons. Clean shutdown uses
+// the handlers below (exit code 0 on SIGINT / SIGTERM).
 log("CRON: Scheduler active. Ctrl+C to stop.\n");
+
+function shutdown(signal: string) {
+  log(`CRON: Received ${signal}, stopping`);
+  process.exit(0);
+}
+
+process.once("SIGINT", () => shutdown("SIGINT"));
+process.once("SIGTERM", () => shutdown("SIGTERM"));
