@@ -172,10 +172,6 @@ export default async function CandidatePage({ params }: Props) {
     "https://votepulse.je";
   const jsonLd = generateCandidateJsonLd(candidate, siteUrl);
 
-  const issueCount = Array.isArray(candidate.aiIssues)
-    ? (candidate.aiIssues as unknown[]).length
-    : 0;
-
   const manifestoFor2026Check = candidate.manifestoRaw ?? "";
   const has2026Content =
     Boolean(candidate.aiSummary) ||
@@ -286,93 +282,12 @@ export default async function CandidatePage({ params }: Props) {
         </div>
       </div>
 
-      {/* ── AEO Candidate Answer Capsule ─────────────────────────────── */}
-      {/* Structured for Google AI Overview extraction on named-candidate queries */}
-      <section
-        id="aeo-candidate-answer"
-        aria-label={`${candidate.name} Jersey 2026 election information`}
-        className="max-w-4xl mx-auto px-4 pt-6"
-      >
-        <article className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="h-0.5 bg-[#C8922A]" />
-          <div className="px-5 py-5">
-            {/* Direct-answer lead */}
-            <p
-              id="aeo-candidate-lead"
-              className="text-sm text-[#0D1B2A] leading-relaxed"
-            >
-              <strong>{candidate.name}</strong> is standing as a candidate in{" "}
-              <strong>{candidate.district}</strong> for Jersey&apos;s 2026
-              general election on 7 June 2026.
-              {candidate.party ? (
-                <>
-                  {" "}
-                  They are running under <strong>{candidate.party}</strong>.
-                </>
-              ) : (
-                <> They are standing as an Independent candidate.</>
-              )}
-              {candidate.aiSummary && (
-                <>
-                  {" "}
-                  {candidate.aiSummary.split(/[.!?]/)[0]?.trim()}.
-                </>
-              )}
-            </p>
-
-            {/* ── Structured facts list ─────────────────────────────── */}
-            <dl className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {[
-                { term: "District", def: candidate.district },
-                { term: "Party", def: candidate.party || "Independent" },
-                { term: "Election", def: "7 June 2026" },
-                { term: "Role", def: "States of Jersey Deputy" },
-                {
-                  term: "AI summary",
-                  def: candidate.aiSummary ? "Available" : "Pending",
-                },
-                {
-                  term: "Issues tracked",
-                  def: `${issueCount} of 10`,
-                },
-              ].map((item) => (
-                <div
-                  key={item.term}
-                  className="flex flex-col px-3 py-2.5 rounded-lg bg-[#F5F5F0]"
-                >
-                  <dt className="text-xs font-semibold text-[#0D1B2A]/50 uppercase tracking-wide">
-                    {item.term}
-                  </dt>
-                  <dd className="text-sm font-semibold text-[#0D1B2A] mt-0.5">
-                    {item.def}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-
-            {/* Source line */}
-            <p className="mt-4 text-xs text-[#0D1B2A]/40">
-              Information sourced from publicly available candidate pages.
-              AI-generated content is clearly labelled below. Last updated:{" "}
-              {candidate.lastEnrichedAt
-                ? new Date(candidate.lastEnrichedAt).toLocaleDateString(
-                    "en-GB",
-                    {
-                      day: "numeric",
-                      month: "long",
-                      year: "numeric",
-                    },
-                  )
-                : "Pending enrichment"}
-              .
-            </p>
-          </div>
-        </article>
-      </section>
-
       <div className="mx-auto max-w-4xl space-y-8 px-4 py-8">
         {candidate.aiSummary && (
-          <section className="rounded-xl border border-amber-200 bg-amber-50 p-6">
+          <section
+            id="aeo-candidate-lead"
+            className="rounded-xl border border-amber-200 bg-amber-50 p-6"
+          >
             <div className="mb-4 flex items-center gap-2">
               <span className="text-base text-amber-500">⚠</span>
               <span className="text-xs font-semibold uppercase tracking-wide text-amber-700">

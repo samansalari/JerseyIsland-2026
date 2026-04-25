@@ -128,7 +128,7 @@ export function generateCandidateJsonLd(
     dateModified,
     speakable: {
       "@type": "SpeakableSpecification",
-      cssSelector: ["#aeo-candidate-lead", "#aeo-candidate-answer"],
+      cssSelector: ["#aeo-candidate-lead"],
     },
     about: { "@id": personId },
     isPartOf: {

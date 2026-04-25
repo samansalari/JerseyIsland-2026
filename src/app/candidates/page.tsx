@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { db } from "@/db";
 import { candidates } from "@/db/schema";
-import { asc, count, isNotNull, ne, sql } from "drizzle-orm";
+import { and, asc, count, isNotNull, ne, notLike, sql } from "drizzle-orm";
 import { CandidateGrid } from "./candidate-grid";
 import { buildPublicPageMetadata } from "@/lib/seo";
 
@@ -49,6 +49,24 @@ export default async function CandidatesPage() {
   const all = await getCandidates();
 
   // ── AEO aggregate queries ──────────────────────────────────────────────────
+  const REAL_JERSEY_DISTRICTS = new Set([
+    "St Helier North",
+    "St Helier Central",
+    "St Helier South",
+    "St Saviour",
+    "St Brelade",
+    "St Clement",
+    "St Peter",
+    "St Lawrence",
+    "St Mary",
+    "St Ouen",
+    "St John",
+    "Trinity",
+    "Grouville",
+    "St Martin",
+    "Island-wide (Senator)",
+  ]);
+
   const districtCounts = await db
     .select({
       district: candidates.district,
@@ -56,9 +74,19 @@ export default async function CandidatesPage() {
       enriched: sql<number>`count(*) filter (where ${candidates.aiSummary} is not null)`,
     })
     .from(candidates)
-    .where(ne(candidates.district, "Unknown"))
+    .where(
+      and(
+        ne(candidates.district, "Unknown"),
+        notLike(candidates.district, "District %"),
+      ),
+    )
     .groupBy(candidates.district)
     .orderBy(candidates.district);
+
+  // Secondary client-side guard for any other non-real names
+  const validDistrictCounts = districtCounts.filter((d) =>
+    REAL_JERSEY_DISTRICTS.has(d.district),
+  );
 
   const enrichedCountRows = await db
     .select({ count: count() })
@@ -186,20 +214,19 @@ export default async function CandidatesPage() {
                 className="grid grid-cols-1 sm:grid-cols-2 gap-1.5"
                 role="list"
               >
-                {districtCounts.map((d) => (
-                  <li
-                    key={d.district}
-                    className="flex items-center justify-between px-3 py-2 rounded-lg bg-[#F5F5F0] text-sm"
-                  >
+                {validDistrictCounts.map((d) => (
+                  <li key={d.district}>
                     <a
                       href={`/districts/${encodeURIComponent(d.district)}`}
-                      className="font-medium text-[#0D1B2A] hover:text-[#A31621] transition-colors"
+                      className="flex items-center justify-between px-3 py-2 rounded-lg bg-[#F5F5F0] hover:bg-[#0D1B2A] transition-colors group w-full"
                     >
-                      {d.district}
+                      <span className="font-medium text-[#0D1B2A] group-hover:text-[#F5E8C8] text-sm transition-colors">
+                        {d.district}
+                      </span>
+                      <span className="text-[#0D1B2A]/50 group-hover:text-[#F5E8C8]/60 text-xs ml-2 tabular-nums transition-colors">
+                        {d.total} candidate{Number(d.total) !== 1 ? "s" : ""}
+                      </span>
                     </a>
-                    <span className="text-[#0D1B2A]/50 text-xs ml-2 tabular-nums">
-                      {d.total} candidate{Number(d.total) !== 1 ? "s" : ""}
-                    </span>
                   </li>
                 ))}
               </ul>
@@ -272,7 +299,7 @@ export default async function CandidatesPage() {
               description:
                 "All 135 candidates standing in Jersey's 2026 general election on 7 June 2026 across 14 districts.",
               numberOfItems: all.length > 0 ? all.length : 135,
-              itemListElement: districtCounts.map((d, i) => ({
+              itemListElement: validDistrictCounts.map((d, i) => ({
                 "@type": "ListItem",
                 position: i + 1,
                 name: `${d.district} — ${d.total} candidate${Number(d.total) !== 1 ? "s" : ""}`,
