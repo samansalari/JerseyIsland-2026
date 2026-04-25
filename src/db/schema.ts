@@ -9,6 +9,7 @@ import {
   index,
   uniqueIndex,
   primaryKey,
+  unique,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
@@ -243,6 +244,58 @@ export const pulseInsights = pgTable(
   }),
 );
 
+// ── topic_summaries ───────────────────────────────────────────────────────────
+// Grok-generated summary for each issue topic, refreshed by cron
+export const topicSummaries = pgTable("topic_summaries", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  issue: text("issue").notNull().unique(), // e.g. "housing"
+  displayName: text("display_name").notNull(), // e.g. "Housing"
+  icon: text("icon").notNull(), // emoji e.g. "🏠"
+
+  // AI-generated content (Grok output, verified against manifestos)
+  aiSummary: text("ai_summary"),
+  candidateCount: integer("candidate_count").default(0),
+  topParties: jsonb("top_parties"), // {party: string, count: number}[]
+
+  // Source traceability
+  sourcesCited: jsonb("sources_cited"), // [{candidateName, slug, sourceQuote, manifestoUrl}]
+
+  generatedAt: timestamp("generated_at", { withTimezone: true }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+// ── topic_upvotes ─────────────────────────────────────────────────────────────
+// Anonymous upvotes — one per fingerprint per issue
+export const topicUpvotes = pgTable(
+  "topic_upvotes",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    issue: text("issue").notNull(),
+    fingerprint: text("fingerprint").notNull(), // SHA256(IP + UA + date) — no PII
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  },
+  (t) => ({
+    uniqueVote: unique().on(t.issue, t.fingerprint),
+  }),
+);
+
+// ── topic_feedback ────────────────────────────────────────────────────────────
+// Anonymous text feedback on a topic — stored for admin analysis
+export const topicFeedback = pgTable("topic_feedback", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  issue: text("issue").notNull(),
+  feedbackType: text("feedback_type").notNull(), // "agree" | "disagree" | "missing" | "wrong"
+  content: text("content"), // optional text (max 500 chars, validated server-side)
+  fingerprint: text("fingerprint").notNull(), // same as upvotes — no PII
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
 // ── Typed row helpers ───────────────────────────────────────────────────────
 export type Candidate = typeof candidates.$inferSelect;
 export type NewCandidate = typeof candidates.$inferInsert;
@@ -276,3 +329,12 @@ export type NewCandidateRating = typeof candidateRatings.$inferInsert;
 
 export type PulseInsight = typeof pulseInsights.$inferSelect;
 export type NewPulseInsight = typeof pulseInsights.$inferInsert;
+
+export type TopicSummary = typeof topicSummaries.$inferSelect;
+export type NewTopicSummary = typeof topicSummaries.$inferInsert;
+
+export type TopicUpvote = typeof topicUpvotes.$inferSelect;
+export type NewTopicUpvote = typeof topicUpvotes.$inferInsert;
+
+export type TopicFeedback = typeof topicFeedback.$inferSelect;
+export type NewTopicFeedback = typeof topicFeedback.$inferInsert;

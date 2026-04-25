@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { db } from "@/db";
-import { candidates, issues } from "@/db/schema";
 import { ElectionCountdown } from "@/components/election-countdown";
+import { IssueIntelligence } from "@/components/issue-intelligence";
 import { generateHomepageJsonLd } from "@/lib/homepage-jsonld";
 import { buildPublicPageMetadata } from "@/lib/seo";
 
@@ -13,7 +12,7 @@ export const metadata: Metadata = buildPublicPageMetadata({
   path: "/",
 });
 
-export const revalidate = 60;
+export const revalidate = 21600; // 6 hours — matches cron cycle
 
 const DISTRICTS = [
   "St Helier North", "St Helier Central", "St Helier South",
@@ -21,29 +20,7 @@ const DISTRICTS = [
   "St Mary", "St Ouen", "St John", "Trinity", "Grouville", "St Martin",
 ] as const;
 
-async function getStats() {
-  try {
-    const [candidateCount, issueCount] = await Promise.all([
-      db.$count(candidates),
-      db.$count(issues),
-    ]);
-    return {
-      candidates: candidateCount,
-      districts: DISTRICTS.length,
-      issues: issueCount,
-    };
-  } catch {
-    /* Allows `next build` when Postgres is not reachable (CI / preview). */
-    return {
-      candidates: 0,
-      districts: DISTRICTS.length,
-      issues: 0,
-    };
-  }
-}
-
 export default async function Home() {
-  const stats = await getStats();
   const homepageJsonLd = generateHomepageJsonLd();
 
   return (
@@ -124,14 +101,8 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* ── Stats bar ─────────────────────────────────────── */}
-      <section className="border-b border-border bg-white">
-        <div className="mx-auto grid max-w-6xl grid-cols-3 divide-x divide-border px-5">
-          <StatCell value={stats.candidates} label="Candidates tracked" />
-          <StatCell value={stats.districts} label="Parishes & districts" />
-          <StatCell value={stats.issues} label="Policy issues" />
-        </div>
-      </section>
+      {/* ── Issue Intelligence ────────────────────────────── */}
+      <IssueIntelligence />
 
       {/* ── How it works ──────────────────────────────────── */}
       <section className="mx-auto max-w-6xl px-5 py-16 md:py-20">
@@ -219,19 +190,6 @@ export default async function Home() {
 }
 
 // ── Local components ────────────────────────────────────────────────────────
-
-function StatCell({ value, label }: { value: number; label: string }) {
-  return (
-    <div className="px-5 py-5 text-center md:py-6">
-      <p className="text-[28px] font-bold tabular-nums tracking-tight text-navy md:text-[32px]">
-        {value}
-      </p>
-      <p className="mt-0.5 text-[12px] font-medium text-muted-foreground">
-        {label}
-      </p>
-    </div>
-  );
-}
 
 function StepCard({
   n,

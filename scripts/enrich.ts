@@ -7,6 +7,7 @@ import {
   candidateIssues,
   issues,
   snapshots,
+  topicSummaries,
 } from "../src/db/schema";
 import {
   type GrokUsage,
@@ -354,6 +355,183 @@ async function enrichOneCandidate(
   }
 }
 
+// ── Topic-level synthesis ────────────────────────────────────────────────────
+
+const ISSUE_NAMES = [
+  "housing",
+  "healthcare",
+  "tax",
+  "education",
+  "environment",
+  "transport",
+  "cost_of_living",
+  "immigration",
+  "economy",
+  "public_services",
+] as const;
+
+type IssueName = (typeof ISSUE_NAMES)[number];
+
+interface CandidatePosition {
+  candidateName: string;
+  slug: string;
+  party: string | null;
+  position: string;
+  sourceQuote: string;
+  confidence: number;
+  manifestoUrl: string | null;
+}
+
+async function generateTopicSummaries() {
+  console.log("\n=== GENERATING TOPIC SUMMARIES ===");
+
+  const enrichedCandidates = await db
+    .select({
+      name: candidates.name,
+      slug: candidates.slug,
+      party: candidates.party,
+      aiIssues: candidates.aiIssues,
+      manifestoUrl: candidates.manifestoUrl,
+    })
+    .from(candidates)
+    .where(isNotNull(candidates.aiIssues));
+
+  for (const issue of ISSUE_NAMES) {
+    const positions: CandidatePosition[] = [];
+
+    for (const candidate of enrichedCandidates) {
+      const issueList = Array.isArray(candidate.aiIssues)
+        ? (candidate.aiIssues as Array<{
+            issue: string;
+            position: string;
+            source_quote: string;
+            confidence: number;
+          }>)
+        : [];
+      const issueData = issueList.find((i) => i.issue === issue);
+
+      if (issueData && issueData.confidence > 0.4) {
+        positions.push({
+          candidateName: candidate.name,
+          slug: candidate.slug,
+          party: candidate.party,
+          position: issueData.position,
+          sourceQuote: issueData.source_quote,
+          confidence: issueData.confidence,
+          manifestoUrl: candidate.manifestoUrl,
+        });
+      }
+    }
+
+    if (positions.length === 0) {
+      console.log(`  ${issue}: no candidates with positions, skipping`);
+      continue;
+    }
+
+    const positionsSummary = positions
+      .slice(0, 20)
+      .map(
+        (p) =>
+          `${p.candidateName} (${p.party ?? "Independent"}): "${p.position}"`,
+      )
+      .join("\n");
+
+    const systemPrompt = `You are a neutral political analyst synthesising candidate positions on a policy topic for Jersey's 2026 general election. You must be completely factual and non-partisan. Every claim must be directly supported by the candidate position data provided. Do not infer or extrapolate. Never hallucinate or add information not in the source data.`;
+
+    const userPrompt = `Synthesise the following candidate positions on "${issue.replace(/_/g, " ")}" into a 2-3 sentence neutral summary that describes the overall landscape — what candidates generally support, where they differ, and any notable consensus.
+
+CANDIDATE POSITIONS:
+${positionsSummary}
+
+Return ONLY a JSON object, no markdown:
+{
+  "summary": "2-3 sentence neutral synthesis of the landscape",
+  "consensus": "One sentence describing any shared ground, or null if none",
+  "divergence": "One sentence describing the main area of disagreement, or null if all agree"
+}`;
+
+    try {
+      const { data: result } = await grokChatCompletionJson<{
+        summary: string;
+        consensus: string | null;
+        divergence: string | null;
+      }>({
+        systemPrompt,
+        userPrompt,
+        temperature: 0,
+        maxTokens: 512,
+        model: MODEL,
+      });
+
+      const sourcesCited = positions
+        .sort((a, b) => b.confidence - a.confidence)
+        .slice(0, 5)
+        .map((p) => ({
+          candidateName: p.candidateName,
+          slug: p.slug,
+          sourceQuote: p.sourceQuote,
+          manifestoUrl: p.manifestoUrl,
+        }));
+
+      const partyCounts: Record<string, number> = {};
+      for (const p of positions) {
+        const party = p.party ?? "Independent";
+        partyCounts[party] = (partyCounts[party] ?? 0) + 1;
+      }
+      const topParties = Object.entries(partyCounts)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 3)
+        .map(([party, count]) => ({ party, count }));
+
+      const fullSummary = [result.summary, result.consensus, result.divergence]
+        .filter(Boolean)
+        .join(" ");
+
+      await db
+        .update(topicSummaries)
+        .set({
+          aiSummary: fullSummary,
+          candidateCount: positions.length,
+          sourcesCited,
+          topParties,
+          generatedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(topicSummaries.issue, issue));
+
+      console.log(
+        `  ✓ ${issue}: ${positions.length} candidates, summary generated`,
+      );
+    } catch (err) {
+      console.error(`  ✗ ${issue}: failed to generate summary`, err);
+    }
+
+    await sleep(2000);
+  }
+
+  console.log("=== TOPIC SUMMARIES COMPLETE ===\n");
+}
+
+async function revalidateHomepage(): Promise<void> {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "");
+  const secret = process.env.REVALIDATION_SECRET?.trim();
+  if (!siteUrl || !secret) return;
+
+  try {
+    await fetch(`${siteUrl}/api/revalidate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        secret,
+        paths: ["/", "/candidates"],
+      }),
+    });
+    console.log("  ✓ Revalidated / and /candidates");
+  } catch {
+    /* non-fatal */
+  }
+}
+
 // ── Main ────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -425,8 +603,22 @@ async function main() {
   await pgClient.end({ timeout: 5 });
 }
 
-// ── Batch: only never-enriched rows (ignores stale refresh) — npm run enrich:batch
-if (process.argv.includes("--batch")) {
+// ── Topics-only: regenerate summaries without re-enriching candidates ────────
+if (process.argv.includes("--topics-only")) {
+  (async () => {
+    console.log("\n=== TOPIC SUMMARIES ONLY ===\n");
+    await generateTopicSummaries();
+    await revalidateHomepage();
+    tokenTracker.printSummary();
+    logTokenUsageToJsonl("enrich:topics");
+    await pgClient.end({ timeout: 5 });
+    process.exit(0);
+  })().catch(async (err) => {
+    console.error("[enrich] ✗ Topics fatal:", err);
+    await pgClient.end({ timeout: 5 }).catch(() => {});
+    process.exit(1);
+  });
+} else if (process.argv.includes("--batch")) {
   (async () => {
     console.log("\n=== GROK BATCH ENRICHMENT ===\n");
     const issueRows = await db.select().from(issues);
@@ -464,6 +656,10 @@ if (process.argv.includes("--batch")) {
     console.log(`\n=== BATCH COMPLETE ===`);
     console.log(`Enriched: ${done}`);
     console.log(`Failed  : ${failed}`);
+
+    await generateTopicSummaries();
+    await revalidateHomepage();
+
     tokenTracker.printSummary();
     logTokenUsageToJsonl("enrich:batch");
     await pgClient.end({ timeout: 5 });

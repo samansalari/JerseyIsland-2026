@@ -35,7 +35,9 @@
     "seed": "npx tsx scripts/seed-candidates.ts",
     "pages:build": "npx @cloudflare/next-on-pages@1",
     "pages:dev": "npx wrangler pages dev .vercel/output/static",
-    "validate:social": "npx tsx scripts/validate-social-links.ts"
+    "validate:social": "npx tsx scripts/validate-social-links.ts",
+    "seed:topics": "npx tsx scripts/seed-topics.ts",
+    "generate:topics": "npx tsx scripts/enrich.ts --topics-only"
   },
   "dependencies": {
     "@fontsource/archivo": "^5.2.8",
