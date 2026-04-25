@@ -158,6 +158,13 @@ export default async function CandidatePage({ params }: Props) {
 
   const jsonLd = generateCandidateJsonLd(candidate, slug);
 
+  const manifestoFor2026Check = candidate.manifestoRaw ?? "";
+  const has2026Content =
+    Boolean(candidate.aiSummary) ||
+    positions.length > 0 ||
+    (manifestoFor2026Check.length > 300 &&
+      manifestoFor2026Check.toLowerCase().includes("2026"));
+
   return (
     <div className="min-h-screen bg-surface">
       <script
@@ -308,7 +315,7 @@ export default async function CandidatePage({ params }: Props) {
           </section>
         )}
 
-        {candidate.manifestoRaw && (
+        {candidate.manifestoRaw ? (
           <section>
             <div className="mb-4 flex items-center justify-between gap-3">
               <h2 className="text-lg font-semibold text-slate-900">
@@ -316,9 +323,36 @@ export default async function CandidatePage({ params }: Props) {
               </h2>
             </div>
             <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+              {!has2026Content && (
+                <div
+                  className="mb-4 rounded-lg border border-amber-200/80 bg-amber-50 p-3 text-sm text-amber-800 [font-family:Archivo,ui-sans-serif,system-ui,sans-serif]"
+                  role="status"
+                >
+                  <span aria-hidden>⚠️</span> No 2026 manifesto published yet.
+                  Showing historical electoral profile from flow.je.
+                </div>
+              )}
               <div className="prose prose-sm max-w-none text-slate-700 prose-headings:text-slate-900 prose-headings:font-semibold prose-a:text-jersey-red prose-strong:text-slate-900 prose-li:my-0.5">
                 <ReactMarkdown>{candidate.manifestoRaw}</ReactMarkdown>
               </div>
+            </div>
+          </section>
+        ) : (
+          <section>
+            <div className="rounded-xl border border-slate-200 bg-white p-6 text-center text-slate-400 shadow-sm">
+              <p className="text-sm">
+                No manifesto or profile text available for this candidate yet.
+              </p>
+              {candidate.manifestoUrl && (
+                <a
+                  href={candidate.manifestoUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 inline-block text-sm font-medium text-jersey-red hover:underline"
+                >
+                  Check their flow.je profile →
+                </a>
+              )}
             </div>
           </section>
         )}

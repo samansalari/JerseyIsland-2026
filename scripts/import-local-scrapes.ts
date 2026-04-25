@@ -76,29 +76,57 @@ function extractName(markdown: string): string | null {
   return name;
 }
 
-function extractBio(markdown: string, _name: string): string | null {
+function extractBio(markdown: string, name: string): string | null {
   const lines = markdown.split("\n");
   const bioLines: string[] = [];
 
   for (const line of lines) {
-    if (line.startsWith("#") || line.startsWith("- [") || line === "Menu")
+    const trimmed = line.trim();
+
+    if (!trimmed) continue;
+
+    if (trimmed.startsWith("#")) continue;
+
+    if (trimmed.startsWith("-") && trimmed.includes("](")) continue;
+    if (trimmed.startsWith("*") && trimmed.includes("](")) continue;
+
+    if (trimmed.includes("|")) continue;
+
+    if (/\d+\.\d+%/.test(trimmed)) continue;
+    if (/^\d+,\d+ (votes|ballots|registered)/i.test(trimmed)) continue;
+    if (/^(Election|By-Election|= \d+\.?\d*% turnout)/i.test(trimmed)) continue;
+    if (/was (elected|not elected)/i.test(trimmed)) continue;
+    if (/^(Elected|Not elected)\.?$/i.test(trimmed)) continue;
+
+    if (/has participated in \d+ elections? since/i.test(trimmed)) continue;
+
+    if (trimmed.startsWith("©")) continue;
+    if (/^return to top/i.test(trimmed)) continue;
+
+    if (trimmed === name) continue;
+
+    if (trimmed === "Menu") continue;
+    if (/^\[.*\]\(.*\)$/.test(trimmed)) continue;
+
+    if (trimmed.startsWith("**") && /was elected/i.test(trimmed)) continue;
+    if (trimmed.startsWith("**") && /was not elected/i.test(trimmed))
       continue;
-    if (line.trim().length > 80) {
-      bioLines.push(line.trim());
-      if (bioLines.length >= 3) break;
+
+    if (trimmed.length > 50 && trimmed[0] && /[A-Z]/.test(trimmed[0])) {
+      const clean = trimmed
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+        .replace(/\*\*([^*]+)\*\*/g, "$1")
+        .replace(/\*([^*]+)\*/g, "$1")
+        .trim();
+
+      bioLines.push(clean);
+
+      if (bioLines.length >= 2) break;
     }
   }
 
   const bio = bioLines.join(" ").trim();
-  const cleanBio = bio
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-    .replace(/\*\*([^*]+)\*\*/g, "$1")
-    .replace(/\*([^*]+)\*/g, "$1")
-    .replace(/^#{1,6}\s+/gm, "")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  return cleanBio.length > 50 ? cleanBio.substring(0, 500) : null;
+  return bio.length > 40 ? bio.substring(0, 500) : null;
 }
 
 function extractDistrict(markdown: string): string | null {
@@ -147,17 +175,52 @@ function stripMarkdownLinks(text: string): string {
   return text.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
 }
 
+function stripTableRowsAndCollapse(text: string): string {
+  return text
+    .replace(/^.*\|.*$/gm, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 function extractManifesto(markdown: string): string {
-  const noNav = cleanMarkdown(markdown);
-  const noLinks = stripMarkdownLinks(noNav);
+  const electionHistoryStart = markdown.search(/^#{1,3}\s*Election History/im);
+
+  let content =
+    electionHistoryStart !== -1
+      ? markdown.substring(0, electionHistoryStart)
+      : markdown;
+
+  // Strip leading flow.je nav while links still have `[text](url)` shape
+  // (cleanMarkdown relies on `- [` / `* [` patterns).
+  content = cleanMarkdown(content);
+
+  content = content.replace(/^---+$/gm, "");
+  content = content.replace(/^\*\*\*+$/gm, "");
+  content = content.replace(/^___+$/gm, "");
+  content = content.replace(/^\s*\*\s+\*\s+\*\s*$/gm, "");
+
+  content = content.replace(/^#\s+\[flow\.je\].+$/im, "");
+
+  content = content.replace(/^Menu\s*$/gm, "");
+
+  content = content.replace(/^©.*$/gm, "");
+  content = content.replace(/^Return to Top.*$/gim, "");
+
+  content = stripMarkdownLinks(content);
+
+  content = content.replace(/^-\s+\[.+?\]\(.+?\)\s*$/gm, "");
+  content = content.replace(/^\*\s+\[.+?\]\(.+?\)\s*$/gm, "");
+
+  content = stripTableRowsAndCollapse(content);
+
   const sectionPattern =
     /(?:#{1,3}\s*(?:Manifesto|Pledges|My Priorities|Key Promises|Policies|Commitments|What I Stand For|My Plans|Election Pledges)[^\n]*\n)([\s\S]+?)(?=\n#{1,3}\s|\Z)/i;
-  const section = noLinks.match(sectionPattern);
+  const section = content.match(sectionPattern);
   if (section?.[1] && section[1].trim().length > 100) {
-    return section[1].trim();
+    return stripTableRowsAndCollapse(section[1]);
   }
 
-  return noLinks.trim();
+  return stripTableRowsAndCollapse(content);
 }
 
 function extractPhotoUrl(markdown: string, metadata: Record<string, string>) {
@@ -304,7 +367,7 @@ async function main() {
               ...new Set([...(ex.sourceUrls || []), ...c.source_urls]),
             ],
             district: ex.district !== "Unknown" ? ex.district : c.district,
-            bio: c.bio || ex.bio,
+            bio: c.bio,
             photoUrl: ex.photoUrl || c.photo_url,
             party: ex.party || c.party,
             manifestoRaw: c.manifesto_raw,

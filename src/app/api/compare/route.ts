@@ -6,6 +6,9 @@ import { candidates } from "@/db/schema";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 export async function GET(request: NextRequest) {
   const ids = request.nextUrl.searchParams
     .get("ids")
@@ -20,6 +23,13 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  if (!ids.every((id) => UUID_RE.test(id))) {
+    return NextResponse.json(
+      { error: "Invalid candidate id format" },
+      { status: 400 },
+    );
+  }
+
   try {
     const results = await db
       .select({
@@ -28,9 +38,13 @@ export async function GET(request: NextRequest) {
         slug: candidates.slug,
         district: candidates.district,
         party: candidates.party,
-        photo_url: candidates.photoUrl,
-        ai_summary: candidates.aiSummary,
-        ai_issues: candidates.aiIssues,
+        bio: candidates.bio,
+        photoUrl: candidates.photoUrl,
+        aiSummary: candidates.aiSummary,
+        aiIssues: candidates.aiIssues,
+        manifestoUrl: candidates.manifestoUrl,
+        sourceUrls: candidates.sourceUrls,
+        manifestoRaw: candidates.manifestoRaw,
       })
       .from(candidates)
       .where(inArray(candidates.id, ids));

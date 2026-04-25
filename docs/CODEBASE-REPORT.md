@@ -140,7 +140,7 @@ VotePulse is a public, non-partisan election intelligence site for Jersey’s 20
 | Method | Path | Purpose | Auth | Status |
 |--------|------|---------|------|--------|
 | GET | `/api/health` | DB + table probe, optional `logs/cron-state.json` | None | OK (`dynamic`, `nodejs`) |
-| GET | `/api/compare` | JSON for comparison matrix (`?candidates=slug,slug`) | None | OK |
+| GET | `/api/compare` | Full candidate compare payload (`?ids=uuid,uuid` 2–4); includes `aiIssues`, bio, sources | None | OK |
 | POST | `/api/revalidate` | ISR revalidate by secret + paths | `REVALIDATION_SECRET` body | OK |
 | POST | `/api/auth/signout` | Clears Supabase session, redirects to login | Session cookie | OK |
 

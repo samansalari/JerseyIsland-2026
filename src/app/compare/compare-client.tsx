@@ -1,6 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import {
+  ComparisonTable,
+  type CandidateCompare,
+} from "./comparison-table";
 
 interface Candidate {
   id: string;
@@ -11,35 +15,10 @@ interface Candidate {
   photo_url: string | null;
 }
 
-interface CandidateIssueFinding {
-  issue: string;
-  position: string;
-  source_quote: string;
-  confidence: number;
-}
-
-interface CandidateWithIssues extends Candidate {
-  ai_summary: string | null;
-  ai_issues: CandidateIssueFinding[] | null;
-}
-
 interface CompareClientProps {
   allCandidates: Candidate[];
   districts: string[];
 }
-
-const ALL_ISSUES = [
-  "housing",
-  "healthcare",
-  "tax",
-  "education",
-  "environment",
-  "transport",
-  "cost_of_living",
-  "immigration",
-  "economy",
-  "public_services",
-] as const;
 
 export function CompareClient({
   allCandidates,
@@ -48,7 +27,7 @@ export function CompareClient({
   const [selectedDistrict, setSelectedDistrict] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [comparisonData, setComparisonData] = useState<CandidateWithIssues[]>([]);
+  const [comparisonData, setComparisonData] = useState<CandidateCompare[]>([]);
   const [loading, setLoading] = useState(false);
 
   const filteredCandidates = useMemo(() => {
@@ -90,8 +69,12 @@ export function CompareClient({
         throw new Error(`Compare API returned ${response.status}`);
       }
       const payload = (await response.json()) as {
-        candidates?: CandidateWithIssues[];
+        candidates?: CandidateCompare[];
+        error?: string;
       };
+      if (payload.error) {
+        throw new Error(payload.error);
+      }
       setComparisonData(payload.candidates ?? []);
     } catch (error) {
       console.error(error);
@@ -216,6 +199,7 @@ export function CompareClient({
                       {candidate.name
                         .split(" ")
                         .map((word) => word[0])
+                        .filter(Boolean)
                         .join("")
                         .slice(0, 2)}
                     </div>
@@ -283,150 +267,9 @@ export function CompareClient({
           </div>
         </div>
 
-        {comparisonData.length >= 2 && (
-          <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-            <div
-              className="grid border-b border-gray-200"
-              style={{
-                gridTemplateColumns: `200px repeat(${comparisonData.length}, 1fr)`,
-              }}
-            >
-              <div className="border-r border-gray-200 bg-gray-50 p-4" />
-              {comparisonData.map((candidate) => (
-                <div
-                  key={candidate.id}
-                  className="border-r border-gray-200 p-4 last:border-r-0"
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[#A31621] text-xs font-bold text-[#F5E8C8]">
-                      {candidate.name
-                        .split(" ")
-                        .map((word) => word[0])
-                        .join("")
-                        .slice(0, 2)}
-                    </div>
-                    <div>
-                      <div className="text-sm font-semibold leading-tight text-[#0D1B2A]">
-                        {candidate.name}
-                      </div>
-                      <div className="text-xs text-gray-400">
-                        {candidate.district}
-                      </div>
-                      {candidate.party && (
-                        <div className="text-xs font-medium text-[#A31621]">
-                          {candidate.party}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div
-              className="grid border-b border-gray-100"
-              style={{
-                gridTemplateColumns: `200px repeat(${comparisonData.length}, 1fr)`,
-              }}
-            >
-              <div className="flex items-start border-r border-gray-200 bg-gray-50 p-4">
-                <span className="text-xs font-bold uppercase tracking-wide text-gray-500">
-                  Summary
-                </span>
-              </div>
-              {comparisonData.map((candidate) => (
-                <div
-                  key={candidate.id}
-                  className="border-r border-gray-100 p-4 text-sm leading-relaxed text-gray-600 last:border-r-0"
-                >
-                  {candidate.ai_summary ? (
-                    <span>
-                      {candidate.ai_summary.length > 200
-                        ? `${candidate.ai_summary.substring(0, 200)}...`
-                        : candidate.ai_summary}
-                    </span>
-                  ) : (
-                    <span className="italic text-gray-300">No summary yet</span>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {ALL_ISSUES.map((issue, index) => {
-              const hasAnyData = comparisonData.some((candidate) =>
-                candidate.ai_issues?.some((item) => item.issue === issue),
-              );
-              if (!hasAnyData) return null;
-
-              return (
-                <div
-                  key={issue}
-                  className={`grid border-b border-gray-100 last:border-b-0 ${
-                    index % 2 === 0 ? "bg-white" : "bg-gray-50/50"
-                  }`}
-                  style={{
-                    gridTemplateColumns: `200px repeat(${comparisonData.length}, 1fr)`,
-                  }}
-                >
-                  <div className="flex items-start border-r border-gray-200 p-4">
-                    <span className="text-xs font-bold uppercase tracking-wide text-[#A31621]">
-                      {issue.replace(/_/g, " ")}
-                    </span>
-                  </div>
-
-                  {comparisonData.map((candidate) => {
-                    const issueData = candidate.ai_issues?.find(
-                      (item) => item.issue === issue,
-                    );
-
-                    return (
-                      <div
-                        key={candidate.id}
-                        className="border-r border-gray-100 p-4 last:border-r-0"
-                      >
-                        {issueData ? (
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-1.5">
-                              <div
-                                className={`h-2 w-2 flex-shrink-0 rounded-full ${
-                                  issueData.confidence > 0.8
-                                    ? "bg-green-500"
-                                    : issueData.confidence > 0.5
-                                      ? "bg-amber-500"
-                                      : "bg-red-400"
-                                }`}
-                              />
-                              <span className="text-xs text-gray-400">
-                                {issueData.confidence > 0.8
-                                  ? "High"
-                                  : issueData.confidence > 0.5
-                                    ? "Medium"
-                                    : "Low"}{" "}
-                                confidence
-                              </span>
-                            </div>
-                            <p className="text-sm leading-relaxed text-gray-700">
-                              {issueData.position}
-                            </p>
-                            {issueData.source_quote && (
-                              <blockquote className="border-l-2 border-[#C8922A] pl-2 text-xs italic text-gray-400">
-                                "{issueData.source_quote}"
-                              </blockquote>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-xs italic text-gray-300">
-                            No position found
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            })}
-          </div>
-        )}
+        {comparisonData.length >= 2 ? (
+          <ComparisonTable candidates={comparisonData} />
+        ) : null}
 
         {selectedIds.length >= 2 && comparisonData.length === 0 && !loading && (
           <div className="py-12 text-center text-gray-400">

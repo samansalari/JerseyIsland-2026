@@ -5,9 +5,9 @@ import Script from "next/script";
 import "./globals.css";
 import { env } from "@/lib/env";
 import { JERSEY_RED_PRIMARY_HEX } from "@/lib/brand-metadata";
-import { NavMobile } from "@/components/nav-mobile";
 import { Logo } from "@/components/logo";
-import { NavLinks } from "@/components/nav-links";
+import { Navbar } from "@/components/navbar";
+import { PWAInstallButton } from "@/components/pwa-install-button";
 
 const GOOGLE_TAG_ID = "G-4WZWNNE0LP";
 
@@ -104,7 +104,7 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-const NAV_LINKS = [
+const FOOTER_NAV_LINKS = [
   { href: "/", label: "Home" },
   { href: "/candidates", label: "Candidates" },
   { href: "/districts", label: "Districts" },
@@ -119,7 +119,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en-GB" className={archivo.variable}>
+    <html lang="en-GB" className={`${archivo.variable} h-full w-full max-w-full`}>
       <head>
         <Script
           src={`https://www.googletagmanager.com/gtag/js?id=${GOOGLE_TAG_ID}`}
@@ -134,35 +134,15 @@ export default function RootLayout({
           `}
         </Script>
       </head>
-      <body className="min-h-screen bg-background font-sans text-foreground">
+      <body className="min-h-screen w-full max-w-full bg-background font-sans text-foreground antialiased">
         {/* Top accent ribbon */}
         <div className="h-[3px] w-full bg-jersey-red" aria-hidden />
 
-        {/* ── Header ────────────────────────────────────── */}
-        <header className="sticky top-0 z-40 border-b border-[#0D1B2A]/10 bg-[#F5F5F0]/95 backdrop-blur-sm">
-          <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-5">
-            <Logo
-              size="md"
-              showWordmark
-              href="/"
-              wordmarkTheme="dark"
-              blendMode="normal"
-            />
+        <Navbar />
 
-            {/* Desktop nav */}
-            <nav className="hidden items-center gap-1 md:flex" aria-label="Main">
-              <NavLinks
-                links={NAV_LINKS as unknown as { href: string; label: string }[]}
-              />
-            </nav>
-
-            {/* Mobile hamburger — client component */}
-            <NavMobile links={NAV_LINKS as unknown as { href: string; label: string }[]} />
-          </div>
-        </header>
-
-        {/* ── Main content ──────────────────────────────── */}
-        <div className="min-h-[calc(100vh-3.5rem-3px)]">{children}</div>
+        <main className="w-full min-h-[calc(100vh-4rem-3px)] overflow-x-clip">
+          {children}
+        </main>
 
         {/* ── Footer ────────────────────────────────────── */}
         <footer className="border-t border-border bg-navy text-on-primary/70">
@@ -190,7 +170,7 @@ export default function RootLayout({
                     Navigate
                   </p>
                   <ul className="space-y-2">
-                    {NAV_LINKS.map(({ href, label }) => (
+                    {FOOTER_NAV_LINKS.map(({ href, label }) => (
                       <li key={href}>
                         <Link
                           href={href}
@@ -255,6 +235,7 @@ export default function RootLayout({
             </div>
           </div>
         </footer>
+        <PWAInstallButton />
       </body>
     </html>
   );
