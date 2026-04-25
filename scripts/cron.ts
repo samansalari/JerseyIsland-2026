@@ -341,6 +341,27 @@ cron.schedule("0 3 * * *", () => {
   );
 });
 
+// ── One-time: Official candidate list day — Monday 27 April 2026 ─────────────
+// vote.je and flow.je are expected to publish the official 2026 candidate list.
+// Run at 08:00 Jersey time (Europe/London = UTC+1 in BST).
+cron.schedule(
+  "0 8 27 4 *",
+  async () => {
+    log("CRON: Official candidate list day — running full rescrape + manifesto harvest");
+    await runTask(
+      "SCRAPE vote.je manifestos",
+      "scripts/scrapers/scrape-vote-je-manifestos.ts",
+    );
+    await runTask("SCRAPE flow.je", "scripts/scrapers/scrape-flow-je.ts");
+    await runTask("IMPORT local scrapes", "scripts/import-local-scrapes.ts");
+    await runTask("EXTRACT social links", "scripts/extract-social-links.ts");
+    await runTask("ENRICH batch", "scripts/enrich.ts", ["--batch"]);
+    await triggerRevalidation();
+    log("CRON: Official list day cycle complete");
+  },
+  { timezone: "Europe/London" },
+);
+
 // Run 6-hour cycle immediately on start
 log("CRON: Running initial 6-hour cycle…\n");
 sixHourCycle().catch((err) =>

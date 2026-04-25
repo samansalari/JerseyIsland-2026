@@ -27,12 +27,15 @@
     "seed:candidates": "npx tsx scripts/seed-candidates.ts",
     "scrape:flow": "tsx scripts/scrapers/scrape-flow-je.ts",
     "scrape:vote": "tsx scripts/scrapers/scrape-vote-je.ts",
+    "scrape:manifestos": "npx tsx scripts/scrapers/scrape-vote-je-manifestos.ts",
+    "extract:social": "npx tsx scripts/extract-social-links.ts",
     "ingest:news": "tsx scripts/ingest-news.ts",
     "import:local-scrapes": "tsx scripts/import-local-scrapes.ts",
     "cron": "npx tsx scripts/cron.ts",
     "seed": "npx tsx scripts/seed-candidates.ts",
     "pages:build": "npx @cloudflare/next-on-pages@1",
-    "pages:dev": "npx wrangler pages dev .vercel/output/static"
+    "pages:dev": "npx wrangler pages dev .vercel/output/static",
+    "validate:social": "npx tsx scripts/validate-social-links.ts"
   },
   "dependencies": {
     "@mendable/firecrawl-js": "^1.8.1",

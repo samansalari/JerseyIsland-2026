@@ -4,6 +4,7 @@ import {
   text,
   jsonb,
   real,
+  integer,
   timestamp,
   index,
   uniqueIndex,
@@ -47,6 +48,9 @@ export const candidates = pgTable(
     // Sacred raw data — never overwritten by AI.
     manifestoRaw: text("manifesto_raw"),
     manifestoUrl: text("manifesto_url"),
+
+    // Social links extracted from scraped markdown.
+    socialLinks: jsonb("social_links").$type<Record<string, string>>(),
 
     // AI enrichment (nullable until the pipeline fills them).
     aiSummary: text("ai_summary"),
