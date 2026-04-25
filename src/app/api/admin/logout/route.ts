@@ -1,10 +1,12 @@
+import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
-import { clearAdminAuthCookie } from "@/lib/admin-auth";
 
 export const runtime = "nodejs";
 
 export async function POST() {
-  const res = NextResponse.json({ ok: true });
-  clearAdminAuthCookie(res);
-  return res;
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+
+  // AdminNav client component fetches this and then does window.location.href = '/admin/login'
+  return NextResponse.json({ ok: true });
 }

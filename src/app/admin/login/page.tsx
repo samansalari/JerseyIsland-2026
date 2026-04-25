@@ -1,111 +1,134 @@
-"use client";
+import type { Metadata } from "next";
+import { login } from "./actions";
 
-import { useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+export const metadata: Metadata = {
+  title: { absolute: "Admin Login | VotePulse" },
+  robots: { index: false, follow: false },
+};
 
-function LoginInner() {
-  const sp = useSearchParams();
-  const configErr = sp.get("error") === "config";
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+type Props = {
+  searchParams: Promise<{ redirectTo?: string; error?: string }>;
+};
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    const r = await fetch("/api/admin/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password }),
-    });
-    const j = await r.json().catch(() => ({}));
-    if (!r.ok) {
-      setError(typeof j.error === "string" ? j.error : "Invalid credentials");
-      setLoading(false);
-      return;
-    }
-    window.location.href = "/admin";
-  }
+export default async function LoginPage({ searchParams }: Props) {
+  const sp = await searchParams;
+
+  const errorMessage =
+    sp.error === "invalid_credentials"
+      ? "Incorrect email or password."
+      : sp.error === "unauthorized"
+        ? "You are not authorised to access this area."
+        : sp.error === "missing_fields"
+          ? "Please enter your email and password."
+          : sp.error === "config"
+            ? "Supabase is not configured on this server."
+            : sp.error
+              ? "Something went wrong. Please try again."
+              : null;
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center"
-      style={{ backgroundColor: "#0D1B2A", fontFamily: "Archivo, sans-serif" }}
-    >
+    <div className="relative min-h-screen flex items-center justify-center px-4 bg-[#0D1B2A]">
+      {/* Subtle grid texture */}
       <div
-        className="w-full max-w-sm p-8 rounded-2xl"
-        style={{ backgroundColor: "#F5F5F0" }}
-      >
-        <div className="text-center mb-8">
-          <p className="text-2xl font-bold" style={{ color: "#0D1B2A" }}>
-            <span>Vote</span>
-            <span style={{ color: "#C8922A" }}>Pulse</span>
-          </p>
-          <p className="text-sm mt-1.5 font-medium" style={{ color: "rgba(13,27,42,0.45)" }}>
-            Admin — restricted access
+        className="absolute inset-0 opacity-[0.04]"
+        style={{
+          backgroundImage:
+            "repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(255,255,255,0.5) 39px, rgba(255,255,255,0.5) 40px)",
+        }}
+        aria-hidden
+      />
+
+      <div className="relative w-full max-w-md">
+        {/* VotePulse wordmark */}
+        <div className="text-center mb-10">
+          <div className="inline-flex items-baseline gap-0.5 mb-2">
+            <span className="text-3xl font-bold text-[#F5E8C8]">Vote</span>
+            <span className="text-3xl font-bold text-[#C8922A]">Pulse</span>
+          </div>
+          <p className="text-sm text-[#F5E8C8]/40 tracking-widest uppercase">
+            Admin Access
           </p>
         </div>
 
-        {configErr && (
-          <div
-            className="mb-4 p-3 rounded-xl text-sm text-center"
-            style={{ backgroundColor: "rgba(200,146,42,0.1)", color: "#C8922A" }}
-          >
-            Set <code className="font-mono text-xs bg-black/10 px-1 py-0.5 rounded">ADMIN_SECRET</code> in Railway environment variables.
-          </div>
-        )}
-
-        <form onSubmit={(e) => void onSubmit(e)} className="space-y-4">
-          <div>
-            <label
-              className="text-xs font-bold uppercase tracking-wide block mb-1.5"
-              style={{ color: "rgba(13,27,42,0.5)" }}
-            >
-              Password
-            </label>
-            <input
-              type="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl text-sm bg-white"
-              style={{
-                border: "1px solid rgba(13,27,42,0.15)",
-                outline: "none",
-                color: "#0D1B2A",
-              }}
-            />
-          </div>
-
-          {error && (
-            <p
-              className="text-sm text-center p-2 rounded-lg"
-              style={{ backgroundColor: "rgba(163,22,33,0.08)", color: "#A31621" }}
-            >
-              {error}
-            </p>
+        {/* Login card */}
+        <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8">
+          {/* Error message */}
+          {errorMessage && (
+            <div className="mb-6 p-4 rounded-xl bg-[#A31621]/20 border border-[#A31621]/40">
+              <p className="text-sm text-[#F5E8C8] text-center">
+                {errorMessage}
+              </p>
+            </div>
           )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 rounded-xl font-bold text-sm transition-opacity hover:opacity-90 disabled:opacity-50"
-            style={{ backgroundColor: "#A31621", color: "#F5E8C8" }}
+          <form action={login} className="space-y-5">
+            {sp.redirectTo && (
+              <input
+                type="hidden"
+                name="redirectTo"
+                value={sp.redirectTo}
+              />
+            )}
+
+            {/* Email */}
+            <div>
+              <label
+                htmlFor="email"
+                className="block text-xs font-semibold text-[#F5E8C8]/60 uppercase tracking-wide mb-2"
+              >
+                Email
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                autoComplete="email"
+                autoFocus
+                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/10 text-[#F5E8C8] placeholder-[#F5E8C8]/30 text-sm focus:outline-none focus:ring-2 focus:ring-[#C8922A]/50 focus:border-[#C8922A]/50 transition-colors"
+                placeholder="admin@votepulse.je"
+              />
+            </div>
+
+            {/* Password */}
+            <div>
+              <label
+                htmlFor="password"
+                className="block text-xs font-semibold text-[#F5E8C8]/60 uppercase tracking-wide mb-2"
+              >
+                Password
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                required
+                autoComplete="current-password"
+                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/10 text-[#F5E8C8] placeholder-[#F5E8C8]/30 text-sm focus:outline-none focus:ring-2 focus:ring-[#C8922A]/50 focus:border-[#C8922A]/50 transition-colors"
+                placeholder="••••••••••••"
+              />
+            </div>
+
+            {/* Submit */}
+            <button
+              type="submit"
+              className="w-full py-3 px-6 rounded-xl bg-[#A31621] hover:bg-[#6B1414] text-[#F5E8C8] text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-[#C8922A]/50 mt-2"
+            >
+              Sign in
+            </button>
+          </form>
+        </div>
+
+        {/* Back link */}
+        <div className="text-center mt-6">
+          <a
+            href="/"
+            className="text-xs text-[#F5E8C8]/30 hover:text-[#F5E8C8]/60 transition-colors"
           >
-            {loading ? "Signing in…" : "Sign In →"}
-          </button>
-        </form>
+            ← Back to VotePulse
+          </a>
+        </div>
       </div>
     </div>
-  );
-}
-
-export default function AdminLoginPage() {
-  return (
-    <Suspense fallback={<div className="min-h-screen bg-[#0D1B2A]" />}>
-      <LoginInner />
-    </Suspense>
   );
 }

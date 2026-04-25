@@ -71,7 +71,6 @@ export type AppEnv = {
   readonly NEXT_PUBLIC_SITE_URL: string;
   readonly SKIP_DB_HEALTHCHECK: boolean;
   readonly NODE_ENV: "development" | "test" | "production";
-  readonly ADMIN_SECRET: string;
   readonly GROK_API_KEY: string | undefined;
   readonly GROK_MODEL: string | undefined;
   readonly RESEND_API_KEY: string;
@@ -121,9 +120,6 @@ export const env: AppEnv = {
   },
   get NODE_ENV() {
     return resolveNodeEnvForRead();
-  },
-  get ADMIN_SECRET() {
-    return process.env.ADMIN_SECRET?.trim() ?? "";
   },
   get GROK_API_KEY() {
     const v = process.env.GROK_API_KEY?.trim();

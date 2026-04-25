@@ -1,23 +1,21 @@
 import type { Metadata } from "next";
-import { AdminNav } from "@/components/admin/admin-nav";
 
 export const metadata: Metadata = {
   title: { absolute: "Admin — VotePulse" },
   robots: { index: false, follow: false },
 };
 
-export default function AdminLayout({
+/**
+ * Minimal shell layout for the /admin segment.
+ * - Protected pages (/admin, /admin/candidates, etc.) get their auth-checking
+ *   layout from app/admin/(protected)/layout.tsx
+ * - The login page (app/admin/login/page.tsx) is NOT in the protected group,
+ *   so it is only wrapped by this minimal layout — no auth redirect loop.
+ */
+export default function AdminShellLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <div
-      className="min-h-screen flex"
-      style={{ backgroundColor: "#F5F5F0", fontFamily: "Archivo, sans-serif" }}
-    >
-      <AdminNav />
-      <main className="flex-1 ml-64 p-8 min-h-screen">{children}</main>
-    </div>
-  );
+  return <>{children}</>;
 }

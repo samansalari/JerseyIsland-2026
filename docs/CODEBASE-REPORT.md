@@ -1,17 +1,18 @@
 # VotePulse — Codebase Report
 
 **Generated:** 23 April 2026  
-**Last documentation sync:** 25 April 2026 — **Phase 8: AEO Answer Capsules** — structured answer capsules on `/candidates`, `/candidates/[slug]`, and `/districts/[district]`; `speakable` JSON-LD on all three; `generateMetadata` descriptions rewritten to 50-word direct-answer format site-wide; root `layout.tsx` description updated. Previous sync: Phase 7: dynamic social OG (`/api/og` — `next/og` / Satori, Node runtime, per-candidate cards via `?slug=`), `@fontsource/archivo` WOFF + **`next.config.ts`** Cache-Control on `/api/og`; also Public Pulse, **`social_links`** + **`buildSocialLinks`**, **`extract:social`** / **`validate:social`**, **`scrape:manifestos`**, **`import-local-scrapes`** heuristics, **`has2026Content`**, compare/API docs, **§13** checklist.
+**Last documentation sync:** 25 April 2026 — **Phase 9: Supabase admin auth** — `ADMIN_SECRET` and HMAC admin cookie **removed**; admin uses **Supabase** `signInWithPassword` via **server action** `src/app/admin/login/actions.ts` + **HttpOnly session cookies** (`@supabase/ssr`); **middleware** in `src/middleware.ts` calls `updateSession` from `src/lib/supabase/middleware.ts` (refreshes session + protects `/admin/*` and `/api/admin/*`); **route group** `src/app/admin/(protected)/` holds dashboard + `candidates` with auth-checking layout; **`src/app/admin/layout.tsx`** is a minimal shell so `/admin/login` is not caught by the same `redirect` as protected pages. **`src/lib/admin-guard.ts`** uses Supabase `getUser()` (not cookies). **Navbar:** server component **`src/components/admin-nav-button.tsx`**, passed as `adminButton` prop from **`layout.tsx`** into client **`Navbar`**. **Logout:** `POST /api/admin/logout` calls `supabase.auth.signOut()`. **Helpers:** `src/lib/supabase/server.ts` + `client.ts` re-export `src/utils/supabase/*`. Previous sync: **Phase 8: AEO Answer Capsules** — capsules on listing/district; candidate page uses `#aeo-candidate-lead` on the amber summary section (redundant full capsule removed in UI cleanup); `speakable` + metadata as documented in §0 rows below. Earlier: Phase 7 dynamic OG, Public Pulse, social links, compare.
 
 ## 0. What changed (recent — for auditors & LLMs)
 
 | Topic | Change |
 |-------|--------|
+| **Supabase admin auth (Phase 9)** | **`ADMIN_SECRET` removed** from `src/lib/env.ts` and the codebase. **Login:** `src/app/admin/login/page.tsx` — server component, email + password, **`action={login}`** from **`src/app/admin/login/actions.ts`** (`signInWithPassword`). **Middleware:** `src/lib/supabase/middleware.ts` — `getUser()` then redirect unauthenticated `/admin/*` (except `/admin/login`) to login; redirect authenticated `/admin/login` → `/admin`; unauthenticated `GET/POST` under `/api/admin/*` → **401** JSON. **Protected UI:** `src/app/admin/(protected)/layout.tsx` — `getUser()` + `redirect` + **`AdminNav`**; URLs stay `/admin`, `/admin/candidates`. **API:** `src/lib/admin-guard.ts` — `createServerClient` + `getUser()` for `requireAdmin`. **Legacy:** `src/app/api/admin/login/route.ts` returns **410**; `src/lib/admin-auth.ts` **unused** (HMAC cookie helpers retained in repo but not imported). |
 | **AEO Answer Capsule — `/candidates`** | **`src/app/candidates/page.tsx`**: adds four aggregate Drizzle queries (`districtCounts`, `totalEnriched`, `independentCount`, `partyBreakdown`) using `count`, `sql`, `ne`, `isNotNull` from `drizzle-orm`. Renders a **`<section id="aeo-answer-capsule">`** above the candidate grid: gold top-accent bar, `<article>` with `<h2>`, **lead `<p id="aeo-lead">`** (direct-answer, ≤65 words, real DB counts), 4-stat grid (135 candidates / 14 districts / enriched count / 10 issues), **`<ul id="aeo-district-list">`** linking to each district page, 10-issue badge row, source attribution. `metadata.description` rewritten to 50-word direct-answer starting with "Jersey's 2026 general election (7 June 2026) has 135 declared candidates…". **`titleSegment`** updated to "All 135 Candidates — Jersey 2026 General Election". |
-| **AEO Answer Capsule — `/candidates/[slug]`** | **`src/app/candidates/[slug]/page.tsx`**: adds **`issueCount`** (guards `Array.isArray(candidate.aiIssues)`). Inserts **`<section id="aeo-candidate-answer">`** between the navy hero and the amber AI summary card: gold 0.5px top accent, **`<p id="aeo-candidate-lead">`** direct-answer (name + district + party/Independent + first sentence of AI summary), **`<dl>`** structured-facts grid (District, Party, Election date, Role, AI summary status, Issues tracked). `generateMetadata` description rebuilt as `[name] is standing in [district] in Jersey's 2026 general election on 7 June 2026 [as Independent / representing party]. [First sentence of aiSummary].` |
+| **AEO — `/candidates/[slug]`** | **`src/app/candidates/[slug]/page.tsx`**: `generateMetadata` direct-answer description (name, district, party/Independent, first sentence of `aiSummary`). **`id="aeo-candidate-lead"`** on the amber AI summary section for speakable targeting. The separate full **`<section id="aeo-candidate-answer">`** capsule (duplicate hero facts) was **removed** in UI cleanup; JSON-LD speakable uses **`#aeo-candidate-lead`** only. |
 | **AEO Answer Capsule — `/districts/[district]`** | **`src/app/districts/[district]/page.tsx`**: imports `count`, `eq`, `sql` from `drizzle-orm`; adds `districtStats` query (total candidates, `withSummary` filter, `parties` `array_agg`). Renders **`<section id="aeo-district-answer">`** above `<DistrictTable>`: `<h2>` + **`<p id="aeo-district-lead">`** with real DB counts (total candidates, summaries available, party list). `generateMetadata` description rewritten to direct-answer format. |
 | **Speakable JSON-LD — candidates listing** | **`src/app/candidates/page.tsx`**: inline `<script type="application/ld+json">` inside page JSX (server-rendered). Schema: `WebPage` with `speakable.cssSelector: ["#aeo-lead","#aeo-district-list"]` + `mainEntity` as `ItemList` (one `ListItem` per district with candidate count and district URL). `numberOfItems` = real `all.length`. |
-| **Speakable JSON-LD — candidate pages** | **`src/lib/candidate-jsonld.ts`** `generateCandidateJsonLd()`: `speakable: { "@type": "SpeakableSpecification", cssSelector: ["#aeo-candidate-lead","#aeo-candidate-answer"] }` added to the `WebPage` node in the `@graph`. No schema change — fully backward-compatible with existing FAQPage + Person nodes. |
+| **Speakable JSON-LD — candidate pages** | **`src/lib/candidate-jsonld.ts`** `generateCandidateJsonLd()`: `speakable: { "@type": "SpeakableSpecification", cssSelector: ["#aeo-candidate-lead"] }` on the `WebPage` node (redundant AEO **section** `#aeo-candidate-answer` was removed; lead id lives on the amber AI summary block). |
 | **Root metadata description** | **`src/app/layout.tsx`**: `metadata.description`, `openGraph.description`, and `twitter.description` rewritten to the 52-word direct-answer format: "VotePulse is Jersey's non-partisan election intelligence platform for the 2026 general election on 7 June 2026. Compare 135 candidates across 14 districts. AI-generated manifesto summaries, policy positions on housing, healthcare, and tax. Free. No ads." |
 | **AEO principles applied** | All capsules are **static server-rendered HTML** — no `useState`, no `useEffect`, no client components inside capsules. Lead paragraphs are declarative factual statements in the first 40–60 words. Stat density: one concrete number per cluster (135 candidates, 14 districts, 83 AI summaries, 10 issues). Semantic HTML: `<article>`, `<section>` with `aria-label`, `<ul role="list">`, `<dl>/<dt>/<dd>` for structured facts. |
 | **Dynamic OG — `/api/og`** | **`src/app/api/og/route.tsx`**: `GET` with **`?slug=`** (Drizzle `candidates` by `slug` — `name`, `district`, `party`, `aiSummary`) returns **1200×630 PNG** via **`ImageResponse`**; no **`export const runtime = "edge"`** (Railway Node). Fonts: **`@fontsource/archivo`** WOFF (400/700) read with **`fs.readFileSync`** from `node_modules/…/files` — Satori in this stack accepts **WOFF**, not WOFF2. **No `?slug` / `?type=home` →** fallback brand card. Unknown slug **200** + fallback, not 404. **`export const dynamic = "force-dynamic"`**. |
@@ -43,7 +44,7 @@ VotePulse is a public, non-partisan election intelligence site for Jersey’s 20
 
 **Tech stack (actual):** Next.js **15** (App Router, TypeScript, ISR on several routes), Tailwind CSS **3.4** (not v4), Drizzle ORM + `postgres` driver, Zod-validated `DATABASE_URL` / `NEXT_PUBLIC_SITE_URL`, **xAI Grok** (OpenAI-compatible HTTP to `api.x.ai`), Firecrawl, RSS ingestion scripts, Supabase-oriented connection settings (`prepare: false` for pooler). **ioredis** for optional Redis rate limits. **Social cards:** per-candidate and default site **`og:image` / `twitter:image`** via **`/api/og`** (`next/og` on the **Node** server, not edge). **Untitled UI is not installed**; the UI is custom Tailwind aligned to a Jersey palette.
 
-**Current state:** Public pages, **compare** (deep table + `ai_issues` from JSONB), **pulse** routes, `src/lib/rate-limit.ts`, API routes listed in §6, and scripts (scrapers, enrich, import-local-scrapes, **generate-pulse-insight**, cron) are implemented. **Admin** uses **`ADMIN_SECRET`** + HTTP-only cookie (`/api/admin/login`, `src/lib/admin-guard.ts`, `src/lib/admin-auth.ts`); middleware also runs **Supabase session** refresh for any Supabase-integrated paths. **RLS policies and SQL migrations beyond Drizzle** are not defined in-repo (operational Supabase work). **`npm run build` succeeds** when `DATABASE_URL` and `NEXT_PUBLIC_SITE_URL` are set; listing pages may tolerate a **down database at build time** via try/catch fallbacks.
+**Current state:** Public pages, **compare** (deep table + `ai_issues` from JSONB), **pulse** routes, `src/lib/rate-limit.ts`, API routes listed in §6, and scripts (scrapers, enrich, import-local-scrapes, **generate-pulse-insight**, cron) are implemented. **Admin** uses **Supabase Auth** (email + password, no self-registration): **server action** sign-in, **HttpOnly** session cookies via **`@supabase/ssr`**, **`src/middleware.ts`** + `src/lib/supabase/middleware.ts` for session refresh and route protection, **`requireAdmin`** in `src/lib/admin-guard.ts` (Supabase `getUser()`). **`ADMIN_SECRET` is not used.** **`src/lib/admin-auth.ts`** (legacy HMAC cookie) is **unreferenced** but may remain on disk. **RLS** for anon DB access is still **to do** if clients ever talk to Postgres directly. **`npm run build` succeeds** when `DATABASE_URL` and `NEXT_PUBLIC_SITE_URL` are set; listing pages may tolerate a **down database at build time** via try/catch fallbacks.
 
 ---
 
@@ -88,7 +89,7 @@ VotePulse is a public, non-partisan election intelligence site for Jersey’s 20
 ├── tsconfig.json
 ├── wrangler.toml
 └── src/
-    ├── middleware.ts
+    ├── middleware.ts                 # CVE header check + updateSession → src/lib/supabase/middleware
     ├── app/
     │   ├── globals.css
     │   ├── layout.tsx
@@ -98,9 +99,10 @@ VotePulse is a public, non-partisan election intelligence site for Jersey’s 20
     │   ├── about/page.tsx
     │   ├── trends/ (page.tsx, pulse-client.tsx)
     │   ├── admin/
-    │   │   ├── layout.tsx
-    │   │   ├── (protected)/layout.tsx, page.tsx
-    │   │   └── login/page.tsx, login-form.tsx
+    │   │   ├── layout.tsx              # minimal shell (no auth — avoids /admin/login loop)
+    │   │   ├── (protected)/layout.tsx, page.tsx, candidates/page.tsx
+    │   │   ├── login/page.tsx, login/actions.ts
+    │   │   └── admin-legacy-panel.tsx, admin-dashboard.tsx
     │   ├── compare/ (page.tsx, compare-client.tsx, comparison-table.tsx)
     │   ├── api/
     │   │   ├── admin/* (login, logout, health, candidates, scrapers, enrich, clear-pulse, regenerate-insight, …)
@@ -113,7 +115,7 @@ VotePulse is a public, non-partisan election intelligence site for Jersey’s 20
     │   ├── candidates/ …
     ├── components/ (navbar, logo, seenovate-footer-credit, about-actions, social-links, admin/*, …)
     ├── db/ (index, schema, migrate, seed, seed-candidates)
-    └── lib/ (env, grok, firecrawl, rate-limit, pulse-insight, **social-links**, brand-metadata, admin-*, supabase, validate, …)
+    └── lib/ (env, grok, firecrawl, rate-limit, pulse-insight, **social-links**, brand-metadata, **admin-guard** (Supabase), **supabase** — `server.ts`/`client.ts` re-export `utils/supabase/`, `middleware.ts` for root middleware, **admin-auth.ts** legacy unused, validate, …)
 ```
 
 **⚠️ Incomplete / missing relative to target architecture**
@@ -134,7 +136,7 @@ VotePulse is a public, non-partisan election intelligence site for Jersey’s 20
 | Untitled UI initialised? | **No.** No `@untitledui/*`, no `untitledui` import layer, no RouteProvider. |
 | RouteProvider (App Router)? | **N/A** (Untitled UI not used). |
 | Untitled UI components in use? | **None** — custom Tailwind + semantic tokens. |
-| Components that “should” be Untitled UI? | Buttons, inputs on admin login are plain HTML + Tailwind. Acceptable until Untitled UI is adopted. |
+| Components that “should” be Untitled UI? | **Admin login** is a **server** page with native `<input>` + Tailwind (VotePulse colours). Acceptable until Untitled UI is adopted. |
 | Jersey colours in `@theme` (Tailwind v4)? | **No** — project uses **Tailwind 3** `theme.extend.colors` plus `:root` CSS variables in `globals.css`. |
 | Hardcoded hex outside tokens? | **Brand metadata:** `src/lib/brand-metadata.ts` (`#A31621` for viewport metadata parity). **Config:** `tailwind.config.ts` defines palette hexes (canonical source for utilities). **CSS variables:** `globals.css` `:root` uses hex (canonical for semantic vars). **Charts:** now use `var(--chart-sentiment-*)` mapped to existing vars. |
 | Archivo loaded? | **Yes** — `next/font/google` Archivo in `src/app/layout.tsx`, `--font-archivo` on `<html>`. **OG image route** uses **`@fontsource/archivo`** WOFF files (see **`src/app/api/og/route.tsx`**) for Satori — separate from the layout font. |
@@ -171,12 +173,15 @@ VotePulse is a public, non-partisan election intelligence site for Jersey’s 20
 
 | Item | Status |
 |------|--------|
-| **Admin panel** | **`ADMIN_SECRET`** — user posts password to `POST /api/admin/login`; server sets HTTP-only cookie; `requireAdmin` + `verifyAdminCookie` guard admin API routes. |
-| `src/lib/admin-guard.ts` / `admin-auth.ts` | **Yes** — shared with pulse cleanup / regeneration routes. |
-| Supabase packages | **`@supabase/ssr`**, **`@supabase/supabase-js`** present; middleware calls **`updateSession`** for session refresh on requests. |
-| `src/middleware.ts` | **Yes** — `/admin` paths; admin cookie check + Supabase session forwarding. |
-| `/admin/login` | **Yes** — password form → `/api/admin/login`. |
-| Protected admin | **Yes** — cookie required for `/admin` app routes and admin APIs. |
+| **Admin panel** | **Supabase Auth** — `signInWithPassword` in **`src/app/admin/login/actions.ts`**; session in **HttpOnly** cookies via **`@supabase/ssr`**. No **`ADMIN_SECRET`**. |
+| `src/lib/admin-guard.ts` | **Yes** — `createServerClient` + **`getUser()`**; returns **401** if no user. Used by `POST/GET` admin API routes (health, enrich, etc.). |
+| `src/lib/admin-auth.ts` | **Legacy / unused** — HMAC `votepulse_admin` cookie; **not imported** after Phase 9. Safe to delete in a later cleanup. |
+| Supabase packages | **`@supabase/ssr`**, **`@supabase/supabase-js`**; **`src/lib/supabase/server.ts`** and **`client.ts`** re-export **`src/utils/supabase/*`** (shared env helpers). |
+| `src/middleware.ts` | **Yes** — blocks **`x-middleware-subrequest`** (CVE mitigation); calls **`updateSession`** from **`src/lib/supabase/middleware.ts`** (session refresh + `/admin/*` and `/api/admin/*` gating). |
+| `/admin/login` | **Server** page — `action={login}`; errors via **`?error=`** query. Legacy **`POST /api/admin/login`** returns **410**. |
+| Protected admin | **Layer 1:** middleware redirects unauthenticated users from `/admin/*` (not `/admin/login`) to login. **Layer 2:** **`src/app/admin/(protected)/layout.tsx`** calls **`getUser()`** + **`redirect`**. **Layer 3:** `requireAdmin` on API routes. |
+| **Navbar “Admin”** | **`src/components/admin-nav-button.tsx`** (server) — rendered only if **`getUser()`** succeeds; passed into client **`Navbar`** as **`adminButton`**. |
+| **Logout** | **`POST /api/admin/logout`** — `supabase.auth.signOut()`; **AdminNav** client fetches then **`window.location = /admin/login`**. |
 | Public routes | **No login** for voters. |
 | **Public Pulse cookie** | **`vp_voted`** (httpOnly) for issue vote; not admin auth. |
 
@@ -194,7 +199,9 @@ VotePulse is a public, non-partisan election intelligence site for Jersey’s 20
 | GET | `/api/pulse/results` | Poll + rating aggregates | Public |
 | GET | `/api/pulse/insight` | **DB-only** latest insight (no LLM) | Public |
 | POST | `/api/pulse/rate` | Candidate rating | Rate limit as wired |
-| POST | `/api/admin/*` | Scrapers, enrich, **clear-pulse**, **regenerate-insight**, etc. | `requireAdmin` (cookie) |
+| POST/GET | `/api/admin/*` (except legacy login) | Scrapers, enrich, **clear-pulse**, **regenerate-insight**, health, etc. | **`requireAdmin`** (Supabase session) — unauthenticated **401**; middleware also returns **401** for `/api/admin` without user |
+| POST | `/api/admin/login` | **Deprecated** | **410** — use `/admin/login` + server action |
+| POST | `/api/admin/logout` | `signOut()` | **Session** required for meaningful sign-out; returns JSON **{ ok: true }** |
 | GET | `/api/districts`, `/api/districts/[district]` | District listings | Public |
 | … | … | See `src/app/api/` for full list | — |
 
@@ -208,18 +215,19 @@ VotePulse is a public, non-partisan election intelligence site for Jersey’s 20
 |-------|-------------|-----------|--------|
 | `/` | Drizzle counts (fallback if DB down at build) | Server, `revalidate = 60` | OK |
 | `/candidates` | Drizzle list + **4 aggregate queries** (`districtCounts`, `totalEnriched`, `independentCount`, `partyBreakdown`); **AEO capsule** `#aeo-answer-capsule` above grid; **speakable** `ItemList` JSON-LD | Server, ISR 6h | OK |
-| `/candidates/[slug]` | Drizzle by slug; `generateStaticParams` (fallback `[]`); hero **`SocialLinks`**; **AEO capsule** `#aeo-candidate-answer` between hero + amber card; **`has2026Content`** manifesto notice; **OG/Twitter** images → **`/api/og?slug=`** | Server, ISR 6h | Dynamic at runtime if not prebuilt |
+| `/candidates/[slug]` | Drizzle by slug; `generateStaticParams` (fallback `[]`); hero **`SocialLinks`**; **`id="aeo-candidate-lead"`** on amber AI card (speakable); **`has2026Content`** manifesto notice; **OG/Twitter** images → **`/api/og?slug=`** | Server, ISR 6h | Dynamic at runtime if not prebuilt |
 | `/compare` | Server: candidate list (filters). **Client:** `GET /api/compare?ids=` → **`ComparisonTable`** (issue grid from **`ai_issues`**) | Hybrid | OK |
 | `/districts/[district]` | District list + **`districtStats` query** (total, withSummary, parties); **AEO capsule** `#aeo-district-answer` above `<DistrictTable>` | Server, ISR 5m | OK |
 | `/trends` | Candidates list + **PublicPulseClient** (poll, ratings, results fetch) | Server + client | **Insight** from `GET /api/pulse/insight` (DB) |
 | `/about` | Static copy + **about-actions** (client) for mail & BMC buttons | Server + client islands | OK |
-| `/admin` | Supabase session | Server | OK (protected) |
-| `/admin/login` | Supabase browser auth | Client form | OK |
+| `/admin` | Drizzle + admin components; **`(protected)/layout`** + middleware | Server | OK (Supabase session) |
+| `/admin/login` | Branded form; **`login` server action** | Server | OK (no `ADMIN_SECRET`) |
 | `/sitemap.xml` | `NEXT_PUBLIC_SITE_URL` only | Metadata route | OK |
 | `/robots.txt` | Same | Metadata route | OK |
 
 **Shared components (high level)**
 
+- **`Navbar`** — client; receives optional **`adminButton`** (server slot: **`AdminNavButton`**) for signed-in admin link.
 - `NavMobile` — mobile drawer (`links` prop).
 - `CandidateGrid`, `CompareClient`, **`ComparisonTable`**, **`PublicPulseClient`** (`trends/pulse-client.tsx`), `ManifestoExpander` — feature-specific clients.
 - Global **footer** in `layout.tsx` + `SeenovateFooterCredit`.
@@ -255,9 +263,9 @@ VotePulse is a public, non-partisan election intelligence site for Jersey’s 20
 | `DATABASE_URL` | Postgres (Supabase pooler URL in prod) | **Yes** (Zod in `src/lib/env.ts`) | Drizzle, all server data routes |
 | `NEXT_PUBLIC_SITE_URL` | Canonical / OG base | **Yes** (default localhost in Zod) | `layout`, metadata, cron, revalidate redirect |
 | `SKIP_DB_HEALTHCHECK` | Skip DB in `/api/health` | No | `api/health`, `env.ts` |
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL | For admin auth | Middleware, Supabase clients |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key | For admin auth | Same |
-| `SUPABASE_SERVICE_ROLE_KEY` | Elevated API (future) | No | Documented only |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL | **Yes** for admin sign-in + session refresh | Middleware, `createServerClient` / browser client |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon (or publishable) key | **Yes** for admin | Same (`utils/supabase/env.ts` accepts `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` fallback) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Elevated API (scripts / server-only) | Optional unless a path uses service role | Server scripts; not required for cookie-based admin UI |
 | `DIRECT_URL` | Drizzle migrate direct port | Optional | Documented in `.env.example` |
 | `GROK_API_KEY` / `XAI_API_KEY` | xAI Grok enrichment | For scripts | `scripts/enrich*.ts`, `src/lib/grok.ts` |
 | `GROK_MODEL` | Grok model id | Optional (default in code: **`grok-4-1-fast-reasoning`**) | `src/lib/grok.ts`, `scripts/enrich*.ts` |
@@ -265,7 +273,7 @@ VotePulse is a public, non-partisan election intelligence site for Jersey’s 20
 | `FIRECRAWL_DAILY_CREDIT_LIMIT` | Credit guard | Optional | Scripts |
 | `REVALIDATION_SECRET` | POST `/api/revalidate` | For webhook-style revalidation | `api/revalidate`, `cron.ts` |
 | `REDIS_URL` | Standard Redis URL (ioredis) | Optional; without it, `checkRateLimit` **allows** all traffic | `src/lib/rate-limit.ts`, API routes using it |
-| `ADMIN_SECRET` | Admin cookie HMAC / verification | Required for `/admin` when enabled | `admin-guard`, `admin-auth`, `api/admin/login` |
+| ~~`ADMIN_SECRET`~~ | **Removed (Phase 9)** | Do not set | Replaced by Supabase sessions |
 
 ---
 
@@ -350,7 +358,7 @@ VotePulse is a public, non-partisan election intelligence site for Jersey’s 20
 - [x] `sitemap.xml` route
 - [x] `robots.txt` route
 - [x] `/api/health`
-- [x] Focus styles on admin inputs (`ring-jersey-red`)
+- [x] Focus styles on admin login inputs (gold ring on `/admin/login`; legacy panels may use `ring-jersey-red`)
 - [ ] **`REDIS_URL`** on web (and worker if same code path) when rate limits must be enforced
 - [x] Public Pulse insight generated on schedule + admin regenerate; not on `GET /api/pulse/insight`
 - [x] **`/compare`** deep table + **`GET /api/compare`** + **`ai_issues` JSONB** docs (§0, §6–7, **§13**)
@@ -368,8 +376,8 @@ Use for security, privacy, DPA, product accuracy, and **LLM-onboarding** (so mod
 | 1 | **`REDIS_URL`:** In production, confirm it is set if you rely on rate limits; if unset, `checkRateLimit` **fails open** (allows requests). |
 | 2 | **Public Pulse — insight:** `GET /api/pulse/insight` must **not** call Grok; generation only in **`generatePulseInsight`** (cron + admin **regenerate-insight**). |
 | 3 | **Public Pulse — votes:** Cookie `vp_voted` + 24h fingerprint; **409** when already voted; **`GET /api/pulse/vote`** exposes cookie state for UI. Confirm matches product copy. |
-| 4 | **Admin APIs:** All mutation routes use **`requireAdmin`**; no bypass via client-only checks. |
-| 5 | **About / privacy copy:** “No cookies / no analytics” claims — **reconcile** with `layout.tsx` and pulse/admin cookies. |
+| 4 | **Admin APIs:** All mutation routes use **`requireAdmin`** (Supabase **`getUser()`** on the request). Middleware also returns **401** for `/api/admin/*` without a session. No **`ADMIN_SECRET`**. |
+| 5 | **About / privacy copy:** “No cookies / no analytics” claims — **reconcile** with `layout.tsx` and pulse/**Supabase session** / admin cookies. |
 | 6 | **Candidate pages:** Only one **`SocialLinks`** block in hero. **`buildSocialLinks()`** must stay **XSS-safe** (only known platforms; `new URL()` validation) — treat `social_links` as **untrusted** DB text. Run **`npm run validate:social`** after bulk imports. |
 | 7 | **Worker `cron.ts`:** Long-running; must **not** use synchronous **`process.exit(0)`** at end of file; shutdown is **SIGINT/SIGTERM**. |
 | 8 | **Data subjects:** About + mailto for correction/removal — operational process matches copy. |
@@ -392,7 +400,8 @@ Use for security, privacy, DPA, product accuracy, and **LLM-onboarding** (so mod
 
 ### LLM coding guardrails (short)
 
-- **AEO capsules:** The `<section id="aeo-answer-capsule">` / `#aeo-candidate-answer` / `#aeo-district-answer` blocks must remain **server-rendered static HTML** — no client components, no `useState`/`useEffect` inside them. CSS selectors in `speakable` JSON-LD must match the `id` attributes exactly. Do not rename or move these ids without updating `candidate-jsonld.ts` and the inline `<script>` in `candidates/page.tsx`.
+- **AEO capsules:** The `<section id="aeo-answer-capsule">` / `#aeo-district-answer` blocks and **`#aeo-candidate-lead`** on the candidate page must remain **server-rendered static HTML** — no client components, no `useState`/`useEffect` inside them. CSS selectors in `speakable` JSON-LD must match the `id` attributes exactly (candidate page: **`#aeo-candidate-lead`** only in `candidate-jsonld.ts`). Do not rename without updating `candidate-jsonld.ts` and the inline `<script>` in `candidates/page.tsx`.
+- **Admin auth:** Do not reintroduce **`ADMIN_SECRET`** or cookie HMAC; use **Supabase** + **`requireAdmin`**. New admin pages belong under **`src/app/admin/(protected)/`** unless intentionally public (e.g. login).
 - **AEO aggregate queries:** The four queries in `CandidatesPage` (`districtCounts`, `enrichedCountRows`, `partyBreakdown`, and the derived `independentCount`) use **`count`, `sql`, `ne`, `isNotNull`** from `drizzle-orm` with camelCase field names. Adding filters must preserve the `ne(candidates.district, "Unknown")` guard.
 - **Speakable schema:** The `WebPage` + `speakable` node is in **`src/lib/candidate-jsonld.ts`** for candidate pages, and an **inline `<script>`** in **`src/app/candidates/page.tsx`** for the listing page. The district page does **not** yet have a speakable `<script>` — the AEO capsule HTML alone is sufficient.
 - **Issues on compare:** Use **`candidates.ai_issues`** (or API response), **not** only **`candidate_issues`**.
@@ -408,12 +417,13 @@ Use for security, privacy, DPA, product accuracy, and **LLM-onboarding** (so mod
 
 ## Appendix — Commands verified (25 Apr 2026)
 
-- `npx tsc --noEmit` — **pass** (Phase 7 + Phase 8)
-- `npm run build` — **pass** (176 pages; Phase 8 — 135 candidate pages + 21 district pages + listing + other routes)
+- `npx tsc --noEmit` — **pass** (through Phase 9 — Supabase admin auth)
+- `npm run build` — **pass** (176 pages; includes admin route group)
+- **Admin auth (local):** unauthenticated `GET /admin` → **307** to `/admin/login?redirectTo=…`; `GET /admin/login` → **200** with email/password form; unauthenticated `GET /api/admin/health` → **401**
 - **`GET /api/og`** — 200 + `image/png` when dev server is up; candidate HTML includes `og:image` / `twitter:image` with **`/api/og?slug=…`**
 - **AEO capsule HTML** (`/candidates`): `id="aeo-answer-capsule"` present in static HTML; `id="aeo-lead"` paragraph shows real DB counts (135 candidates, 46 Independents, 14 districts); 83 AI summaries shown in stat grid; 21 `<li>` district links rendered
 - **Speakable JSON-LD** (`/candidates`): `SpeakableSpecification` count = 2 (present in raw HTML)
-- **AEO capsule** (`/candidates/alan-beadle`): `id="aeo-candidate-answer"` + `id="aeo-candidate-lead"` present; `SpeakableSpecification` in JSON-LD pointing to `#aeo-candidate-lead` and `#aeo-candidate-answer`
+- **AEO / speakable** (`/candidates/alan-beadle`): `id="aeo-candidate-lead"` present on amber summary block; JSON-LD **`speakable.cssSelector`** lists **`#aeo-candidate-lead`** only (no `#aeo-candidate-answer`)
 - **AEO capsule** (`/districts/St%20John`): `id="aeo-district-answer"` + `id="aeo-district-lead"` present with real candidate count (2) from DB
 - **`/candidates` meta description** verified: starts with "Jersey's 2026 general election (7 June 2026) has 135 declared candidates…"
 - **`/candidates/alan-beadle` meta description** verified: starts with "Alan Beadle is standing in St Brelade in Jersey's 2026 general election on 7 June 2026 as an Independent."

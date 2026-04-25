@@ -14,7 +14,7 @@ const NAV_LINKS = [
   { href: "/about", label: "About" },
 ] as const;
 
-export function Navbar() {
+export function Navbar({ adminButton }: { adminButton?: React.ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
 
@@ -91,6 +91,11 @@ export function Navbar() {
               </Link>
             ))}
           </nav>
+
+          {/* Admin button — only rendered when user is authenticated (server component slot) */}
+          {adminButton && (
+            <div className="hidden md:flex items-center ml-2">{adminButton}</div>
+          )}
 
           <button
             type="button"

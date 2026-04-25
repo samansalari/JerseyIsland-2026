@@ -7,7 +7,7 @@ import {
 } from "@/db/schema";
 import { sql, isNotNull, isNull, count, desc } from "drizzle-orm";
 import { AdminActions } from "@/components/admin/admin-actions";
-import { AdminLegacyPanel } from "./admin-legacy-panel";
+import { AdminLegacyPanel } from "../admin-legacy-panel";
 
 export const dynamic = "force-dynamic";
 

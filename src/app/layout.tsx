@@ -7,6 +7,7 @@ import { env } from "@/lib/env";
 import { JERSEY_RED_PRIMARY_HEX } from "@/lib/brand-metadata";
 import { Logo } from "@/components/logo";
 import { Navbar } from "@/components/navbar";
+import { AdminNavButton } from "@/components/admin-nav-button";
 import { PWAInstallButton } from "@/components/pwa-install-button";
 import { SeenovateFooterCredit } from "@/components/seenovate-footer-credit";
 
@@ -142,7 +143,7 @@ export default function RootLayout({
         {/* Top accent ribbon */}
         <div className="h-[3px] w-full bg-jersey-red" aria-hidden />
 
-        <Navbar />
+        <Navbar adminButton={<AdminNavButton />} />
 
         <main className="w-full min-h-[calc(100vh-4rem-3px)] overflow-x-clip">
           {children}

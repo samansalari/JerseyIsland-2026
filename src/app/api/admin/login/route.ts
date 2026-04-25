@@ -1,28 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
-import { env } from "@/lib/env";
-import { setAdminAuthCookie } from "@/lib/admin-auth";
+import { NextResponse } from "next/server";
 
-export const runtime = "nodejs";
-
-export async function POST(request: NextRequest) {
-  if (!env.ADMIN_SECRET) {
-    return NextResponse.json(
-      { error: "ADMIN_SECRET not configured" },
-      { status: 503 },
-    );
-  }
-
-  const body = await request.json().catch(() => null);
-  const password =
-    body && typeof body === "object" && "password" in body
-      ? String((body as { password?: string }).password ?? "")
-      : "";
-
-  if (password !== env.ADMIN_SECRET) {
-    return NextResponse.json({ error: "Invalid password" }, { status: 401 });
-  }
-
-  const res = NextResponse.json({ ok: true });
-  await setAdminAuthCookie(res, env.ADMIN_SECRET);
-  return res;
+// Login is now handled by the server action in app/admin/login/actions.ts.
+// This route is no longer used.
+export function POST() {
+  return NextResponse.json(
+    { error: "Use the /admin/login page to sign in." },
+    { status: 410 },
+  );
 }
