@@ -4,6 +4,8 @@ import { candidateRatings } from '@/db/schema'
 import { and, eq, gte } from 'drizzle-orm'
 import { createHash } from 'crypto'
 import { headers } from 'next/headers'
+import { checkRateLimit } from '@/lib/rate-limit'
+import { validateBody, ratingSchema } from '@/lib/validate'
 
 async function getFingerprint(): Promise<string> {
   const h = await headers()
@@ -13,13 +15,14 @@ async function getFingerprint(): Promise<string> {
 }
 
 export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json() as { candidateId?: string; rating?: number }
-    const { candidateId, rating } = body
+  const { success, response: rlResponse } = await checkRateLimit(req, 10, 60)
+  if (!success) return rlResponse!
 
-    if (!candidateId || typeof rating !== 'number' || rating < 1 || rating > 5) {
-      return NextResponse.json({ error: 'Invalid data' }, { status: 400 })
-    }
+  try {
+    const body = await req.json().catch(() => ({}))
+    const validated = validateBody(ratingSchema, body)
+    if ('error' in validated) return validated.error
+    const { candidateId, rating } = validated.data
 
     const fingerprint = await getFingerprint()
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)

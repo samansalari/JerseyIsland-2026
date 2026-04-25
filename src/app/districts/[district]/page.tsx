@@ -6,7 +6,7 @@ import { candidates } from "@/db/schema";
 import { DistrictTable } from "@/components/district-table";
 import { siteBase } from "@/lib/seo";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300; // 5 minutes
 
 type Props = { params: Promise<{ district: string }> };
 

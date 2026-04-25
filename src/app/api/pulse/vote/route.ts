@@ -4,19 +4,8 @@ import { issueVotes } from '@/db/schema'
 import { and, eq, gte } from 'drizzle-orm'
 import { createHash } from 'crypto'
 import { headers } from 'next/headers'
-
-const VALID_ISSUES = new Set([
-  'housing',
-  'healthcare',
-  'cost_of_living',
-  'environment',
-  'economy',
-  'education',
-  'transport',
-  'tax',
-  'immigration',
-  'public_services',
-])
+import { checkRateLimit } from '@/lib/rate-limit'
+import { validateBody, voteSchema } from '@/lib/validate'
 
 async function getFingerprint(): Promise<string> {
   const h = await headers()
@@ -26,13 +15,14 @@ async function getFingerprint(): Promise<string> {
 }
 
 export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json() as { issue?: string }
-    const { issue } = body
+  const { success, response: rlResponse } = await checkRateLimit(req, 5, 60)
+  if (!success) return rlResponse!
 
-    if (!issue || !VALID_ISSUES.has(issue)) {
-      return NextResponse.json({ error: 'Invalid issue' }, { status: 400 })
-    }
+  try {
+    const body = await req.json().catch(() => ({}))
+    const validated = validateBody(voteSchema, body)
+    if ('error' in validated) return validated.error
+    const { issue } = validated.data
 
     const fingerprint = await getFingerprint()
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)

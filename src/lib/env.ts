@@ -84,6 +84,28 @@ export type AppEnv = {
   readonly REVALIDATION_SECRET: string;
 };
 
+/**
+ * Server-only secret accessors — never import these in 'use client' components.
+ * They throw at runtime if the env var is missing.
+ */
+function requireServerEnv(key: string): string {
+  const val = process.env[key]?.trim();
+  if (!val) throw new Error(`Missing required server environment variable: ${key}`);
+  return val;
+}
+
+export const getGrokApiKey = () => requireServerEnv("GROK_API_KEY");
+export const getFirecrawlApiKey = () => requireServerEnv("FIRECRAWL_API_KEY");
+export const getSupabaseServiceKey = () =>
+  requireServerEnv("SUPABASE_SERVICE_ROLE_KEY");
+
+// Public vars (safe for browser) — access via env object below
+export const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+export const SUPABASE_ANON_KEY =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
+  "";
+
 export const env: AppEnv = {
   get DATABASE_URL() {
     return resolveDatabaseUrlForRead();

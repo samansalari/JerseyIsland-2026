@@ -1,13 +1,16 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
 import { pulseInsights, issueVotes, candidates } from '@/db/schema'
 import { sql, desc, eq, and, gte } from 'drizzle-orm'
 import { grokChatCompletion } from '@/lib/grok'
 import { scrapeUrl } from '@/lib/firecrawl'
+import { checkRateLimit } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const { success, response: rlResponse } = await checkRateLimit(req, 5, 600)
+  if (!success) return rlResponse!
   try {
     // Serve cached insight if less than 6 hours old
     const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000)

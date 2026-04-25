@@ -3,7 +3,7 @@ import { asc, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { candidates } from "@/db/schema";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300; // 5 minutes
 
 export default async function DistrictsPage() {
   const result = await db

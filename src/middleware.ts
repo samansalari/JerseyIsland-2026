@@ -7,6 +7,11 @@ import {
 } from "@/utils/supabase/middleware";
 
 export async function middleware(request: NextRequest) {
+  // CVE-2025-29927 mitigation: block internal subrequest bypass header
+  if (request.headers.get("x-middleware-subrequest")) {
+    return new NextResponse(null, { status: 403 });
+  }
+
   const sessionResponse = await updateSession(request);
   const { pathname } = request.nextUrl;
 
