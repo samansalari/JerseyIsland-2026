@@ -126,6 +126,10 @@ export function generateCandidateJsonLd(
     description,
     inLanguage: "en-GB",
     dateModified,
+    speakable: {
+      "@type": "SpeakableSpecification",
+      cssSelector: ["#aeo-candidate-lead", "#aeo-candidate-answer"],
+    },
     about: { "@id": personId },
     isPartOf: {
       "@type": "WebSite",

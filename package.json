@@ -38,6 +38,7 @@
     "validate:social": "npx tsx scripts/validate-social-links.ts"
   },
   "dependencies": {
+    "@fontsource/archivo": "^5.2.8",
     "@mendable/firecrawl-js": "^1.8.1",
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.104.1",

@@ -82,6 +82,16 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      // Cache OG images — they change when candidate data changes (up to 6h)
+      {
+        source: "/api/og",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, s-maxage=21600, stale-while-revalidate=86400",
+          },
+        ],
+      },
       {
         source: "/sitemap.xml",
         headers: [

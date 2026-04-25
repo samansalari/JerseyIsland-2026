@@ -26,7 +26,10 @@ export const metadata: Metadata = {
     template: "%s | VotePulse",
   },
   description:
-    "Independent non-partisan election intelligence for Jersey's 2026 general election. 135 candidate profiles, AI-extracted policy positions, public opinion polls.",
+    "VotePulse is Jersey's non-partisan election intelligence platform for the " +
+    "2026 general election on 7 June 2026. Compare 135 candidates across 14 " +
+    "districts. AI-generated manifesto summaries, policy positions on housing, " +
+    "healthcare, and tax. Free. No ads.",
   icons: {
     icon: [
       { url: "/favicons/votepulse_icon_navy.svg", type: "image/svg+xml" },
@@ -60,7 +63,7 @@ export const metadata: Metadata = {
     url: "/",
     title: "VotePulse — Jersey 2026 Election Intelligence",
     description:
-      "Independent non-partisan election intelligence for Jersey's 2026 general election. 135 candidate profiles, AI-extracted policy positions, public opinion polls.",
+      "VotePulse is Jersey's non-partisan election intelligence platform for the 2026 general election on 7 June 2026. Compare 135 candidates across 14 districts. AI-generated manifesto summaries, policy positions on housing, healthcare, and tax. Free. No ads.",
     images: [
       {
         url: "/api/og",
@@ -76,7 +79,7 @@ export const metadata: Metadata = {
     site: "@votepulse_je",
     title: "VotePulse — Jersey 2026 Election Intelligence",
     description:
-      "Independent non-partisan election intelligence for Jersey's 2026 general election.",
+      "VotePulse is Jersey's non-partisan election intelligence platform for the 2026 general election on 7 June 2026. Compare 135 candidates across 14 districts.",
     images: ["/api/og"],
   },
   robots: {
