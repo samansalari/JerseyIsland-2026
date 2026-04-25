@@ -1,0 +1,133 @@
+# VotePulse — Jersey 2026 Election Intelligence
+# https://votepulse.je
+# robots.txt — last updated April 2026
+
+# ─── DEFAULT: Allow all crawlers ───────────────────────────────────────────
+# Only block admin and private API endpoints.
+# Do NOT block /api/ globally — public API routes like
+# /api/health, /api/compare, /api/pulse/results must stay crawlable.
+
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /admin/
+Disallow: /api/admin
+Disallow: /api/admin/
+Disallow: /api/revalidate
+
+# ─── GOOGLE ────────────────────────────────────────────────────────────────
+
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Googlebot-Image
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: GoogleOther
+Allow: /
+
+# ─── BING / MICROSOFT ──────────────────────────────────────────────────────
+
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+User-agent: msnbot
+Allow: /
+
+# ─── OPENAI / CHATGPT ──────────────────────────────────────────────────────
+# GPTBot = OpenAI's training crawler
+# ChatGPT-User = ChatGPT Browse with Bing / real-time search
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+# ─── ANTHROPIC / CLAUDE ────────────────────────────────────────────────────
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+# ─── PERPLEXITY ────────────────────────────────────────────────────────────
+
+User-agent: PerplexityBot
+Allow: /
+
+# ─── GOOGLE GEMINI ─────────────────────────────────────────────────────────
+
+User-agent: Gemini
+Allow: /
+
+# ─── META / FACEBOOK ───────────────────────────────────────────────────────
+
+User-agent: Meta-ExternalAgent
+Allow: /
+
+User-agent: Meta-ExternalFetcher
+Allow: /
+
+User-agent: facebookexternalhit
+Allow: /
+
+# ─── APPLE ─────────────────────────────────────────────────────────────────
+
+User-agent: Applebot
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+# ─── AMAZON / ALEXA ────────────────────────────────────────────────────────
+
+User-agent: Amazonbot
+Allow: /
+
+# ─── COHERE ────────────────────────────────────────────────────────────────
+
+User-agent: cohere-ai
+Allow: /
+
+# ─── TWITTER / X ───────────────────────────────────────────────────────────
+# Needed for Twitter Card rich previews when sharing candidate links
+
+User-agent: Twitterbot
+Allow: /
+
+# ─── LINKEDIN ──────────────────────────────────────────────────────────────
+
+User-agent: LinkedInBot
+Allow: /
+
+# ─── SLACK ─────────────────────────────────────────────────────────────────
+
+User-agent: Slackbot
+Allow: /
+
+User-agent: Slackbot-LinkExpanding
+Allow: /
+
+# ─── COMMON SEO TOOLS (do not block — used for monitoring) ─────────────────
+
+User-agent: Semrushbot
+Allow: /
+Crawl-delay: 10
+
+User-agent: AhrefsBot
+Allow: /
+Crawl-delay: 10
+
+# ─── SITEMAP ───────────────────────────────────────────────────────────────
+
+Sitemap: https://votepulse.je/sitemap.xml

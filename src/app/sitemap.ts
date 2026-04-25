@@ -3,36 +3,40 @@ import { db } from "@/db";
 import { candidates } from "@/db/schema";
 import { asc, ne } from "drizzle-orm";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 3600; // regenerate sitemap every hour
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const siteUrl =
     process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
     "https://votepulse.je";
   const now = new Date();
 
+  // ── Static pages ──────────────────────────────────────────────────────────
   const staticEntries: MetadataRoute.Sitemap = [
     {
       url: siteUrl,
       lastModified: now,
-      changeFrequency: "hourly",
+      changeFrequency: "daily",
       priority: 1.0,
     },
     {
       url: `${siteUrl}/candidates`,
       lastModified: now,
-      changeFrequency: "hourly",
-      priority: 0.9,
-    },
-    {
-      url: `${siteUrl}/compare`,
-      lastModified: now,
       changeFrequency: "daily",
-      priority: 0.8,
+      priority: 0.9,
     },
     {
       url: `${siteUrl}/trends`,
       lastModified: now,
       changeFrequency: "hourly",
       priority: 0.8,
+    },
+    {
+      url: `${siteUrl}/compare`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.7,
     },
     {
       url: `${siteUrl}/districts`,
@@ -44,11 +48,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: `${siteUrl}/about`,
       lastModified: now,
       changeFrequency: "monthly",
-      priority: 0.5,
+      priority: 0.4,
     },
   ];
 
   try {
+    // ── Candidate pages ─────────────────────────────────────────────────────
+    // Uses camelCase Drizzle field names (lastEnrichedAt, updatedAt, slug, district)
+    // Only includes candidates with a real district (excludes 'Unknown' imports)
     const candidateRows = await db
       .select({
         slug: candidates.slug,
@@ -60,13 +67,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .where(ne(candidates.district, "Unknown"))
       .orderBy(asc(candidates.slug));
 
+    // priority: 0.8, changeFrequency: 'daily' as required
+    // lastmod uses real DB timestamp so Google sees accurate freshness signal
     const candidateEntries: MetadataRoute.Sitemap = candidateRows.map((r) => ({
       url: `${siteUrl}/candidates/${r.slug}`,
       lastModified: r.lastEnrichedAt ?? r.updatedAt ?? now,
-      changeFrequency: "weekly" as const,
-      priority: 0.9,
+      changeFrequency: "daily" as const,
+      priority: 0.8,
     }));
 
+    // ── District pages ──────────────────────────────────────────────────────
+    // Deduplicated from live DB query — never hardcoded
     const districts = [
       ...new Set(
         candidateRows
@@ -84,6 +95,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     return [...staticEntries, ...candidateEntries, ...districtEntries];
   } catch {
+    // Fallback to static pages only if DB is unreachable (build time / CI)
     return staticEntries;
   }
 }

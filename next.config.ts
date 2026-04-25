@@ -80,9 +80,18 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Cache-Control",
-            value: "public, s-maxage=3600",
+            value: "public, s-maxage=3600, stale-while-revalidate=86400",
           },
         ],
+      },
+      // Tell crawlers never to index admin pages — belt-and-suspenders with robots.txt
+      {
+        source: "/admin/:path*",
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+      },
+      {
+        source: "/api/admin/:path*",
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
       },
     ];
   },

@@ -71,9 +71,12 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * Run Supabase session refresh on all non-static routes; keep admin matcher
-     * behaviour by handling `/admin` and `/api/admin` above.
+     * Run middleware on all routes EXCEPT:
+     * - Next.js internals (_next/static, _next/image)
+     * - Static asset file extensions (images, fonts, icons)
+     * - Well-known crawl files that must be served as plain text
+     *   without any cookie/session processing (robots.txt, sitemap.xml, llms.txt)
      */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|robots\\.txt|sitemap\\.xml|llms.*\\.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?|ttf|otf)$).*)",
   ],
 };
