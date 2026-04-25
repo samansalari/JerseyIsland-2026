@@ -1,280 +1,334 @@
 import type { Metadata } from "next";
-import { buildPublicPageMetadata } from "@/lib/seo";
+import {
+  BuyMeABeerButton,
+  ContactButton,
+  RemovalButton,
+} from "@/components/about-actions";
 
-export const metadata: Metadata = buildPublicPageMetadata({
-  titleSegment: "About",
+export const metadata: Metadata = {
+  title: "About VotePulse — Jersey 2026 Election Intelligence",
   description:
-    "How VotePulse works, where Jersey 2026 candidate data comes from, our AI transparency rules, and our non-partisan commitment to election coverage.",
-  path: "/about",
-});
+    "VotePulse is a free, independent election intelligence platform for Jersey's 2026 general election. No ads. No affiliation. No agenda.",
+};
 
 export default function AboutPage() {
   return (
-    <main className="mx-auto max-w-2xl px-5 py-12 md:py-16">
-      <h1 className="text-[32px] font-bold tracking-tight text-navy md:text-[40px]">
-        About VotePulse
-      </h1>
-
-      {/* ── What it is ────────────────────────────────── */}
-      <section className="mt-10">
-        <h2 className="text-[20px] font-bold text-navy">What it is</h2>
-        <p className="mt-3 text-[15px] leading-[1.75] text-navy/80">
-          VotePulse is an independent, open-source election intelligence
-          platform built for Jersey&rsquo;s 2026 general election. It exists to
-          help voters understand where candidates stand on the issues that
-          matter — housing, healthcare, tax, education, the environment and
-          more.
-        </p>
-        <p className="mt-4 text-[15px] leading-[1.75] text-navy/80">
-          VotePulse is <strong>not affiliated</strong> with any political party,
-          candidate, or government body. It does not accept donations from
-          political organisations and does not endorse or oppose any candidate.
-        </p>
-      </section>
-
-      {/* ── How it works ──────────────────────────────── */}
-      <section className="mt-12">
-        <h2 className="text-[20px] font-bold text-navy">How it works</h2>
-        <div className="mt-4 space-y-4">
-          <Step
-            n="1"
-            title="Data collection"
-            body="Candidate manifestos, public statements and news coverage are collected from publicly available sources — primarily flow.je, vote.je, policy.je and Jersey news outlets. Every piece of source data is stored with its original URL so nothing is lost."
-          />
-          <Step
-            n="2"
-            title="AI analysis"
-            body="AI (xAI Grok) reads each manifesto to generate plain-language summaries and extract policy positions mapped to specific issues. Each extraction includes the exact source quote from the original text and a confidence score."
-          />
-          <Step
-            n="3"
-            title="Labelling &amp; verification"
-            body="All AI-generated content is clearly labelled with a warning badge. Users can expand any summary to read the original manifesto text and verify claims against the source quote."
-          />
-          <Step
-            n="4"
-            title="Continuous updates"
-            body="Data is refreshed every 6 hours. When a candidate's manifesto or public statements change, the system detects the difference (via SHA-256 hash), re-ingests the content, and re-runs the analysis. Previous versions are preserved in an append-only snapshot history."
-          />
+    <div className="min-h-screen bg-[#F5F5F0]">
+      <div className="mx-auto max-w-3xl px-4 py-14">
+        {/* ── HERO ──────────────────────────────────────────────── */}
+        <div className="mb-12">
+          <h1 className="mb-4 text-4xl font-bold leading-tight text-[#0D1B2A]">
+            About VotePulse
+          </h1>
+          <p className="text-lg leading-relaxed text-[#0D1B2A]/70">
+            One place. Every candidate. No spin.
+          </p>
         </div>
-      </section>
 
-      {/* ── Trust & transparency ──────────────────────── */}
-      <section className="mt-12">
-        <h2 className="text-[20px] font-bold text-navy">
-          Trust &amp; transparency
-        </h2>
-        <div className="mt-4 rounded-xl border border-gold/30 bg-gold/5 p-5">
-          <ul className="space-y-3 text-[14px] leading-[1.7] text-navy/80">
-            <li className="flex gap-3">
-              <span className="mt-1 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border border-gold/40 text-[11px] font-bold text-gold">
-                !
-              </span>
-              <span>
-                <strong>AI summaries may contain errors</strong> or
-                misrepresentations. They are starting points for understanding,
-                not definitive records.
-              </span>
-            </li>
-            <li className="flex gap-3">
-              <span className="mt-1 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border border-gold/40 text-[11px] font-bold text-gold">
-                !
-              </span>
-              <span>
-                <strong>Always verify with the original text.</strong> Every AI
-                summary links to the full manifesto and the specific quote that
-                supports each claim.
-              </span>
-            </li>
-            <li className="flex gap-3">
-              <span className="mt-1 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border border-gold/40 text-[11px] font-bold text-gold">
-                !
-              </span>
-              <span>
-                <strong>Confidence scores are shown</strong> for every extracted
-                position (high, medium, low) so you know how certain the AI
-                was about its reading.
-              </span>
-            </li>
-            <li className="flex gap-3">
-              <span className="mt-1 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border border-gold/40 text-[11px] font-bold text-gold">
-                !
-              </span>
-              <span>
-                <strong>
-                  We do not editorially rank, endorse, or oppose any candidate.
-                </strong>{" "}
-                Candidates are listed alphabetically. Issue comparisons show
-                raw data, not editorial judgement.
-              </span>
-            </li>
-          </ul>
-        </div>
-      </section>
+        {/* ── WHAT IT IS ────────────────────────────────────────── */}
+        <section className="mb-12">
+          <h2 className="mb-4 text-xl font-bold text-[#0D1B2A]">What it is</h2>
+          <div className="space-y-4 leading-relaxed text-[#0D1B2A]/80">
+            <p>
+              VotePulse is a free, independent platform built to make
+              Jersey&apos;s 2026 general election easier to navigate. We gather
+              publicly available information about every declared candidate and
+              bring it together in one place — so you can compare, explore, and
+              decide for yourself.
+            </p>
+            <p>
+              We have no political affiliation. We do not endorse, promote, or
+              oppose any candidate or party. We do not accept money from any
+              political organisation, campaign, or government body.
+            </p>
+            <p>
+              VotePulse was built because Jersey voters deserved a single,
+              structured view of who is standing and what they stand for.
+              Nothing more.
+            </p>
+          </div>
+        </section>
 
-      {/* ── Data sources ──────────────────────────────── */}
-      <section className="mt-12">
-        <h2 className="text-[20px] font-bold text-navy">Data sources</h2>
-        <p className="mt-3 text-[14px] leading-[1.7] text-navy/80">
-          There is no official API for Jersey election data. VotePulse collects
-          information from publicly accessible web pages:
-        </p>
-        <ul className="mt-4 space-y-2">
-          <SourceLink
-            href="https://flow.je"
-            name="flow.je"
-            desc="Candidate manifestos and profiles"
-          />
-          <SourceLink
-            href="https://vote.je"
-            name="vote.je"
-            desc="Voter registration and election information"
-          />
-          <SourceLink
-            href="https://policy.je"
-            name="policy.je"
-            desc="Policy documents and position papers"
-          />
-          <SourceLink
-            href="#"
-            name="Local news outlets"
-            desc="BBC Jersey, Bailiwick Express, ITV Channel, JEP (via RSS)"
-          />
-        </ul>
-        <p className="mt-4 text-[13px] leading-[1.7] text-muted-foreground">
-          If a source is unavailable or changes format, VotePulse logs the
-          failure in its ingest history so gaps are visible rather than silent.
-        </p>
-      </section>
+        {/* ── HOW IT WORKS ──────────────────────────────────────── */}
+        <section className="mb-12">
+          <h2 className="mb-6 text-xl font-bold text-[#0D1B2A]">How it works</h2>
+          <div className="space-y-4">
+            <div className="flex gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+              <div
+                className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold"
+                style={{ backgroundColor: "#0D1B2A", color: "#F5E8C8" }}
+              >
+                1
+              </div>
+              <div>
+                <h3 className="mb-1 font-semibold text-[#0D1B2A]">
+                  We gather public information
+                </h3>
+                <p className="text-sm leading-relaxed text-[#0D1B2A]/65">
+                  Candidate profiles, manifestos, and public statements are
+                  collected from publicly accessible web pages. Every piece of
+                  information is linked back to its original source so you can
+                  always verify it yourself.
+                </p>
+              </div>
+            </div>
 
-      {/* ── Contact ───────────────────────────────────── */}
-      <section className="mt-12">
-        <h2 className="text-[20px] font-bold text-navy">
-          Contact &amp; feedback
-        </h2>
-        <p className="mt-3 text-[15px] leading-[1.75] text-navy/80">
-          Found an error? Have a suggestion? We want to hear from you.
-        </p>
-        <a
-          href="mailto:hello@votepulse.je"
-          className="mt-4 inline-flex items-center gap-2 rounded-md bg-jersey-red px-5 py-2.5 text-[14px] font-semibold text-on-primary transition-colors hover:bg-jersey-red-dark"
-        >
-          <svg
-            viewBox="0 0 20 20"
-            className="h-4 w-4"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+            <div className="flex gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+              <div
+                className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold"
+                style={{ backgroundColor: "#0D1B2A", color: "#F5E8C8" }}
+              >
+                2
+              </div>
+              <div>
+                <h3 className="mb-1 font-semibold text-[#0D1B2A]">
+                  AI reads and summarises instantly
+                </h3>
+                <p className="text-sm leading-relaxed text-[#0D1B2A]/65">
+                  Our AI engine reads each candidate&apos;s manifesto and
+                  generates a plain-language summary — in seconds. It also
+                  extracts their position on key issues like housing, healthcare,
+                  and tax, giving you a confidence score for each extraction so
+                  you know how certain the AI was.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+              <div
+                className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold"
+                style={{ backgroundColor: "#0D1B2A", color: "#F5E8C8" }}
+              >
+                3
+              </div>
+              <div>
+                <h3 className="mb-1 font-semibold text-[#0D1B2A]">
+                  Everything is labelled and verifiable
+                </h3>
+                <p className="text-sm leading-relaxed text-[#0D1B2A]/65">
+                  Every AI-generated summary is clearly marked. Every extracted
+                  position links to the exact quote from the original manifesto
+                  text. We never present AI output as fact — it is always a
+                  starting point, not a definitive record.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+              <div
+                className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold"
+                style={{ backgroundColor: "#0D1B2A", color: "#F5E8C8" }}
+              >
+                4
+              </div>
+              <div>
+                <h3 className="mb-1 font-semibold text-[#0D1B2A]">
+                  Kept up to date
+                </h3>
+                <p className="text-sm leading-relaxed text-[#0D1B2A]/65">
+                  As candidates update their manifestos or publish new
+                  statements, VotePulse detects the changes and re-analyses the
+                  content automatically. What you see reflects the most
+                  current publicly available information.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── TRUST & TRANSPARENCY ──────────────────────────────── */}
+        <section className="mb-12">
+          <h2 className="mb-4 text-xl font-bold text-[#0D1B2A]">
+            Trust &amp; transparency
+          </h2>
+          <div
+            className="space-y-4 rounded-xl border p-5"
+            style={{ backgroundColor: "#FFF9E6", borderColor: "#FFE099" }}
           >
-            <rect x="2" y="4" width="16" height="12" rx="2" />
-            <path d="M2 6l8 5 8-5" />
-          </svg>
-          hello@votepulse.je
-        </a>
-      </section>
+            {[
+              {
+                icon: "⚠",
+                text: (
+                  <>
+                    <strong>AI summaries may contain errors.</strong> They are
+                    starting points for understanding, not authoritative records.
+                    Always read the original before making decisions.
+                  </>
+                ),
+              },
+              {
+                icon: "🔗",
+                text: (
+                  <>
+                    <strong>Every summary links to its original source.</strong>{" "}
+                    You can read the candidate&apos;s own words at any time.
+                  </>
+                ),
+              },
+              {
+                icon: "📊",
+                text: (
+                  <>
+                    <strong>Confidence scores are shown</strong> for every
+                    extracted position — high, medium, or low — so you know how
+                    certain the AI was about each reading.
+                  </>
+                ),
+              },
+              {
+                icon: "⚖",
+                text: (
+                  <>
+                    <strong>
+                      We do not rank, endorse, or oppose any candidate.
+                    </strong>{" "}
+                    Candidates are listed alphabetically. Issue comparisons show
+                    raw data, not editorial judgement.
+                  </>
+                ),
+              },
+            ].map((item, i) => (
+              <div key={i} className="flex gap-3">
+                <span
+                  className="mt-0.5 flex-shrink-0 text-base"
+                  aria-hidden="true"
+                >
+                  {item.icon}
+                </span>
+                <p className="text-sm leading-relaxed text-[#0D1B2A]/80">
+                  {item.text}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
 
-      {/* ── Legal ─────────────────────────────────────── */}
-      <section className="mt-12 rounded-xl border border-border bg-white p-6">
-        <h2 className="text-[16px] font-bold text-navy">Legal disclaimer</h2>
-        <div className="mt-3 space-y-3 text-[13px] leading-[1.7] text-muted-foreground">
-          <p>
-            VotePulse is a personal project built for public benefit. It is not
-            a registered third-party campaigner under Jersey electoral law. If
-            registration becomes required, this page will be updated
-            accordingly.
+        {/* ── YOUR INFORMATION ──────────────────────────────────── */}
+        <section className="mb-12">
+          <h2 className="mb-4 text-xl font-bold text-[#0D1B2A]">
+            Your information on VotePulse
+          </h2>
+          <div className="space-y-4 leading-relaxed text-[#0D1B2A]/80">
+            <p>
+              All information displayed about candidates is drawn from publicly
+              available sources. We do not collect or store any personal data
+              about visitors to this site. No cookies, no analytics trackers, no
+              login required.
+            </p>
+            <p>
+              If you are a candidate and believe any information about you on
+              VotePulse is inaccurate, incomplete, or you would like it removed,
+              you can contact us directly. We will review your request and update
+              or remove the information promptly.
+            </p>
+            <div className="mt-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+              <h3 className="mb-2 font-semibold text-[#0D1B2A]">
+                Request correction or removal
+              </h3>
+              <p className="mb-4 text-sm leading-relaxed text-[#0D1B2A]/65">
+                Are you a candidate? Found something incorrect? Want your
+                information removed? We will act on your request — no questions
+                asked.
+              </p>
+              <RemovalButton />
+            </div>
+          </div>
+        </section>
+
+        {/* ── CONTACT & FEEDBACK ────────────────────────────────── */}
+        <section className="mb-12">
+          <h2 className="mb-4 text-xl font-bold text-[#0D1B2A]">
+            Contact &amp; feedback
+          </h2>
+          <p className="mb-5 leading-relaxed text-[#0D1B2A]/80">
+            Found an error? Have a suggestion? Something not working? We want to
+            hear from you.
           </p>
-          <p>
-            No personal data is collected from users. VotePulse does not use
-            cookies, analytics trackers, or any form of user identification.
-          </p>
-          <p>
-            The information presented is gathered from public sources and
-            processed by AI. While every effort is made to ensure accuracy,
-            VotePulse makes no warranty about the completeness or correctness
-            of any content. For authoritative election information, contact the
-            Judicial Greffe or visit{" "}
-            <a
-              href="https://vote.je"
-              className="font-medium text-jersey-red underline underline-offset-2"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              vote.je
-            </a>
-            .
-          </p>
-        </div>
-      </section>
+          <ContactButton />
+        </section>
 
-      <footer className="mt-12 border-t border-border pt-5 text-[12px] text-muted-foreground">
-        Last updated: April 2026
-      </footer>
-    </main>
-  );
-}
+        {/* ── SUPPORT THE PROJECT ───────────────────────────────── */}
+        <section className="mb-12">
+          <h2 className="mb-4 text-xl font-bold text-[#0D1B2A]">
+            Support the project
+          </h2>
+          <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+            <p className="mb-2 leading-relaxed text-[#0D1B2A]/80">
+              VotePulse is free, independent, and runs entirely on personal time.
+              There are no ads, no subscriptions, and no commercial backing.
+            </p>
+            <p className="mb-6 leading-relaxed text-[#0D1B2A]/80">
+              If you find it useful and want to say thanks, you can buy the
+              developer a beer. Entirely optional — VotePulse will always be
+              free.
+            </p>
+            <BuyMeABeerButton />
+            <p className="mt-3 text-xs" style={{ color: "rgba(13,27,42,0.40)" }}>
+              Powered by Buy Me a Coffee. No payment data is handled by
+              VotePulse.
+            </p>
+          </div>
+        </section>
 
-// ── Local components ────────────────────────────────────────────────────────
+        {/* ── LEGAL DISCLAIMER ──────────────────────────────────── */}
+        <section className="mb-8">
+          <div className="rounded-xl border border-gray-200 bg-white p-6">
+            <h2 className="mb-3 text-base font-bold text-[#0D1B2A]">
+              Legal disclaimer
+            </h2>
+            <div className="space-y-3 text-sm leading-relaxed text-[#0D1B2A]/65">
+              <p>
+                VotePulse is an independent personal project built for public
+                benefit. It is not affiliated with any political party,
+                candidate, electoral authority, or government body.
+              </p>
+              <p>
+                All information displayed is gathered from publicly available
+                sources and processed by AI. While every effort is made to
+                ensure accuracy, VotePulse makes no warranty about the
+                completeness or correctness of any content. For authoritative
+                election information, visit{" "}
+                <a
+                  href="https://www.vote.je"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#A31621] transition-colors hover:underline"
+                >
+                  vote.je
+                </a>
+                .
+              </p>
+              <p>
+                No personal data about visitors is collected. Candidate
+                information displayed is limited to publicly available public
+                interest material. Any candidate may request correction or
+                removal of their information by contacting{" "}
+                <a
+                  href="mailto:hello@votepulse.je"
+                  className="text-[#A31621] transition-colors hover:underline"
+                >
+                  hello@votepulse.je
+                </a>
+                .
+              </p>
+              <p>
+                VotePulse does not accept financial contributions from any
+                political party, campaign, candidate, or political organisation.
+                Support received through Buy Me a Coffee is a personal
+                contribution to the developer and is unrelated to any electoral
+                activity.
+              </p>
+            </div>
+          </div>
+        </section>
 
-function Step({
-  n,
-  title,
-  body,
-}: {
-  n: string;
-  title: string;
-  body: string;
-}) {
-  return (
-    <div className="flex gap-4">
-      <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-navy font-mono text-[12px] font-bold text-on-primary">
-        {n}
-      </span>
-      <div>
-        <h3 className="text-[15px] font-semibold text-navy">{title}</h3>
-        <p className="mt-1 text-[14px] leading-[1.7] text-navy/80">{body}</p>
+        <p
+          className="text-center text-xs"
+          style={{ color: "rgba(13,27,42,0.35)" }}
+        >
+          Last updated: April 2026
+        </p>
       </div>
     </div>
-  );
-}
-
-function SourceLink({
-  href,
-  name,
-  desc,
-}: {
-  href: string;
-  name: string;
-  desc: string;
-}) {
-  return (
-    <li>
-      <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="group flex items-start gap-3 rounded-lg border border-border bg-surface px-4 py-3 transition-all hover:border-jersey-red/30 hover:shadow-sm"
-      >
-        <svg
-          viewBox="0 0 16 16"
-          className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground/40 transition-colors group-hover:text-jersey-red"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-        >
-          <path d="M6 10l4-4" />
-          <path d="M9 4.5h2.5V7" />
-          <rect x="2" y="6" width="7" height="7" rx="1.5" />
-        </svg>
-        <div>
-          <span className="text-[14px] font-semibold text-navy transition-colors group-hover:text-jersey-red">
-            {name}
-          </span>
-          <p className="mt-0.5 text-[12px] text-muted-foreground">{desc}</p>
-        </div>
-      </a>
-    </li>
   );
 }
