@@ -2,43 +2,49 @@ import type { MetadataRoute } from "next";
 import { db } from "@/db";
 import { candidates } from "@/db/schema";
 import { asc, ne } from "drizzle-orm";
-import { siteBase } from "@/lib/seo";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = siteBase();
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
+    "https://votepulse.je";
   const now = new Date();
 
   const staticEntries: MetadataRoute.Sitemap = [
-    { url: `${base}/`, lastModified: now, changeFrequency: "daily", priority: 1 },
     {
-      url: `${base}/candidates`,
+      url: siteUrl,
       lastModified: now,
-      changeFrequency: "daily",
-      priority: 0.95,
+      changeFrequency: "hourly",
+      priority: 1.0,
     },
     {
-      url: `${base}/compare`,
+      url: `${siteUrl}/candidates`,
       lastModified: now,
-      changeFrequency: "weekly",
-      priority: 0.85,
+      changeFrequency: "hourly",
+      priority: 0.9,
     },
     {
-      url: `${base}/districts`,
+      url: `${siteUrl}/compare`,
       lastModified: now,
       changeFrequency: "daily",
       priority: 0.8,
     },
     {
-      url: `${base}/trends`,
+      url: `${siteUrl}/trends`,
       lastModified: now,
-      changeFrequency: "daily",
-      priority: 0.75,
+      changeFrequency: "hourly",
+      priority: 0.8,
     },
     {
-      url: `${base}/about`,
+      url: `${siteUrl}/districts`,
+      lastModified: now,
+      changeFrequency: "daily",
+      priority: 0.7,
+    },
+    {
+      url: `${siteUrl}/about`,
       lastModified: now,
       changeFrequency: "monthly",
-      priority: 0.55,
+      priority: 0.5,
     },
   ];
 
@@ -55,7 +61,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .orderBy(asc(candidates.slug));
 
     const candidateEntries: MetadataRoute.Sitemap = candidateRows.map((r) => ({
-      url: `${base}/candidates/${encodeURIComponent(r.slug)}`,
+      url: `${siteUrl}/candidates/${r.slug}`,
       lastModified: r.lastEnrichedAt ?? r.updatedAt ?? now,
       changeFrequency: "weekly" as const,
       priority: 0.9,
@@ -70,7 +76,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ].sort();
 
     const districtEntries: MetadataRoute.Sitemap = districts.map((d) => ({
-      url: `${base}/districts/${encodeURIComponent(d)}`,
+      url: `${siteUrl}/districts/${encodeURIComponent(d)}`,
       lastModified: now,
       changeFrequency: "daily" as const,
       priority: 0.7,

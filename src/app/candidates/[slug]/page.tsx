@@ -86,15 +86,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
   }
 
+  const siteUrl = siteBase();
+  const url = canonicalUrl(`/candidates/${slug}`);
+  const titleAbsolute = `${c.name} — Jersey 2026 election | VotePulse`;
+
   const description =
     truncateMetaDescription(c.aiSummary ?? c.bio, 155) ||
-    `${c.name} is standing in ${c.district} in Jersey's 2026 general election. View their manifesto, positions, and policy comparisons.`;
+    `${c.name} is standing in ${c.district} in Jersey's 2026 general election. View their manifesto, positions, and policy comparisons on VotePulse.`;
 
-  const url = canonicalUrl(`/candidates/${slug}`);
-  const ogImagePath = `/candidates/${slug}/opengraph-image`;
-  const ogImageUrl = absoluteAssetUrl(ogImagePath);
-  const titleAbsolute = `${c.name} — Jersey 2026 election | VotePulse`;
-  const siteUrl = siteBase();
+  const ogImageUrl = absoluteAssetUrl(
+    `/api/og?title=${encodeURIComponent(c.name)}&sub=${encodeURIComponent(c.district || "Jersey 2026")}`,
+  );
 
   return {
     title: { absolute: titleAbsolute },

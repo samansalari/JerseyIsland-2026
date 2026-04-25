@@ -19,13 +19,13 @@ const archivo = Archivo({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(env.NEXT_PUBLIC_SITE_URL),
+  metadataBase: new URL(env.NEXT_PUBLIC_SITE_URL || "https://votepulse.je"),
   title: {
-    default: "VotePulse — Jersey 2026 election intelligence",
+    default: "VotePulse — Jersey 2026 Election Intelligence",
     template: "%s | VotePulse",
   },
   description:
-    "Non-partisan public election intelligence for Jersey's 2026 general election. Candidate summaries, policy comparisons, and news tracking.",
+    "Independent non-partisan election intelligence for Jersey's 2026 general election. 135 candidate profiles, AI-extracted policy positions, public opinion polls.",
   icons: {
     icon: [
       { url: "/favicons/votepulse_icon_navy.svg", type: "image/svg+xml" },
@@ -39,34 +39,33 @@ export const metadata: Metadata = {
   keywords: [
     "Jersey election 2026",
     "Jersey candidates 2026",
-    "States of Jersey election",
-    "Jersey politics",
-    "Jersey voting",
+    "States Assembly election",
+    "Deputy election Jersey",
+    "Senator Jersey 2026",
+    "Connétable election",
+    "Reform Jersey 2026",
     "vote Jersey",
     "Jersey election candidates",
-    "Jersey manifesto",
-    "VotePulse",
+    "Jersey politics 2026",
   ],
-  authors: [{ name: "VotePulse" }],
+  authors: [{ name: "VotePulse", url: "https://votepulse.je" }],
   creator: "VotePulse",
   publisher: "VotePulse",
-  alternates: {
-    canonical: "/",
-  },
+  alternates: { canonical: "/" },
   openGraph: {
     type: "website",
     siteName: "VotePulse",
     locale: "en_GB",
     url: "/",
-    title: "VotePulse — Jersey 2026 election intelligence",
+    title: "VotePulse — Jersey 2026 Election Intelligence",
     description:
-      "Non-partisan public election intelligence for Jersey's 2026 general election. Candidate summaries, policy comparisons, and news tracking.",
+      "Independent non-partisan election intelligence for Jersey's 2026 general election. 135 candidate profiles, AI-extracted policy positions, public opinion polls.",
     images: [
       {
-        url: "/Logo__2_.png",
-        width: 1024,
-        height: 1024,
-        alt: "VotePulse — Jersey 2026 election intelligence",
+        url: "/api/og",
+        width: 1200,
+        height: 630,
+        alt: "VotePulse — Jersey 2026 Election Intelligence",
       },
     ],
   },
@@ -74,10 +73,10 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     creator: "@votepulse_je",
     site: "@votepulse_je",
-    title: "VotePulse — Jersey 2026 election intelligence",
+    title: "VotePulse — Jersey 2026 Election Intelligence",
     description:
-      "Non-partisan public election intelligence for Jersey's 2026 general election.",
-    images: ["/Logo__2_.png"],
+      "Independent non-partisan election intelligence for Jersey's 2026 general election.",
+    images: ["/api/og"],
   },
   robots: {
     index: true,
@@ -90,10 +89,11 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
-  verification: {
-    // Add after registering in Search Console / Bing:
-    // google: "your-google-search-console-verification-code",
-    // yandex: "your-yandex-code",
+  other: {
+    "geo.region": "JE",
+    "geo.placename": "Jersey, Channel Islands",
+    "geo.position": "49.2144;-2.1312",
+    ICBM: "49.2144, -2.1312",
   },
   category: "politics",
 };

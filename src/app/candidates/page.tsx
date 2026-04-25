@@ -57,9 +57,24 @@ export default async function CandidatesPage() {
         <h1 className="text-[28px] font-bold tracking-tight text-navy md:text-[34px]">
           Candidates
         </h1>
-        <p className="mt-2 max-w-lg text-[14px] text-muted-foreground">
-          {all.length} candidates standing across Jersey&rsquo;s parishes.
-          Filter by district, party, or search by name.
+
+        {/* AEO answer capsule — structured for Google AI Overviews extraction */}
+        <p className="mt-3 max-w-3xl text-[14px] leading-relaxed text-muted-foreground">
+          The <strong className="text-navy font-semibold">Jersey 2026 General Election</strong>{" "}
+          takes place on{" "}
+          <strong className="text-navy font-semibold">7 June 2026</strong>.
+          VotePulse tracks{" "}
+          <strong className="text-navy font-semibold">
+            {all.length > 0 ? all.length : 135} declared candidates
+          </strong>{" "}
+          standing across{" "}
+          <strong className="text-navy font-semibold">
+            14 parishes and electoral districts
+          </strong>{" "}
+          for the roles of Senator (island-wide), Deputy (district), and
+          Connétable (parish). AI-extracted policy positions cover housing,
+          healthcare, cost of living, economy, environment and more. Filter by
+          district or search by name below.
         </p>
       </header>
 
