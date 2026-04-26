@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import {
   BuyMeABeerButton,
   ContactButton,
@@ -175,9 +176,18 @@ export default function AboutPage() {
           <div className="space-y-4 text-base leading-relaxed text-[#0D1B2A]/80">
             <p>
               All information displayed about candidates is drawn from publicly
-              available sources. We do not collect or store any personal data
-              about visitors to this site. No cookies, no analytics trackers, no
-              login required.
+              available sources.
+            </p>
+            <p className="text-sm leading-relaxed text-[#0D1B2A]/70">
+              VotePulse uses Google Analytics 4 and Microsoft Clarity for anonymous
+              usage analytics — only if you consent via the cookie banner. The{' '}
+              <code className="bg-gray-100 px-1 rounded text-xs">vp_voted</code> cookie
+              prevents duplicate votes on Public Pulse. No user accounts or personal
+              details are collected from visitors. See our{' '}
+              <Link href="/privacy" className="text-[#A31621] hover:underline font-medium">
+                Privacy Policy
+              </Link>{' '}
+              for full details.
             </p>
             <p>
               If you are a candidate and believe any information about you on
@@ -211,6 +221,13 @@ export default function AboutPage() {
             hear from you.
           </p>
           <ContactButton />
+          <p className="text-xs text-[#0D1B2A]/50 mt-3">
+            View our{' '}
+            <Link href="/privacy" className="text-[#A31621] hover:underline">
+              Privacy Policy
+            </Link>{' '}
+            for information on how we handle data.
+          </p>
         </section>
 
         {/* ── SUPPORT THE PROJECT ───────────────────────────────── */}
@@ -247,46 +264,51 @@ export default function AboutPage() {
             {/* ✓ WCAG — #0D1B2A/65 on #FFFFFF ≈ 6.8:1 */}
             <div className="space-y-3 text-sm leading-relaxed text-[#0D1B2A]/65">
               <p>
-                VotePulse is an independent personal project built for public
-                benefit. It is not affiliated with any political party,
-                candidate, electoral authority, or government body.
+                VotePulse is a personal project built for public benefit by
+                Seenovate Ltd, Jersey.
               </p>
               <p>
-                All information displayed is gathered from publicly available
-                sources and processed by AI. While every effort is made to
-                ensure accuracy, VotePulse makes no warranty about the
-                completeness or correctness of any content. For authoritative
-                election information, visit{" "}
-                {/* ✓ WCAG — #A31621 on #FFFFFF = 5.9:1 */}
-                <a
-                  href="https://www.vote.je"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="rounded-sm text-[#A31621] transition-colors hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#A31621] focus-visible:ring-offset-1"
-                >
-                  vote.je
-                </a>
-                .
+                VotePulse does not promote or procure the election of any candidate.
+                It provides neutral, factual information only. It is not a registered
+                third-party campaigner and does not meet the definition of a
+                third-party campaigner under the{" "}
+                <strong>
+                  Public Elections (Expenditure and Donations) (Jersey) Law 2014
+                </strong>
+                , as it does not incur election expenses for the purpose of promoting
+                or opposing any candidate.
               </p>
               <p>
-                No personal data about visitors is collected. Candidate
-                information displayed is limited to publicly available public
-                interest material. Any candidate may request correction or
-                removal of their information by contacting{" "}
+                All AI-generated content is clearly labelled. AI summaries are derived
+                from publicly available manifesto text and may contain errors or
+                omissions. Every summary links to the original source text. VotePulse
+                does not endorse, rank, or oppose any candidate or political party.
+              </p>
+              <p>
+                Candidates who believe information about them is inaccurate may request
+                corrections or removal by emailing{" "}
                 <a
                   href="mailto:hello@votepulse.je"
                   className="rounded-sm text-[#A31621] transition-colors hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#A31621] focus-visible:ring-offset-1"
                 >
                   hello@votepulse.je
                 </a>
-                .
+                . Requests will be actioned within 4 weeks as required by the Data
+                Protection (Jersey) Law 2018.
               </p>
               <p>
-                VotePulse does not accept financial contributions from any
-                political party, campaign, candidate, or political organisation.
-                Support received through Buy Me a Coffee is a personal
-                contribution to the developer and is unrelated to any electoral
-                activity.
+                VotePulse is not affiliated with the States of Jersey, the Jersey
+                Electoral Authority, or any political party or candidate. For
+                authoritative election information, visit{" "}
+                <a
+                  href="https://vote.je"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-sm text-[#A31621] transition-colors hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#A31621] focus-visible:ring-offset-1"
+                >
+                  vote.je ↗
+                </a>
+                .
               </p>
             </div>
           </div>

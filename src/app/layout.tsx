@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Archivo } from "next/font/google";
 import Link from "next/link";
-import Script from "next/script";
 import "./globals.css";
 import { env } from "@/lib/env";
 import { JERSEY_RED_PRIMARY_HEX } from "@/lib/brand-metadata";
@@ -10,9 +9,8 @@ import { Navbar } from "@/components/navbar";
 import { AdminNavButton } from "@/components/admin-nav-button";
 import { PWAInstallButton } from "@/components/pwa-install-button";
 import { SeenovateFooterCredit } from "@/components/seenovate-footer-credit";
-
-const GOOGLE_TAG_ID = "G-4WZWNNE0LP";
-const CLARITY_PROJECT_ID = "whg4c7n340";
+import { Analytics } from "@/components/analytics";
+import { CookieConsent } from "@/components/cookie-consent";
 
 const archivo = Archivo({
   subsets: ["latin"],
@@ -127,29 +125,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en-GB" className={`${archivo.variable} h-full w-full max-w-full`}>
-      <head>
-        <Script
-          src={`https://www.googletagmanager.com/gtag/js?id=${GOOGLE_TAG_ID}`}
-          strategy="afterInteractive"
-        />
-        <Script id="google-analytics" strategy="afterInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', '${GOOGLE_TAG_ID}');
-          `}
-        </Script>
-        <Script id="microsoft-clarity" strategy="afterInteractive">
-          {`
-            (function(c,l,a,r,i,t,y){
-              c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-              t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-              y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-            })(window, document, "clarity", "script", "${CLARITY_PROJECT_ID}");
-          `}
-        </Script>
-      </head>
+      <head />
       <body className="min-h-screen w-full max-w-full bg-background font-sans text-foreground antialiased">
         {/* Top accent ribbon */}
         <div className="h-[3px] w-full bg-jersey-red" aria-hidden />
@@ -259,10 +235,26 @@ export default function RootLayout({
             <p className="mt-2 text-[11px] text-on-primary/55">
               &copy; {new Date().getFullYear()} VotePulse &middot; Jersey 2026
             </p>
+            <div className="mt-2 flex items-center gap-4">
+              <Link
+                href="/privacy"
+                className="text-[11px] text-on-primary/55 hover:text-on-primary/80 transition-colors"
+              >
+                Privacy Policy
+              </Link>
+              <Link
+                href="/terms"
+                className="text-[11px] text-on-primary/55 hover:text-on-primary/80 transition-colors"
+              >
+                Terms of Use
+              </Link>
+            </div>
             <SeenovateFooterCredit />
           </div>
         </footer>
         <PWAInstallButton />
+        <Analytics />
+        <CookieConsent />
       </body>
     </html>
   );
