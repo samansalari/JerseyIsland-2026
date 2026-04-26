@@ -12,17 +12,27 @@ import { getSupabasePublicKey, getSupabaseUrl, isSupabaseConfigured } from "@/ut
  * - All other routes: session cookies refreshed, pass through
  */
 export async function updateSession(request: NextRequest) {
+  // The magic-link callback must be reachable before a session exists
+  const isCallback =
+    request.nextUrl.pathname === "/admin/auth/callback";
+
   if (!isSupabaseConfigured()) {
-    // If Supabase is not configured, block admin routes entirely
+    // If Supabase is not configured, block admin routes (except callback/login)
     if (
       request.nextUrl.pathname.startsWith("/admin") &&
-      !request.nextUrl.pathname.startsWith("/admin/login")
+      !request.nextUrl.pathname.startsWith("/admin/login") &&
+      !isCallback
     ) {
       const url = request.nextUrl.clone();
       url.pathname = "/admin/login";
       url.searchParams.set("error", "config");
       return NextResponse.redirect(url);
     }
+    return NextResponse.next({ request });
+  }
+
+  // Let the callback route through — it handles its own auth exchange
+  if (isCallback) {
     return NextResponse.next({ request });
   }
 
@@ -56,7 +66,8 @@ export async function updateSession(request: NextRequest) {
   if (
     !user &&
     pathname.startsWith("/admin") &&
-    !pathname.startsWith("/admin/login")
+    !pathname.startsWith("/admin/login") &&
+    pathname !== "/admin/auth/callback"
   ) {
     const url = request.nextUrl.clone();
     url.pathname = "/admin/login";
