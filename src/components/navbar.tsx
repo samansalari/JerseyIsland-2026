@@ -12,6 +12,7 @@ const NAV_LINKS = [
   { href: "/compare", label: "Compare" },
   { href: "/trends", label: "Public Pulse" },
   { href: "/about", label: "About" },
+  { href: "/how-it-works", label: "Voting Guide" },
 ] as const;
 
 export function Navbar({ adminButton }: { adminButton?: React.ReactNode }) {

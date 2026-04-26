@@ -115,8 +115,9 @@ const FOOTER_NAV_LINKS = [
   { href: "/candidates", label: "Candidates" },
   { href: "/districts", label: "Districts" },
   { href: "/compare", label: "Compare" },
-  { href: "/trends", label: "Trends" },
+  { href: "/trends", label: "Public Pulse" },
   { href: "/about", label: "About" },
+  { href: "/how-it-works", label: "Voting Guide" },
 ] as const;
 
 export default function RootLayout({

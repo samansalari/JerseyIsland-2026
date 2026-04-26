@@ -134,16 +134,17 @@ export async function IssueIntelligence() {
     <section className="mx-auto max-w-6xl px-5 py-16">
       {/* Section header */}
       <div className="mb-10">
-        <div className="mb-3 flex items-center gap-3">
-          <div className="h-0.5 w-8 bg-gold" />
-          <span className="text-[11px] font-bold uppercase tracking-widest text-gold">
+        {/* Section eyebrow */}
+        <div className="mb-4 flex items-center gap-3">
+          <div className="h-px w-8 bg-[#C8922A]" />
+          <span className="text-xs font-bold uppercase tracking-[0.2em] text-[#C8922A]">
             Policy Intelligence
           </span>
         </div>
-        <h2 className="text-[26px] font-bold leading-tight tracking-tight text-navy md:text-[30px]">
+        <h2 className="mb-3 text-3xl font-bold leading-tight tracking-tight text-[#0D1B2A] sm:text-4xl">
           What are candidates planning?
         </h2>
-        <p className="mt-3 max-w-2xl text-[14px] leading-relaxed text-muted-foreground">
+        <p className="max-w-2xl text-base leading-relaxed text-[#0D1B2A]/65">
           Explore what Jersey&apos;s 2026 candidates say about the issues that
           matter. Every position is AI-extracted directly from their manifestos
           — with source quotes you can verify.

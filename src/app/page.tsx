@@ -47,14 +47,15 @@ export default async function Home() {
         <div className="relative mx-auto max-w-6xl px-5 pb-16 pt-20 md:pb-20 md:pt-28">
           <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
             <div>
-              <div className="flex items-center gap-2">
-                <span className="inline-block h-1.5 w-1.5 rounded-full bg-jersey-red" />
-                <span className="text-[12px] font-semibold uppercase tracking-[0.2em] text-on-primary/50">
+              {/* Section eyebrow — left-anchored gold (same system as Policy Intelligence) */}
+              <div className="mb-4 flex items-center gap-3">
+                <div className="h-px w-8 bg-[#C8922A]" />
+                <span className="text-xs font-bold uppercase tracking-[0.2em] text-[#C8922A]">
                   Jersey 2026 General Election
                 </span>
               </div>
 
-              <h1 className="mt-5 max-w-2xl text-[clamp(2rem,5vw,3.5rem)] font-bold leading-[1.1] tracking-tight text-on-primary">
+              <h1 className="mt-0 max-w-2xl text-[clamp(2rem,5vw,3.5rem)] font-bold leading-[1.1] tracking-tight text-on-primary">
                 Election Intelligence
                 <br />
                 <span className="text-gold">for every voter.</span>
@@ -104,18 +105,47 @@ export default async function Home() {
       {/* ── Issue Intelligence ────────────────────────────── */}
       <IssueIntelligence />
 
+      {/* ── Voting Guide teaser ──────────────────────────────────── */}
+      <section className="py-10 border-t border-[#0D1B2A]/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-[#0D1B2A] rounded-xl px-6 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#C8922A] mb-1">
+                New to Jersey elections?
+              </p>
+              <p className="text-sm text-[#F5E8C8]/80 leading-relaxed">
+                In 2026 each voter gets{' '}
+                <strong className="text-[#F5E8C8]">12–14 votes</strong> across three
+                categories of candidate. Understand the system before election day.
+              </p>
+            </div>
+            <Link
+              href="/how-it-works"
+              className="flex-shrink-0 inline-flex items-center gap-2 px-5 py-2.5
+                         rounded-lg text-sm font-semibold transition-colors
+                         bg-[#C8922A] text-[#0D1B2A] hover:bg-[#A87823]
+                         focus-visible:outline-none focus-visible:ring-2
+                         focus-visible:ring-[#C8922A] focus-visible:ring-offset-2
+                         focus-visible:ring-offset-[#0D1B2A]"
+            >
+              How to vote →
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* Full-width divider — removes the dead gap between sections */}
       <div className="border-t border-[#0D1B2A]/10" aria-hidden />
 
       {/* ── How it works ──────────────────────────────────── */}
       <section className="py-16">
         <div className="mx-auto max-w-6xl px-5">
-        <div className="flex items-center gap-2">
-          <div className="h-px flex-1 bg-border" />
-          <h2 className="flex-shrink-0 text-[12px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-            How it works
-          </h2>
-          <div className="h-px flex-1 bg-border" />
+        <div className="flex items-center gap-4">
+          <div className="h-px flex-1 bg-[#0D1B2A]/10" />
+          <span className="text-xs font-bold uppercase tracking-[0.2em] text-[#0D1B2A]/40">
+            How It Works
+          </span>
+          <div className="h-px flex-1 bg-[#0D1B2A]/10" />
         </div>
 
         <div className="mt-10 grid gap-px overflow-hidden rounded-xl border border-border bg-border md:grid-cols-3">
@@ -169,10 +199,10 @@ export default async function Home() {
       {/* ── District grid ─────────────────────────────────── */}
       <section className="border-t border-border bg-white">
         <div className="mx-auto max-w-6xl px-5 py-16 md:py-20">
-          <h2 className="text-[22px] font-bold tracking-tight text-navy md:text-[26px]">
+          <h2 className="text-3xl font-bold tracking-tight text-[#0D1B2A] sm:text-4xl">
             All 14 parishes
           </h2>
-          <p className="mt-2 max-w-lg text-[14px] text-muted-foreground">
+          <p className="mt-3 max-w-lg text-base leading-relaxed text-[#0D1B2A]/65">
             Jersey&rsquo;s candidates stand in parish-based constituencies.
             Select a parish to see who&rsquo;s running in your area.
           </p>
