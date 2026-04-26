@@ -92,7 +92,7 @@ const jsonLd = {
           name: "Who can vote in Jersey's 2026 election?",
           acceptedAnswer: {
             '@type': 'Answer',
-            text: "You can vote in Jersey's 2026 election if you are registered to vote, are 16 years of age or over on election day, and have lived in Jersey for at least 6 months plus a total of 5 years previously. You do not have to be a British citizen.",
+            text: "You can vote in Jersey's 2026 election if you are registered to vote, are 16 years of age or over on election day, and have lived in Jersey for the last 12 months, OR for the last 6 months plus periods totalling 5 years. You do not have to be a British citizen.",
           },
         },
         {
@@ -210,7 +210,7 @@ export default function HowItWorksPage() {
                 },
                 {
                   q: 'Who votes?',
-                  a: "Anyone registered to vote who is 16+ and has lived in Jersey for at least 6 months (plus 5 years total). Non-British citizens can vote.",
+                  a: "Anyone registered to vote who is 16+ and has lived in Jersey for the last 12 months, OR the last 6 months plus periods totalling 5 years. Non-British citizens can vote.",
                 },
                 {
                   q: 'How many votes?',
@@ -413,7 +413,7 @@ export default function HowItWorksPage() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 mb-16 flex gap-3">
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 mb-8 flex gap-3">
             <span className="text-amber-500 flex-shrink-0 mt-0.5">⚠</span>
             <p className="text-sm text-amber-800 leading-relaxed">
               <strong>You don&rsquo;t have to use all your votes.</strong>{' '}
@@ -421,6 +421,84 @@ export default function HowItWorksPage() {
               Only vote for candidates you actually support — &ldquo;plumping&rdquo;
               (voting for fewer) is a legitimate strategy, especially for senators.
             </p>
+          </div>
+
+          {/* ── PARISH VOTE TABLE ─────────────────────────────────────── */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm mb-16 overflow-hidden">
+            <div className="px-5 pt-5 pb-3">
+              <div className="flex items-center gap-3 mb-1">
+                <div className="h-px w-8 bg-[#C8922A]" />
+                <span className="text-xs font-bold uppercase tracking-[0.2em] text-[#C8922A]">
+                  By parish
+                </span>
+              </div>
+              <h3 className="text-base font-bold text-[#0D1B2A]">
+                Exactly how many votes do I get?
+              </h3>
+              <p className="text-xs text-[#0D1B2A]/55 mt-1">
+                Find your parish below. St Brelade and St Saviour voters get 14 votes; Grouville
+                gets 12; everywhere else gets 13.
+              </p>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-y border-gray-100 text-xs text-[#0D1B2A]/50 uppercase tracking-wider bg-gray-50">
+                    <th className="px-4 py-2.5 text-left font-semibold">Parish</th>
+                    <th className="px-4 py-2.5 text-left font-semibold">Constituency</th>
+                    <th className="px-4 py-2.5 text-center font-semibold">Connétable</th>
+                    <th className="px-4 py-2.5 text-center font-semibold">Deputies</th>
+                    <th className="px-4 py-2.5 text-center font-semibold">Senators</th>
+                    <th className="px-4 py-2.5 text-center font-semibold text-[#C8922A]">Total</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {[
+                    { parish: 'Grouville', constituency: 'Grouville & St. Martin', connetable: 1, deputies: 2, senators: 9, total: 12 },
+                    { parish: 'St. Brelade', constituency: 'St. Brelade', connetable: 1, deputies: 4, senators: 9, total: 14 },
+                    { parish: 'St. Clement', constituency: 'St. Clement', connetable: 1, deputies: 3, senators: 9, total: 13 },
+                    { parish: 'St. Helier (Central)', constituency: 'St. Helier Central', connetable: 1, deputies: 4, senators: 9, total: 14 },
+                    { parish: 'St. Helier (North)', constituency: 'St. Helier North', connetable: 1, deputies: 3, senators: 9, total: 13 },
+                    { parish: 'St. Helier (South)', constituency: 'St. Helier South', connetable: 1, deputies: 3, senators: 9, total: 13 },
+                    { parish: 'St. John', constituency: 'St. John, St. Lawrence & Trinity', connetable: 1, deputies: 3, senators: 9, total: 13 },
+                    { parish: 'St. Lawrence', constituency: 'St. John, St. Lawrence & Trinity', connetable: 1, deputies: 3, senators: 9, total: 13 },
+                    { parish: 'St. Martin', constituency: 'Grouville & St. Martin', connetable: 1, deputies: 3, senators: 9, total: 13 },
+                    { parish: 'St. Mary', constituency: 'St. Mary, St. Ouen & St. Peter', connetable: 1, deputies: 3, senators: 9, total: 13 },
+                    { parish: 'St. Ouen', constituency: 'St. Mary, St. Ouen & St. Peter', connetable: 1, deputies: 3, senators: 9, total: 13 },
+                    { parish: 'St. Peter', constituency: 'St. Mary, St. Ouen & St. Peter', connetable: 1, deputies: 3, senators: 9, total: 13 },
+                    { parish: 'St. Saviour', constituency: 'St. Saviour', connetable: 1, deputies: 4, senators: 9, total: 14 },
+                    { parish: 'Trinity', constituency: 'St. John, St. Lawrence & Trinity', connetable: 1, deputies: 3, senators: 9, total: 13 },
+                  ].map((row, i) => (
+                    <tr
+                      key={row.parish}
+                      className={`hover:bg-gray-50/50 transition-colors ${i % 2 === 1 ? 'bg-gray-50/30' : ''}`}
+                    >
+                      <td className="px-4 py-2.5 font-medium text-[#0D1B2A]">{row.parish}</td>
+                      <td className="px-4 py-2.5 text-[#0D1B2A]/60 text-xs">{row.constituency}</td>
+                      <td className="px-4 py-2.5 text-center text-[#1A6B3A] font-semibold">{row.connetable}</td>
+                      <td className="px-4 py-2.5 text-center text-[#0D1B2A]/70 font-semibold">{row.deputies}</td>
+                      <td className="px-4 py-2.5 text-center text-[#A31621] font-semibold">{row.senators}</td>
+                      <td className="px-4 py-2.5 text-center text-[#C8922A] font-bold text-base">{row.total}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between">
+              <p className="text-xs text-[#0D1B2A]/40">
+                Note: St. Helier voters vote for their parish connétable only once, regardless of which constituency they are in.
+              </p>
+              <a
+                href="https://www.vote.je"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-[#A31621] hover:underline flex-shrink-0 ml-4"
+              >
+                Source: vote.je ↗
+              </a>
+            </div>
           </div>
 
           {/* ── SECTION 3: WHO CAN VOTE ───────────────────────────────── */}
@@ -457,7 +535,7 @@ export default function HowItWorksPage() {
                 {[
                   'Aged 16 or over on 7 June 2026',
                   'Registered to vote (automatic registration introduced for 2026)',
-                  'Resident in Jersey for at least 6 months AND 5 years total previously',
+                  'Resident in Jersey for the last 12 months; OR for the last 6 months plus periods totalling 5 years',
                   'Not required to be a British citizen — all nationalities welcome',
                 ].map(item => (
                   <li
@@ -480,7 +558,7 @@ export default function HowItWorksPage() {
                   'Automatic voter registration — you should be registered automatically if eligible',
                   'Sunday election — first time Jersey has voted on a Sunday',
                   'Senators return — reintroduced after being abolished in 2022',
-                  'Residency reduced from 2 years to 6 months (plus 5 year total)',
+                  'Residency: qualify with 12 months residency, OR 6 months plus 5 years total — two separate qualifying conditions',
                 ].map(item => (
                   <li
                     key={item}
@@ -534,7 +612,21 @@ export default function HowItWorksPage() {
               {
                 date: 'May 2026',
                 event: 'Campaign period',
-                detail: 'Manifestos, hustings, and canvassing',
+                detail: 'Manifestos and canvassing across Jersey',
+                done: false,
+                highlight: false,
+              },
+              {
+                date: '5 May – 3 Jun',
+                event: 'Hustings',
+                detail: 'Free public meetings with candidates — all parishes, filmed and on YouTube',
+                done: false,
+                highlight: false,
+              },
+              {
+                date: '26 May – 1 Jun',
+                event: 'Early voting (pre-poll)',
+                detail: "St Paul's Centre, Dumaresq St, St Helier — 8:45am–5pm (noon on 1 June)",
                 done: false,
                 highlight: false,
               },
@@ -624,7 +716,68 @@ export default function HowItWorksPage() {
             </div>
           </div>
 
-          {/* ── SECTION 6: FAQ ────────────────────────────────────────── */}
+          {/* ── SECTION 6: HUSTINGS ───────────────────────────────────── */}
+          <div className="flex items-center gap-4 mb-12">
+            <div className="h-px flex-1 bg-[#0D1B2A]/10" />
+            <span className="text-xs font-bold uppercase tracking-[0.2em] text-[#0D1B2A]/40 flex-shrink-0">
+              Meet the candidates
+            </span>
+            <div className="h-px flex-1 bg-[#0D1B2A]/10" />
+          </div>
+
+          <div className="mb-6">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="h-px w-8 bg-[#C8922A]" />
+              <span className="text-xs font-bold uppercase tracking-[0.2em] text-[#C8922A]">
+                Hustings 2026
+              </span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-bold text-[#0D1B2A] tracking-tight mb-3">
+              Meet the candidates — Hustings 2026
+            </h2>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mb-16">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-5">
+              <div className="flex-1">
+                <p className="text-sm text-[#0D1B2A]/70 leading-relaxed mb-4">
+                  Hustings run{' '}
+                  <strong className="text-[#0D1B2A]">5 May – 3 June 2026</strong>.
+                  Free and open to everyone. Held at Parish Halls and community centres
+                  across Jersey. All sessions are filmed and made available on the
+                  Vote.je YouTube channel, so you can watch any event you can&rsquo;t
+                  attend in person.
+                </p>
+                <ul className="space-y-2">
+                  {[
+                    'Free entry — no booking required',
+                    'All 12 parishes covered across the campaign period',
+                    'Candidates answer questions from the public',
+                    'All sessions filmed and posted to YouTube',
+                  ].map(item => (
+                    <li key={item} className="flex items-start gap-2 text-sm text-[#0D1B2A]/70">
+                      <span className="text-[#1A6B3A] font-bold flex-shrink-0 mt-0.5">✓</span>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <a
+                href="https://www.vote.je/hustings-2026/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-shrink-0 inline-flex items-center gap-2 px-5 py-2.5
+                           rounded-lg text-sm font-semibold transition-colors
+                           bg-[#0D1B2A] text-[#F5E8C8] hover:bg-[#0D1B2A]/85
+                           focus-visible:outline-none focus-visible:ring-2
+                           focus-visible:ring-[#0D1B2A] focus-visible:ring-offset-2"
+              >
+                View hustings schedule ↗
+              </a>
+            </div>
+          </div>
+
+          {/* ── SECTION 7: FAQ ────────────────────────────────────────── */}
           <div className="flex items-center gap-4 mb-12">
             <div className="h-px flex-1 bg-[#0D1B2A]/10" />
             <span className="text-xs font-bold uppercase tracking-[0.2em] text-[#0D1B2A]/40 flex-shrink-0">
@@ -657,7 +810,7 @@ export default function HowItWorksPage() {
               },
               {
                 q: 'Can I vote by post?',
-                a: 'Yes. Postal voting is available. You can also vote in person at any polling station in your parish on election day. Pre-poll (early) voting is also available in the days before election day.',
+                a: "Yes. Postal voting is available. You can also vote in person at any polling station in your parish on election day. Early (pre-poll) voting is at St Paul's Centre, Dumaresq St, St Helier from Tuesday 26 May to Monday 1 June 2026, 8:45am–5pm (noon on 1 June).",
               },
               {
                 q: 'What does the States Assembly actually do?',
