@@ -6,7 +6,14 @@ import "./bootstrap-env";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { candidates } from "../src/db/schema";
+import {
+  candidates,
+  type ElectionHistory,
+} from "../src/db/schema";
+import {
+  extractDeclaredIntention,
+  extractElectionHistory,
+} from "./parsers/flow-je-history";
 
 const FLOW_JE_FOLDER = "./data/flow.je";
 
@@ -223,6 +230,7 @@ function extractManifesto(markdown: string): string {
   return stripTableRowsAndCollapse(content);
 }
 
+
 function extractPhotoUrl(markdown: string, metadata: Record<string, string>) {
   const imgMatch = markdown.match(/!\[[^\]]*\]\((https?:\/\/[^)]+)\)/);
   if (imgMatch) return imgMatch[1]!;
@@ -265,6 +273,8 @@ async function main() {
     manifesto_url: string;
     source_urls: string[];
     data_hash: string;
+    election_history: ElectionHistory | null;
+    declared_district: string | null;
   }>();
 
   for (const file of files) {
@@ -292,11 +302,19 @@ async function main() {
       }
 
       const slug = toSlug(name);
-      const district = extractDistrict(markdown) || "Unknown";
+      const intention = extractDeclaredIntention(markdown);
+      const baseDistrict = extractDistrict(markdown) || "Unknown";
+      const district =
+        baseDistrict === "Unknown" && intention.district
+          ? intention.district
+          : baseDistrict;
       const party = JERSEY_PARTIES.find((p) => markdown.includes(p)) || null;
       const bio = extractBio(markdown, name);
-      const manifesto_raw = extractManifesto(markdown);
+      // ── manifestoRaw stores the FULL markdown (incl. election history). The
+      // page renders a cleaned-up view; Grok needs the full text for context.
+      const manifesto_raw = markdown;
       const photo_url = extractPhotoUrl(markdown, metadata);
+      const election_history = extractElectionHistory(markdown, name);
 
       const candidate = {
         name,
@@ -309,6 +327,8 @@ async function main() {
         manifesto_url: sourceUrl,
         source_urls: [sourceUrl],
         data_hash: sha256(manifesto_raw),
+        election_history: election_history.length > 0 ? election_history : null,
+        declared_district: intention.district,
       };
 
       const existing = candidateMap.get(slug);
@@ -322,6 +342,17 @@ async function main() {
             manifesto_raw.length > (existing.manifesto_raw?.length || 0)
               ? manifesto_raw
               : existing.manifesto_raw,
+          // Prefer the richer election history (more records, otherwise longer).
+          election_history:
+            (election_history.length > (existing.election_history?.length ?? 0)
+              ? election_history
+              : existing.election_history) ?? null,
+          declared_district:
+            existing.declared_district ?? intention.district ?? null,
+          district:
+            existing.district !== "Unknown"
+              ? existing.district
+              : district,
         };
         merged.data_hash = sha256(merged.manifesto_raw);
         candidateMap.set(slug, merged);
@@ -360,18 +391,27 @@ async function main() {
       if (existing.length > 0) {
         const ex = existing[0]!;
 
+        // Resolve district. If the existing district is "Unknown" or empty,
+        // fall back to the importer's pick (which already prefers the
+        // declared-intention parish over the JERSEY_DISTRICTS scan).
+        const resolvedDistrict =
+          ex.district && ex.district !== "Unknown"
+            ? ex.district
+            : c.declared_district ?? c.district;
+
         await db
           .update(candidates)
           .set({
             sourceUrls: [
               ...new Set([...(ex.sourceUrls || []), ...c.source_urls]),
             ],
-            district: ex.district !== "Unknown" ? ex.district : c.district,
+            district: resolvedDistrict,
             bio: c.bio,
             photoUrl: ex.photoUrl || c.photo_url,
             party: ex.party || c.party,
             manifestoRaw: c.manifesto_raw,
             manifestoUrl: c.manifesto_url,
+            electionHistory: c.election_history,
             dataHash: c.data_hash,
             aiSummary: null,
             aiIssues: null,
@@ -381,7 +421,10 @@ async function main() {
           })
           .where(eq(candidates.slug, c.slug));
 
-        console.log(`  ↺  Updated : ${c.name}`);
+        const historyNote = c.election_history
+          ? ` (${c.election_history.length} past elections)`
+          : "";
+        console.log(`  ↺  Updated : ${c.name}${historyNote}`);
         stats.updated++;
       } else {
         await db.insert(candidates).values({
@@ -393,6 +436,7 @@ async function main() {
           photoUrl: c.photo_url,
           manifestoRaw: c.manifesto_raw,
           manifestoUrl: c.manifesto_url,
+          electionHistory: c.election_history,
           sourceUrls: c.source_urls,
           dataHash: c.data_hash,
           lastScrapedAt: new Date(),
@@ -400,8 +444,11 @@ async function main() {
           updatedAt: new Date(),
         });
 
+        const historyNote = c.election_history
+          ? ` (${c.election_history.length} past elections)`
+          : "";
         console.log(
-          `  ✓  Inserted: ${c.name.padEnd(28)} | ${c.district}`,
+          `  ✓  Inserted: ${c.name.padEnd(28)} | ${c.district}${historyNote}`,
         );
         stats.inserted++;
       }

@@ -4,7 +4,13 @@ import { notFound } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import { arrayContains, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { articles, candidateIssues, candidates, issues } from "@/db/schema";
+import {
+  articles,
+  candidateIssues,
+  candidates,
+  issues,
+  type ElectionRecord,
+} from "@/db/schema";
 import { generateCandidateJsonLd } from "@/lib/candidate-jsonld";
 import {
   absoluteAssetUrl,
@@ -14,6 +20,7 @@ import {
 } from "@/lib/seo";
 import { SocialLinks } from "@/components/social-links";
 import { safeDisplayName } from "@/lib/candidate-utils";
+import { cleanManifestoForDisplay } from "@/lib/manifesto-display";
 
 export const revalidate = 21600;
 
@@ -26,6 +33,60 @@ function stripMarkdown(text: string): string {
     .replace(/^>\s+/gm, "")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+/**
+ * Turn a raw `source_urls` URL into a friendly label for the data-sources list.
+ * The DB stores plain URL strings; we derive labels from the host + path.
+ */
+function getSourceLabel(url: string): string {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return url;
+  }
+
+  const host = parsed.hostname.replace(/^www\./, "");
+  const path = parsed.pathname;
+
+  // vote.je archive: /candidates/2016/alvin-aaron/ → "2016 Vote.je manifesto"
+  const voteJeYear = path.match(/\/candidates\/(\d{4})\//);
+  if (host.endsWith("vote.je") && voteJeYear) {
+    return `${voteJeYear[1]} Vote.je manifesto`;
+  }
+
+  if (host.endsWith("vote.je")) {
+    if (path.includes("/2026/")) return "2026 Vote.je profile";
+    if (path.includes("/candidate")) return "Vote.je candidate profile";
+    return "Vote.je";
+  }
+
+  if (host.endsWith("flow.je")) return "Flow.je profile";
+
+  if (host.endsWith("youtube.com") || host === "youtu.be") {
+    return "YouTube video";
+  }
+
+  if (host.endsWith("sosjersey.co.uk")) return "SOS Jersey Q&A";
+
+  if (host.endsWith("wikipedia.org")) return "Wikipedia";
+
+  if (host.endsWith("bbc.co.uk") || host.endsWith("bbc.com")) {
+    return "BBC News";
+  }
+
+  if (host.endsWith("itv.com")) return "ITV News";
+
+  if (host.endsWith("jerseyeveningpost.com") || host === "jep.je") {
+    return "Jersey Evening Post";
+  }
+
+  if (host.endsWith("bailiwickexpress.com")) return "Bailiwick Express";
+
+  if (host.endsWith("gov.je")) return "gov.je";
+
+  return host;
 }
 
 export async function generateStaticParams() {
@@ -175,7 +236,10 @@ export default async function CandidatePage({ params }: Props) {
     "https://votepulse.je";
   const jsonLd = generateCandidateJsonLd(candidate, siteUrl);
 
-  const manifestoFor2026Check = candidate.manifestoRaw ?? "";
+  const displayManifesto = cleanManifestoForDisplay(candidate.manifestoRaw ?? "");
+  const hasManifestoBody = displayManifesto.length > 0;
+  const electionHistory = (candidate.electionHistory ?? []) as ElectionRecord[];
+  const manifestoFor2026Check = displayManifesto;
   const has2026Content =
     Boolean(candidate.aiSummary) ||
     positions.length > 0 ||
@@ -340,7 +404,7 @@ export default async function CandidatePage({ params }: Props) {
           </section>
         )}
 
-        {candidate.manifestoRaw ? (
+        {hasManifestoBody ? (
           <section>
             <div className="mb-4 flex items-center justify-between gap-3">
               <h2 className="text-lg font-semibold text-slate-900">
@@ -358,11 +422,11 @@ export default async function CandidatePage({ params }: Props) {
                 </div>
               )}
               <div className="prose prose-sm max-w-none text-slate-700 prose-headings:text-slate-900 prose-headings:font-semibold prose-a:text-jersey-red prose-strong:text-slate-900 prose-li:my-0.5">
-                <ReactMarkdown>{candidate.manifestoRaw}</ReactMarkdown>
+                <ReactMarkdown>{displayManifesto}</ReactMarkdown>
               </div>
             </div>
           </section>
-        ) : (
+        ) : electionHistory.length === 0 ? (
           <section>
             <div className="rounded-xl border border-slate-200 bg-white p-6 text-center text-slate-400 shadow-sm">
               <p className="text-sm">
@@ -380,6 +444,13 @@ export default async function CandidatePage({ params }: Props) {
               )}
             </div>
           </section>
+        ) : null}
+
+        {electionHistory.length > 0 && (
+          <ElectionHistorySection
+            history={electionHistory}
+            candidateName={candidateDisplayName}
+          />
         )}
 
         {relatedArticles.length > 0 && (
@@ -459,20 +530,23 @@ export default async function CandidatePage({ params }: Props) {
                 </svg>
                 Data sources ({candidate.sourceUrls.length})
               </summary>
-              <div className="mt-3 space-y-2 pl-6">
+              <ul className="mt-3 space-y-2 pl-6">
                 {candidate.sourceUrls.map((url, i) => (
-                  <div key={`${url}-${i}`}>
+                  <li key={`${url}-${i}`} className="leading-snug">
                     <a
                       href={url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="break-all text-xs text-jersey-red hover:underline"
+                      className="text-sm text-[#A31621] hover:underline"
                     >
-                      {url}
+                      {getSourceLabel(url)}
                     </a>
-                  </div>
+                    <span className="ml-2 break-all text-xs text-slate-400">
+                      {url}
+                    </span>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </details>
           </section>
         )}
@@ -514,6 +588,217 @@ function ConfidenceBadge({ value }: { value: number }) {
       title={`Confidence: ${Math.round(value * 100)}%`}
     >
       {level}
+    </span>
+  );
+}
+
+function ElectionHistorySection({
+  history,
+  candidateName,
+}: {
+  history: ElectionRecord[];
+  candidateName: string;
+}) {
+  return (
+    <section className="mt-2">
+      <div className="mb-5 flex items-center gap-3">
+        <div className="h-px w-8 bg-[#C8922A]" />
+        <span className="text-xs font-bold uppercase tracking-[0.2em] text-[#C8922A]">
+          Election history
+        </span>
+        <span className="text-xs text-slate-400">
+          {history.length} {history.length === 1 ? "election" : "elections"}
+        </span>
+      </div>
+
+      <div className="space-y-4">
+        {history.map((record, i) => (
+          <ElectionRecordCard
+            key={`${record.year}-${i}`}
+            record={record}
+            candidateName={candidateName}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ElectionRecordCard({
+  record,
+  candidateName,
+}: {
+  record: ElectionRecord;
+  candidateName: string;
+}) {
+  const rows = record.allResults ?? [];
+  const hasFooter =
+    record.totalVotes !== null ||
+    record.registeredVoters !== null ||
+    record.turnout !== null ||
+    (record.sources?.length ?? 0) > 0;
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+      <div className="border-b border-gray-100 px-5 py-4">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <h3 className="text-sm font-bold text-[#0D1B2A] [text-wrap:balance]">
+              {record.electionName}
+            </h3>
+            {(record.role && record.role !== record.electionName) ||
+            record.date ||
+            record.seats ? (
+              <p className="mt-0.5 text-xs text-[#0D1B2A]/55 [font-variant-numeric:tabular-nums]">
+                {record.role && record.role !== record.electionName
+                  ? record.role
+                  : null}
+                {record.role &&
+                record.role !== record.electionName &&
+                record.date
+                  ? " · "
+                  : null}
+                {record.date}
+                {(record.role !== record.electionName || record.date) &&
+                record.seats !== null
+                  ? " · "
+                  : null}
+                {record.seats !== null
+                  ? `${record.seats} seat${record.seats !== 1 ? "s" : ""}`
+                  : null}
+              </p>
+            ) : null}
+            {record.party && (
+              <p className="mt-1 text-xs text-[#0D1B2A]/55">
+                Stood for{" "}
+                <span className="font-medium text-[#0D1B2A]/80">
+                  {record.party}
+                </span>
+              </p>
+            )}
+          </div>
+          <ResultBadge result={record.result} />
+        </div>
+      </div>
+
+      {rows.length > 0 && (
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs [font-variant-numeric:tabular-nums]">
+            <thead>
+              <tr className="border-b border-gray-100 text-[#0D1B2A]/50">
+                <th className="w-8 px-4 py-2 text-left text-[10px] font-semibold uppercase tracking-wider">
+                  #
+                </th>
+                <th className="px-4 py-2 text-left text-[10px] font-semibold uppercase tracking-wider">
+                  Candidate
+                </th>
+                <th className="px-4 py-2 text-left text-[10px] font-semibold uppercase tracking-wider">
+                  Party
+                </th>
+                <th className="px-4 py-2 text-right text-[10px] font-semibold uppercase tracking-wider">
+                  Votes
+                </th>
+                <th className="px-4 py-2 text-right text-[10px] font-semibold uppercase tracking-wider">
+                  %
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, j) => {
+                const isThem =
+                  row.isCandidate ||
+                  row.name.toLowerCase() === candidateName.toLowerCase();
+                return (
+                  <tr
+                    key={`${row.rank}-${j}`}
+                    className={`border-b border-gray-50 last:border-0 ${
+                      isThem ? "bg-[#A31621]/5 font-semibold" : ""
+                    }`}
+                  >
+                    <td className="px-4 py-2 text-[#0D1B2A]/50">{row.rank}</td>
+                    <td className="px-4 py-2 text-[#0D1B2A]">
+                      {row.name}
+                      {isThem && (
+                        <span
+                          aria-label="this candidate"
+                          className="ml-2 inline-block rounded-full bg-[#A31621]/10 px-1.5 py-0.5 text-[10px] font-medium text-[#A31621]"
+                        >
+                          this candidate
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2 text-[#0D1B2A]/60">
+                      {row.party ?? "Independent"}
+                    </td>
+                    <td className="px-4 py-2 text-right text-[#0D1B2A]">
+                      {row.votes !== null ? row.votes.toLocaleString() : "—"}
+                    </td>
+                    <td className="px-4 py-2 text-right text-[#0D1B2A]/70">
+                      {row.percentage ?? "—"}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {hasFooter && (
+        <div className="flex flex-wrap items-center gap-4 border-t border-gray-100 bg-gray-50 px-5 py-3 [font-variant-numeric:tabular-nums]">
+          {record.totalVotes !== null && (
+            <span className="text-xs text-[#0D1B2A]/55">
+              {record.totalVotes.toLocaleString()} votes cast
+            </span>
+          )}
+          {record.registeredVoters !== null && (
+            <span className="text-xs text-[#0D1B2A]/55">
+              {record.registeredVoters.toLocaleString()} registered voters
+            </span>
+          )}
+          {record.turnout && (
+            <span className="text-xs font-semibold text-[#0D1B2A]/70">
+              {record.turnout} turnout
+            </span>
+          )}
+          {record.sources && record.sources.length > 0 && (
+            <a
+              href={record.sources[0]}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ml-auto text-xs font-medium text-[#A31621] transition-colors hover:underline"
+            >
+              Source ↗
+            </a>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ResultBadge({ result }: { result: ElectionRecord["result"] }) {
+  const styles =
+    result === "elected"
+      ? "bg-[#1A6B3A]/10 text-[#1A6B3A]"
+      : result === "not_elected"
+        ? "bg-gray-100 text-[#0D1B2A]/60"
+        : result === "withdrew"
+          ? "bg-amber-50 text-amber-700"
+          : "bg-gray-50 text-gray-500";
+  const label =
+    result === "elected"
+      ? "✓ Elected"
+      : result === "not_elected"
+        ? "Not elected"
+        : result === "withdrew"
+          ? "Withdrew"
+          : "Unknown";
+  return (
+    <span
+      className={`flex-shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${styles}`}
+    >
+      {label}
     </span>
   );
 }

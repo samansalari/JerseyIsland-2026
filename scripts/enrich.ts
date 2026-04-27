@@ -168,7 +168,9 @@ async function callGrokForManifesto(
   district: string,
   manifestoRaw: string,
 ): Promise<ManifestoGrokResult> {
-  const systemPrompt = `You are analysing a Jersey election candidate's profile page. The text may contain election history, biographical details, and declared intentions for 2026. Extract whatever is available. Do not say "no manifesto provided" - work with what exists.`;
+  const systemPrompt = `You are analysing a Jersey election candidate's profile page. The text may contain election history, biographical details, and declared intentions for 2026. Extract whatever is available. Do not say "no manifesto provided" - work with what exists.
+
+IMPORTANT: The profile text may contain historical election data including vote counts, percentages, and election results tables from previous elections (e.g. 2008, 2014, 2016, 2018, 2022). IGNORE all historical election result tables completely. They are not policy positions. Only extract policy positions from explicit 2026 manifesto content, declared 2026 intentions, or unambiguous policy statements. Do not confuse historical vote counts with policy positions, and do not treat past election outcomes as evidence of a stance on any issue.`;
 
   const userPrompt = `Analyse this profile for ${candidateName}.
 

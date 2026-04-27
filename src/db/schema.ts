@@ -32,6 +32,46 @@ import { sql } from "drizzle-orm";
  * The `0000_enable_pgcrypto.sql` migration handles this.
  */
 
+// ── Election history (structured, parsed from flow.je) ──────────────────────
+/** A single row in an election results table. */
+export type ElectionResult = {
+  rank: number;
+  name: string;
+  party: string | null;
+  votes: number | null;
+  percentage: string | null;
+  /** True if this row is the candidate whose page contains this record. */
+  isCandidate: boolean;
+};
+
+/** A single election a candidate participated in. */
+export type ElectionRecord = {
+  year: number;
+  /** e.g. "2008 Deputies Election" */
+  electionName: string;
+  /** e.g. "Deputy of St Brelade No 1" */
+  role: string;
+  /** e.g. "26th November 2008" */
+  date: string | null;
+  /** Number of seats available in this election. */
+  seats: number | null;
+  result: "elected" | "not_elected" | "withdrew" | "unknown";
+  candidateVotes: number | null;
+  candidatePercentage: string | null;
+  candidateRank: number | null;
+  totalVotes: number | null;
+  registeredVoters: number | null;
+  /** e.g. "27.5%" */
+  turnout: string | null;
+  allResults: ElectionResult[];
+  /** URLs from the Sources section of this election block. */
+  sources: string[];
+  /** Party they ran under in THIS election (may differ from current). */
+  party: string | null;
+};
+
+export type ElectionHistory = ElectionRecord[];
+
 // ── Candidates ──────────────────────────────────────────────────────────────
 export const candidates = pgTable(
   "candidates",
@@ -49,6 +89,11 @@ export const candidates = pgTable(
     // Sacred raw data — never overwritten by AI.
     manifestoRaw: text("manifesto_raw"),
     manifestoUrl: text("manifesto_url"),
+
+    // Structured election history parsed from flow.je profile pages.
+    // Preserved verbatim so the page can render results tables, turnout, and
+    // sources without round-tripping through AI.
+    electionHistory: jsonb("election_history").$type<ElectionHistory>(),
 
     // Social links extracted from scraped markdown.
     socialLinks: jsonb("social_links").$type<Record<string, string>>(),
