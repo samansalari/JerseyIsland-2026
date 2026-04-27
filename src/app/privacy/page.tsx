@@ -41,7 +41,7 @@ export default function PrivacyPage() {
               <p>
                 VotePulse (<strong>votepulse.je</strong>) is an independent, non-partisan
                 election intelligence platform for Jersey&rsquo;s 2026 general election.
-                It is operated by <strong>Seenovate Ltd</strong>, a company registered in Jersey.
+                It is operated by <strong>Seenovate Ltd</strong>, a company registered in England and Wales (United Kingdom).
               </p>
               <p>
                 <strong>Data controller:</strong> Seenovate Ltd<br />
@@ -184,7 +184,7 @@ export default function PrivacyPage() {
                   <tbody className="divide-y divide-gray-100 text-[#0D1B2A]/70">
                     {[
                       {
-                        name: 'vp_consent',
+                        name: 'Cookie preference',
                         purpose: 'Stores your analytics cookie preference',
                         duration: '1 year',
                         required: 'Functional',
@@ -215,7 +215,7 @@ export default function PrivacyPage() {
                       },
                     ].map(row => (
                       <tr key={row.name}>
-                        <td className="px-4 py-3 font-mono">{row.name}</td>
+                        <td className={`px-4 py-3 ${row.name === 'Cookie preference' ? '' : 'font-mono'}`}>{row.name}</td>
                         <td className="px-4 py-3">{row.purpose}</td>
                         <td className="px-4 py-3 whitespace-nowrap">{row.duration}</td>
                         <td className="px-4 py-3">
