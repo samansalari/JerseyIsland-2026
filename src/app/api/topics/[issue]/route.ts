@@ -30,7 +30,16 @@ export async function GET(
 
   try {
     const [summary] = await db
-      .select()
+      .select({
+        aiSummary: topicSummaries.aiSummary,
+        candidateCount: topicSummaries.candidateCount,
+        topParties: topicSummaries.topParties,
+        sourcesCited: topicSummaries.sourcesCited,
+        themeClusters: topicSummaries.themeClusters,
+        icon: topicSummaries.icon,
+        displayName: topicSummaries.displayName,
+        generatedAt: topicSummaries.generatedAt,
+      })
       .from(topicSummaries)
       .where(eq(topicSummaries.issue, issue))
       .limit(1);
@@ -90,6 +99,7 @@ export async function GET(
     return NextResponse.json({
       issue,
       summary: summary ?? null,
+      themeClusters: summary?.themeClusters ?? [],
       candidates: candidatesWithPosition,
       total: candidatesWithPosition.length,
     });

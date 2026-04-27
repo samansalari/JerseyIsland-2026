@@ -12,7 +12,11 @@ import "./bootstrap-env";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { eq, sql as sqlTag } from "drizzle-orm";
-import { candidates, topicSummaries } from "../src/db/schema";
+import {
+  candidates,
+  topicSummaries,
+  type ThemeCluster,
+} from "../src/db/schema";
 import {
   grokChatCompletionJson,
   DEFAULT_GROK_MODEL,
@@ -80,6 +84,25 @@ Return ONLY valid JSON, no markdown:
   "summary": "2-3 sentence neutral synthesis describing the overall landscape — what candidates generally support, where they differ",
   "consensus": "One sentence describing any shared ground across most candidates, or null if none clear",
   "divergence": "One sentence describing the main area of disagreement, or null if candidates broadly agree"
+}`;
+
+// Second pass: cluster the same positions into 4-8 thematic groups so the
+// drawer can show "what candidates are actually saying" at a glance before
+// listing every individual position card.
+const CLUSTER_SYSTEM_PROMPT = `You are a neutral political analyst grouping Jersey 2026 candidate policy positions into clear thematic clusters. Be strictly factual — every theme must be supported by the supplied candidate text. Do not invent positions.
+
+Rules:
+- Identify 4-8 distinct themes from the supplied positions.
+- A candidate may legitimately fit more than one theme — count them in each.
+- Theme labels MUST be short (3-6 words), plain English, no jargon, no party names.
+- For each theme, list 2-3 example candidate names (first names + surname is fine) drawn ONLY from the supplied list.
+- Order themes by candidateCount descending.
+
+Return ONLY valid JSON, no markdown, no commentary. Shape:
+{
+  "clusters": [
+    { "theme": "short theme label", "candidateCount": number, "exampleNames": ["Name 1", "Name 2"] }
+  ]
 }`;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -275,6 +298,106 @@ Return only the JSON object.`;
       console.log(
         `  ✓ ${topic.issue}: ${isDryRun ? "DRY RUN — " : ""}summary written (${positions.length} candidates)`,
       );
+
+      // ── Theme clusters (second Grok pass) ──────────────────────────────
+      // Group the same positions into 4-8 themes so the issue drawer can
+      // show a "Key themes" overview before the individual position cards.
+      const clusterThreshold = Math.max(1, Math.ceil(positions.length * 0.1));
+      let clustersWritten = 0;
+
+      if (positions.length < 3) {
+        if (!isDryRun) {
+          await db
+            .update(topicSummaries)
+            .set({ themeClusters: [] })
+            .where(eq(topicSummaries.issue, topic.issue));
+        }
+        console.log(
+          `  · ${topic.issue}: only ${positions.length} positions — clusters skipped`,
+        );
+      } else {
+        try {
+          const positionsList = positions
+            .map(
+              (p, i) =>
+                `${i + 1}. [${p.candidateName}]: ${p.position}`,
+            )
+            .join("\n");
+
+          const clusterUserPrompt = `Issue: ${topic.displayName} (${topic.issue})
+Total candidates with positions on this issue: ${positions.length}
+
+Candidate positions (each numbered, name in brackets):
+${positionsList}
+
+Return only the JSON object described in the system instructions.`;
+
+          const { data: clusterResult, usage: clusterUsage } =
+            await grokChatCompletionJson<{ clusters: ThemeCluster[] }>({
+              systemPrompt: CLUSTER_SYSTEM_PROMPT,
+              userPrompt: clusterUserPrompt,
+              temperature: 0,
+              maxTokens: 800,
+              model: MODEL,
+            });
+
+          const clusterRec = tokenTracker.record(
+            `generate-topics:${topic.issue}:clusters`,
+            clusterUsage.promptTokens,
+            clusterUsage.completionTokens,
+            clusterUsage.cachedTokens,
+          );
+          tokenTracker.printCall(clusterRec);
+
+          const rawClusters = Array.isArray(clusterResult?.clusters)
+            ? clusterResult.clusters
+            : [];
+
+          const validClusters: ThemeCluster[] = rawClusters
+            .filter(
+              (c): c is ThemeCluster =>
+                !!c &&
+                typeof c.theme === "string" &&
+                c.theme.trim().length > 0 &&
+                c.theme.length <= 60 &&
+                typeof c.candidateCount === "number" &&
+                c.candidateCount > 0 &&
+                c.candidateCount <= positions.length,
+            )
+            .map((c) => ({
+              theme: c.theme.trim(),
+              candidateCount: Math.round(c.candidateCount),
+              isMinority: c.candidateCount < clusterThreshold,
+              exampleNames: Array.isArray(c.exampleNames)
+                ? c.exampleNames
+                    .filter(
+                      (n): n is string =>
+                        typeof n === "string" && n.trim().length > 0,
+                    )
+                    .slice(0, 3)
+                : [],
+            }))
+            .sort((a, b) => b.candidateCount - a.candidateCount);
+
+          if (!isDryRun) {
+            await db
+              .update(topicSummaries)
+              .set({ themeClusters: validClusters })
+              .where(eq(topicSummaries.issue, topic.issue));
+          }
+
+          clustersWritten = validClusters.length;
+          console.log(
+            `  ✓ ${topic.issue}: ${isDryRun ? "DRY RUN — " : ""}${clustersWritten} theme clusters generated`,
+          );
+        } catch (err) {
+          console.error(
+            `  ✗ ${topic.issue}: cluster generation failed —`,
+            err instanceof Error ? err.message : err,
+          );
+        }
+      }
+
       generated++;
     } catch (err) {
       console.error(

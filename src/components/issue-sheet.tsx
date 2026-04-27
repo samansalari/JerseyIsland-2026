@@ -14,6 +14,15 @@ interface CandidatePosition {
   manifestoUrl: string | null;
 }
 
+// Defined locally rather than imported from `@/db/schema` so the client
+// bundle never pulls in the drizzle-orm + postgres types.
+type ThemeCluster = {
+  theme: string;
+  candidateCount: number;
+  isMinority: boolean;
+  exampleNames: string[];
+};
+
 interface TopicSummaryData {
   aiSummary: string | null;
   sourcesCited:
@@ -30,6 +39,7 @@ interface TopicSummaryData {
 interface TopicApiResponse {
   issue: string;
   summary: TopicSummaryData | null;
+  themeClusters: ThemeCluster[];
   candidates: CandidatePosition[];
   total: number;
 }
@@ -232,14 +242,20 @@ export function IssueSheet({ topic }: { topic: TopicData }) {
           {/* Sheet panel — slides in from right */}
           <div className="relative ml-auto h-full w-full max-w-xl overflow-y-auto bg-surface shadow-2xl">
             {/* Header */}
-            <div className="sticky top-0 z-10 flex items-center justify-between bg-navy px-6 py-5 text-on-primary">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">{topic.icon}</span>
+            <div className="sticky top-0 z-10 flex items-start justify-between bg-navy px-6 py-5 text-on-primary">
+              <div className="flex items-start gap-3">
+                <span
+                  className="text-3xl leading-none"
+                  role="img"
+                  aria-label={topic.displayName}
+                >
+                  {topic.icon}
+                </span>
                 <div>
-                  <h2 className="text-[17px] font-bold leading-tight">
+                  <h2 className="text-xl font-bold leading-tight tracking-tight">
                     {topic.displayName}
                   </h2>
-                  <p className="text-[12px] text-on-primary/50">
+                  <p className="mt-1 text-[12px] text-on-primary/55">
                     Jersey 2026 Election
                   </p>
                 </div>
@@ -301,6 +317,97 @@ export function IssueSheet({ topic }: { topic: TopicData }) {
                     </section>
                   )}
 
+                  {/* ── Key themes / cluster overview ─────────────── */}
+                  {data.themeClusters && data.themeClusters.length > 0 && (
+                    <section>
+                      <div className="mb-3 flex items-center gap-3">
+                        <div className="h-px w-6 bg-gold" />
+                        <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-gold">
+                          Key themes
+                        </span>
+                      </div>
+                      <p className="mb-4 text-[12px] leading-relaxed text-navy/55">
+                        What candidates are actually saying — grouped by
+                        theme. Candidates may appear in more than one.
+                      </p>
+
+                      <div className="space-y-2">
+                        {data.themeClusters.map((cluster, i) => {
+                          const denom =
+                            data.total > 0 ? data.total : cluster.candidateCount;
+                          const pct = Math.min(
+                            100,
+                            Math.round(
+                              (cluster.candidateCount / denom) * 100,
+                            ),
+                          );
+                          const barColour = cluster.isMinority
+                            ? "#C8922A"
+                            : "#A31621";
+
+                          return (
+                            <div
+                              key={`${cluster.theme}-${i}`}
+                              className={`rounded-xl border p-3 ${
+                                cluster.isMinority
+                                  ? "border-amber-200 bg-amber-50"
+                                  : "border-gray-100 bg-white"
+                              }`}
+                            >
+                              <div className="mb-2 flex items-start justify-between gap-3">
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    {cluster.isMinority && (
+                                      <span className="flex-shrink-0 rounded border border-amber-200 bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
+                                        Minority view
+                                      </span>
+                                    )}
+                                    <p className="text-[13px] font-semibold leading-tight text-navy">
+                                      {cluster.theme}
+                                    </p>
+                                  </div>
+                                  {cluster.exampleNames.length > 0 && (
+                                    <p className="mt-0.5 text-[11px] text-navy/50">
+                                      e.g.{" "}
+                                      {cluster.exampleNames
+                                        .slice(0, 3)
+                                        .join(", ")}
+                                    </p>
+                                  )}
+                                </div>
+                                <div className="flex-shrink-0 text-right tabular-nums">
+                                  <span
+                                    className="text-[13px] font-bold"
+                                    style={{ color: barColour }}
+                                  >
+                                    {cluster.candidateCount}
+                                  </span>
+                                  <span className="ml-1 text-[11px] text-navy/40">
+                                    candidates
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Progress bar */}
+                              <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+                                <div
+                                  className="h-1.5 rounded-full transition-all duration-500"
+                                  style={{
+                                    width: `${pct}%`,
+                                    backgroundColor: barColour,
+                                  }}
+                                />
+                              </div>
+                              <p className="mt-1 text-[11px] text-navy/35">
+                                {pct}% of candidates on this issue
+                              </p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  )}
+
                   {/* Stats row */}
                   <div className="flex gap-3">
                     <div className="flex-1 rounded-xl border border-border bg-white p-3 text-center">
@@ -355,9 +462,19 @@ export function IssueSheet({ topic }: { topic: TopicData }) {
 
                   {/* Candidate positions */}
                   <section>
-                    <h3 className="mb-3 text-[13px] font-bold text-navy">
-                      Candidate positions ({data.total})
-                    </h3>
+                    {data.themeClusters && data.themeClusters.length > 0 ? (
+                      <div className="mb-5 flex items-center gap-3">
+                        <div className="h-px flex-1 bg-navy/10" />
+                        <span className="flex-shrink-0 text-[11px] font-bold uppercase tracking-[0.2em] text-navy/40">
+                          Individual positions ({data.total})
+                        </span>
+                        <div className="h-px flex-1 bg-navy/10" />
+                      </div>
+                    ) : (
+                      <h3 className="mb-3 text-[13px] font-bold text-navy">
+                        Candidate positions ({data.total})
+                      </h3>
+                    )}
 
                     {data.candidates.length === 0 ? (
                       <div className="py-8 text-center text-[13px] italic text-muted-foreground">
