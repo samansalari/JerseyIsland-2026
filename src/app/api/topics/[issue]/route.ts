@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { candidates, topicSummaries } from "@/db/schema";
+import {
+  candidates,
+  topicSummaries,
+  type ActionPoint,
+  type IssueStance,
+} from "@/db/schema";
 import { and, eq, isNotNull } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
@@ -65,18 +70,18 @@ export async function GET(
       sourceQuote: string;
       confidence: number;
       manifestoUrl: string | null;
+      // New (action-points pipeline) — undefined for legacy rows that haven't
+      // been re-enriched yet. The client renders the old `position` paragraph
+      // when both fields are missing.
+      stanceType?: IssueStance["stanceType"];
+      actionPoints?: ActionPoint[];
     };
 
     const candidatesWithPosition: CandidateWithPosition[] = [];
 
     for (const candidate of allCandidates) {
       const issues = Array.isArray(candidate.aiIssues)
-        ? (candidate.aiIssues as Array<{
-            issue: string;
-            position: string;
-            source_quote: string;
-            confidence: number;
-          }>)
+        ? (candidate.aiIssues as IssueStance[])
         : [];
       const issueData = issues.find((i) => i.issue === issue);
 
@@ -87,14 +92,26 @@ export async function GET(
           district: candidate.district,
           party: candidate.party,
           position: issueData.position,
-          sourceQuote: issueData.source_quote,
+          sourceQuote: issueData.source_quote ?? "",
           confidence: issueData.confidence,
           manifestoUrl: candidate.manifestoUrl,
+          stanceType: issueData.stanceType,
+          actionPoints: Array.isArray(issueData.actionPoints)
+            ? issueData.actionPoints
+            : [],
         });
       }
     }
 
-    candidatesWithPosition.sort((a, b) => b.confidence - a.confidence);
+    // Sort: candidates with concrete action points first, then by confidence.
+    // Voters care more about "what they will DO" than how confident the
+    // extractor is in the position summary.
+    candidatesWithPosition.sort((a, b) => {
+      const aPoints = a.actionPoints?.length ?? 0;
+      const bPoints = b.actionPoints?.length ?? 0;
+      if (aPoints !== bPoints) return bPoints - aPoints;
+      return b.confidence - a.confidence;
+    });
 
     return NextResponse.json({
       issue,

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import ReactMarkdown from "react-markdown";
 import { and, arrayContains, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import {
@@ -9,7 +8,9 @@ import {
   candidateIssues,
   candidates,
   issues,
+  type ActionPoint,
   type ElectionRecord,
+  type IssueStance,
 } from "@/db/schema";
 import { generateCandidateJsonLd } from "@/lib/candidate-jsonld";
 import {
@@ -20,7 +21,11 @@ import {
 } from "@/lib/seo";
 import { SocialLinks } from "@/components/social-links";
 import { safeDisplayName } from "@/lib/candidate-utils";
-import { cleanManifestoForDisplay } from "@/lib/manifesto-display";
+import {
+  cleanManifestoForDisplay,
+  isManifestoMeaningless,
+} from "@/lib/clean-manifesto";
+import { ManifestoContent } from "@/components/manifesto-content";
 
 export const revalidate = 21600;
 
@@ -110,8 +115,31 @@ async function getCandidate(slug: string) {
   return row ?? null;
 }
 
-async function getCandidatePositions(candidateId: string) {
-  return db
+type RenderedPosition = {
+  issueName: string;
+  issueDisplayName: string;
+  position: string;
+  sourceQuote: string;
+  confidence: number;
+  stanceType: NonNullable<IssueStance["stanceType"]>;
+  actionPoints: ActionPoint[];
+};
+
+/**
+ * Merge the structured action-points data from `candidates.ai_issues` (jsonb)
+ * with the `candidate_issues` junction table. The junction table is the
+ * authoritative source for which issues to render (it has display names via
+ * `issues`), while jsonb carries the new `stanceType` / `actionPoints` fields.
+ *
+ * Falls back gracefully when a candidate hasn't been re-enriched under the
+ * action-points pipeline yet — `actionPoints` is `[]` and `stanceType` is
+ * `"neutral"`, so the existing position paragraph + quote still render.
+ */
+async function getCandidatePositions(
+  candidateId: string,
+  aiIssuesJsonb: unknown,
+): Promise<RenderedPosition[]> {
+  const rows = await db
     .select({
       position: candidateIssues.position,
       sourceQuote: candidateIssues.sourceQuote,
@@ -123,6 +151,30 @@ async function getCandidatePositions(candidateId: string) {
     .innerJoin(issues, eq(candidateIssues.issueId, issues.id))
     .where(eq(candidateIssues.candidateId, candidateId))
     .orderBy(issues.displayName);
+
+  const stanceMap = new Map<string, IssueStance>();
+  if (Array.isArray(aiIssuesJsonb)) {
+    for (const stance of aiIssuesJsonb as IssueStance[]) {
+      if (stance && typeof stance.issue === "string") {
+        stanceMap.set(stance.issue, stance);
+      }
+    }
+  }
+
+  return rows.map((r) => {
+    const stance = stanceMap.get(r.issueName);
+    return {
+      issueName: r.issueName,
+      issueDisplayName: r.issueDisplayName,
+      position: r.position,
+      sourceQuote: r.sourceQuote,
+      confidence: r.confidence,
+      stanceType: stance?.stanceType ?? "neutral",
+      actionPoints: Array.isArray(stance?.actionPoints)
+        ? stance.actionPoints
+        : [],
+    };
+  });
 }
 
 async function getRelatedArticles(candidateId: string) {
@@ -222,7 +274,7 @@ export default async function CandidatePage({ params }: Props) {
   if (!candidate) notFound();
 
   const [positions, relatedArticles] = await Promise.all([
-    getCandidatePositions(candidate.id),
+    getCandidatePositions(candidate.id, candidate.aiIssues),
     getRelatedArticles(candidate.id),
   ]);
 
@@ -240,14 +292,21 @@ export default async function CandidatePage({ params }: Props) {
   const jsonLd = generateCandidateJsonLd(candidate, siteUrl);
 
   const displayManifesto = cleanManifestoForDisplay(candidate.manifestoRaw ?? "");
-  const hasManifestoBody = displayManifesto.length > 0;
+  const hasManifestoBody =
+    displayManifesto.length > 0 && !isManifestoMeaningless(candidate.manifestoRaw);
   const electionHistory = (candidate.electionHistory ?? []) as ElectionRecord[];
-  const manifestoFor2026Check = displayManifesto;
+  // 2026 content heuristic: explicit AI summary, extracted positions, or a
+  // long manifesto that mentions the year. Used to gate the "no 2026" notice.
+  const isHistoricalRecord = (candidate.manifestoRaw ?? "").startsWith(
+    "[Historical manifesto from vote.je",
+  );
   const has2026Content =
-    Boolean(candidate.aiSummary) ||
-    positions.length > 0 ||
-    (manifestoFor2026Check.length > 300 &&
-      manifestoFor2026Check.toLowerCase().includes("2026"));
+    !isHistoricalRecord &&
+    (Boolean(candidate.aiSummary) ||
+      positions.length > 0 ||
+      (displayManifesto.length > 300 &&
+        displayManifesto.toLowerCase().includes("2026")));
+  const sourceUrls = candidate.sourceUrls ?? [];
 
   return (
     <div className="min-h-screen bg-surface">
@@ -388,50 +447,117 @@ export default async function CandidatePage({ params }: Props) {
             </h2>
             <div className="grid gap-3 sm:grid-cols-2">
               {positions.map((item) => (
-                <div
-                  key={item.issueName}
-                  className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
-                >
-                  <div className="mb-2 flex items-center justify-between gap-3">
-                    <span className="text-xs font-bold uppercase tracking-wide text-jersey-red">
-                      {item.issueDisplayName}
-                    </span>
-                    <ConfidenceBadge value={item.confidence} />
-                  </div>
-                  <p className="text-sm leading-relaxed text-slate-700 [text-wrap:pretty]">
-                    {item.position}
-                  </p>
-                  {item.sourceQuote && (
-                    <blockquote className="mt-3 border-l-2 border-gold pl-3 text-xs italic text-slate-500">
-                      &quot;{item.sourceQuote}&quot;
-                    </blockquote>
-                  )}
-                </div>
+                <IssuePositionCard key={item.issueName} item={item} />
               ))}
             </div>
           </section>
         )}
 
-        {hasManifestoBody ? (
-          <section>
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <h2 className="text-lg font-semibold text-slate-900">
+        {hasManifestoBody || sourceUrls.length > 0 ? (
+          <section className="mt-2">
+            <div className="mb-5 flex items-center gap-3">
+              <div className="h-px w-8 bg-[#C8922A]" />
+              <span className="text-xs font-bold uppercase tracking-[0.2em] text-[#C8922A]">
                 Original Manifesto
-              </h2>
+              </span>
             </div>
-            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-              {!has2026Content && (
+
+            <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+              {!has2026Content && hasManifestoBody && (
                 <div
-                  className="mb-4 rounded-lg border border-amber-200/80 bg-amber-50 p-3 text-sm text-amber-800 [font-family:Archivo,ui-sans-serif,system-ui,sans-serif]"
+                  className="flex items-start gap-3 border-b border-amber-200 bg-amber-50 px-5 py-4"
                   role="status"
                 >
-                  <span aria-hidden>⚠️</span> No 2026 manifesto published yet.
-                  Showing historical electoral profile from flow.je.
+                  <span
+                    aria-hidden
+                    className="mt-0.5 flex-shrink-0 text-base text-amber-500"
+                  >
+                    ⚠
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold text-amber-800">
+                      No 2026 manifesto published yet
+                    </p>
+                    <p className="mt-0.5 text-xs leading-relaxed text-amber-700">
+                      Showing historical electoral profile from flow.je and
+                      vote.je. This content is from a previous election and may
+                      not reflect the candidate&rsquo;s current positions.
+                    </p>
+                  </div>
                 </div>
               )}
-              <div className="prose prose-sm max-w-none text-slate-700 prose-headings:text-slate-900 prose-headings:font-semibold prose-a:text-jersey-red prose-strong:text-slate-900 prose-li:my-0.5">
-                <ReactMarkdown>{displayManifesto}</ReactMarkdown>
-              </div>
+
+              {hasManifestoBody ? (
+                <ManifestoContent raw={candidate.manifestoRaw ?? ""} />
+              ) : (
+                <div className="px-5 py-12 text-center">
+                  <p className="text-sm italic text-[#0D1B2A]/40">
+                    No manifesto text available yet.
+                  </p>
+                  {candidate.manifestoUrl && (
+                    <a
+                      href={candidate.manifestoUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-[#A31621] hover:underline"
+                    >
+                      View on vote.je ↗
+                    </a>
+                  )}
+                </div>
+              )}
+
+              {sourceUrls.length > 0 && (
+                <div className="border-t border-gray-100 bg-gray-50 px-5 py-3">
+                  <details className="group">
+                    <summary className="flex cursor-pointer list-none items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#0D1B2A]/50 transition-colors hover:text-[#0D1B2A]/70">
+                      <svg
+                        className="h-3 w-3 transition-transform group-open:rotate-90"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2.5}
+                        aria-hidden
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                      Data sources ({sourceUrls.length})
+                    </summary>
+                    <ul className="mt-3 space-y-2">
+                      {sourceUrls.map((url, i) => (
+                        <li key={`${url}-${i}`}>
+                          <a
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-sm text-[#A31621] hover:underline"
+                          >
+                            <svg
+                              className="h-3 w-3 flex-shrink-0 opacity-60"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              strokeWidth={2}
+                              aria-hidden
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                              />
+                            </svg>
+                            {getSourceLabel(url)}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                </div>
+              )}
             </div>
           </section>
         ) : electionHistory.length === 0 ? (
@@ -519,46 +645,6 @@ export default async function CandidatePage({ params }: Props) {
           </section>
         )}
 
-        {candidate.sourceUrls.length > 0 && (
-          <section>
-            <details className="group">
-              <summary className="flex cursor-pointer list-none items-center gap-2 py-2 text-sm font-medium text-slate-400">
-                <svg
-                  className="h-4 w-4 flex-shrink-0 transition-transform group-open:rotate-90"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-                Data sources ({candidate.sourceUrls.length})
-              </summary>
-              <ul className="mt-3 space-y-2 pl-6">
-                {candidate.sourceUrls.map((url, i) => (
-                  <li key={`${url}-${i}`} className="leading-snug">
-                    <a
-                      href={url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-[#A31621] hover:underline"
-                    >
-                      {getSourceLabel(url)}
-                    </a>
-                    <span className="ml-2 break-all text-xs text-slate-400">
-                      {url}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </details>
-          </section>
-        )}
-
         <footer className="border-t border-border pt-5 text-[12px] text-muted-foreground">
           <div className="flex flex-wrap items-center gap-4 [font-variant-numeric:tabular-nums]">
             {candidate.lastEnrichedAt && (
@@ -597,6 +683,112 @@ function ConfidenceBadge({ value }: { value: number }) {
     >
       {level}
     </span>
+  );
+}
+
+const STANCE_STYLE: Record<
+  NonNullable<IssueStance["stanceType"]>,
+  { label: string; bg: string; text: string; border: string }
+> = {
+  supportive: {
+    label: "Has proposals",
+    bg: "rgba(26,107,58,0.10)",
+    text: "#1A6B3A",
+    border: "rgba(26,107,58,0.20)",
+  },
+  opposing: {
+    label: "Opposed",
+    bg: "rgba(163,22,33,0.10)",
+    text: "#A31621",
+    border: "rgba(163,22,33,0.20)",
+  },
+  concerned: {
+    label: "Concerned",
+    bg: "rgba(200,146,42,0.10)",
+    text: "#C8922A",
+    border: "rgba(200,146,42,0.20)",
+  },
+  neutral: {
+    label: "Mentions",
+    bg: "rgba(13,27,42,0.06)",
+    text: "#0D1B2A",
+    border: "rgba(13,27,42,0.15)",
+  },
+};
+
+function StanceBadge({
+  stance,
+}: {
+  stance: NonNullable<IssueStance["stanceType"]>;
+}) {
+  const s = STANCE_STYLE[stance];
+  return (
+    <span
+      className="rounded-full border px-2 py-0.5 text-[11px] font-semibold"
+      style={{ backgroundColor: s.bg, color: s.text, borderColor: s.border }}
+    >
+      {s.label}
+    </span>
+  );
+}
+
+function IssuePositionCard({ item }: { item: RenderedPosition }) {
+  const hasActionPoints = item.actionPoints.length > 0;
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <span className="text-xs font-bold uppercase tracking-wide text-jersey-red">
+          {item.issueDisplayName}
+        </span>
+        <div className="flex items-center gap-2">
+          {item.stanceType === "supportive" && (
+            <StanceBadge stance="supportive" />
+          )}
+          <ConfidenceBadge value={item.confidence} />
+        </div>
+      </div>
+
+      <p className="text-sm leading-relaxed text-slate-700 [text-wrap:pretty]">
+        {item.position}
+      </p>
+
+      {hasActionPoints ? (
+        <>
+          <div className="my-3 h-px bg-gray-100" />
+          <ul className="space-y-2">
+            {item.actionPoints.map((ap, i) => {
+              const isOpposition = ap.type === "opposition";
+              const iconColour = isOpposition ? "#A31621" : "#1A6B3A";
+              return (
+                <li key={i} className="flex items-start gap-2">
+                  <span
+                    aria-hidden
+                    className="mt-0.5 flex-shrink-0 text-sm leading-none"
+                    style={{ color: iconColour }}
+                  >
+                    {isOpposition ? "✗" : "✓"}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm leading-snug text-[#0D1B2A]">
+                      {ap.text}
+                    </p>
+                    {ap.sourceQuote && (
+                      <p className="mt-1 border-l border-gray-200 pl-2 text-xs italic text-[#0D1B2A]/45">
+                        &ldquo;{ap.sourceQuote}&rdquo;
+                      </p>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </>
+      ) : item.sourceQuote ? (
+        <blockquote className="mt-3 border-l-2 border-gold pl-3 text-xs italic text-slate-500">
+          &quot;{item.sourceQuote}&quot;
+        </blockquote>
+      ) : null}
+    </div>
   );
 }
 

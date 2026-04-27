@@ -3,11 +3,23 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
+// Locally-mirrored shape of an action point. Defined here rather than imported
+// from `@/db/schema` so the client bundle stays free of drizzle-orm.
+export type ActionPointDTO = {
+  text: string;
+  type: "action" | "commitment" | "opposition" | "concern" | string;
+  sourceQuote?: string;
+};
+
 export interface IssueData {
   issue: string;
   position: string;
   source_quote?: string;
   confidence: number;
+  // New (action-points pipeline). Both fields are optional — legacy rows that
+  // have not been re-enriched omit them, in which case only `position` shows.
+  stanceType?: "supportive" | "opposing" | "concerned" | "neutral";
+  actionPoints?: ActionPointDTO[];
 }
 
 export interface CandidateCompare {
@@ -84,12 +96,44 @@ function IssueCell({ issueData }: { issueData: IssueData | undefined }) {
     );
   }
 
+  const actionPoints = issueData.actionPoints ?? [];
+  const visibleActionPoints = actionPoints.slice(0, 3);
+  const hiddenActionCount = Math.max(0, actionPoints.length - visibleActionPoints.length);
+
   return (
     <div className="space-y-2 p-4">
       <div className="flex items-start justify-between gap-2">
         <ConfidenceBadge confidence={issueData.confidence} />
       </div>
       <p className="text-sm leading-relaxed text-gray-700">{issueData.position}</p>
+
+      {visibleActionPoints.length > 0 ? (
+        <ul className="mt-2 space-y-1">
+          {visibleActionPoints.map((ap, i) => {
+            const isOpposition = ap.type === "opposition";
+            return (
+              <li key={i} className="flex items-start gap-1.5">
+                <span
+                  aria-hidden
+                  className="mt-0.5 flex-shrink-0 text-xs leading-none"
+                  style={{ color: isOpposition ? "#A31621" : "#1A6B3A" }}
+                >
+                  {isOpposition ? "✗" : "✓"}
+                </span>
+                <span className="text-xs leading-snug text-[#0D1B2A]/75">
+                  {ap.text}
+                </span>
+              </li>
+            );
+          })}
+          {hiddenActionCount > 0 ? (
+            <li className="pl-4 text-xs text-[#0D1B2A]/40">
+              +{hiddenActionCount} more
+            </li>
+          ) : null}
+        </ul>
+      ) : null}
+
       {issueData.source_quote ? (
         <div>
           <button

@@ -40,6 +40,7 @@ import postgres from "postgres";
 import { eq } from "drizzle-orm";
 import { candidates, snapshots } from "../../src/db/schema";
 import { mapSite, scrapeUrl } from "../../src/lib/firecrawl";
+import { cleanManifestoForStorage } from "../../src/lib/clean-manifesto";
 
 // ── Config ───────────────────────────────────────────────────────────────────
 
@@ -347,10 +348,12 @@ async function runPhase1(allCandidates: CandidateRow[]): Promise<Stats> {
 
     stats.matched++;
 
-    const newLen = page.markdown.length;
+    // Strip vote.je nav/icon noise BEFORE comparing or storing.
+    const cleanedManifesto = cleanManifestoForStorage(page.markdown);
+    const newLen = cleanedManifesto.length;
     const existingLen = existing.manifestoRaw?.length ?? 0;
     const meaningfullyLonger = newLen > existingLen + 200;
-    const hashChanged = sha256(page.markdown) !== (existing.dataHash ?? "");
+    const hashChanged = sha256(cleanedManifesto) !== (existing.dataHash ?? "");
 
     if (!meaningfullyLonger && !hashChanged) {
       console.log(`  = Unchanged: ${existing.name}`);
@@ -359,7 +362,7 @@ async function runPhase1(allCandidates: CandidateRow[]): Promise<Stats> {
     }
 
     console.log(
-      `  ✓ Updating: ${existing.name} (${newLen} chars, was ${existingLen})`,
+      `  ✓ Updating: ${existing.name} (${newLen} chars cleaned, was ${existingLen})`,
     );
 
     if (!DRY_RUN) {
@@ -382,10 +385,10 @@ async function runPhase1(allCandidates: CandidateRow[]): Promise<Stats> {
       await db
         .update(candidates)
         .set({
-          manifestoRaw: page.markdown,
+          manifestoRaw: cleanedManifesto,
           manifestoUrl: url,
           sourceUrls: mergedSourceUrls,
-          dataHash: sha256(page.markdown),
+          dataHash: sha256(cleanedManifesto),
           aiSummary: null,
           aiIssues: null,
           lastEnrichedAt: null,
@@ -508,7 +511,9 @@ async function runPhase2(allCandidates: CandidateRow[]): Promise<HistoricalStats
       continue;
     }
 
-    const body = (archivePage.markdown ?? "").trim();
+    // Strip vote.je nav/icon noise from the archive body BEFORE prepending
+    // the historical note, so the stored value is clean from day one.
+    const body = cleanManifestoForStorage(archivePage.markdown ?? "").trim();
     if (body.length < 400) {
       console.warn(`  ⚠ Archive content too short (${body.length} chars) — skipping`);
       await sleep(RATE_LIMIT_MS);

@@ -3,6 +3,20 @@
 import { useState, useCallback } from "react";
 import type { TopicData } from "./issue-intelligence";
 
+// Locally-mirrored shape of an action point. Defined here rather than
+// imported from `@/db/schema` so the client bundle stays free of drizzle-orm.
+type ActionPointDTO = {
+  text: string;
+  type: "action" | "commitment" | "opposition" | "concern" | string;
+  sourceQuote: string;
+};
+
+type StanceTypeDTO =
+  | "supportive"
+  | "opposing"
+  | "concerned"
+  | "neutral";
+
 interface CandidatePosition {
   name: string;
   slug: string;
@@ -12,7 +26,26 @@ interface CandidatePosition {
   sourceQuote: string;
   confidence: number;
   manifestoUrl: string | null;
+  // New (action-points pipeline). Both fields are optional — legacy rows that
+  // have not yet been re-enriched omit them, in which case we fall back to
+  // showing the `position` paragraph and `sourceQuote`.
+  stanceType?: StanceTypeDTO;
+  actionPoints?: ActionPointDTO[];
 }
+
+const STANCE_COLOUR: Record<StanceTypeDTO, string> = {
+  supportive: "#1A6B3A",
+  opposing: "#A31621",
+  concerned: "#C8922A",
+  neutral: "#0D1B2A",
+};
+
+const STANCE_LABEL: Record<StanceTypeDTO, string> = {
+  supportive: "Has proposals",
+  opposing: "Opposed",
+  concerned: "Concerned",
+  neutral: "Mentions",
+};
 
 // Defined locally rather than imported from `@/db/schema` so the client
 // bundle never pulls in the drizzle-orm + postgres types.
@@ -483,57 +516,7 @@ export function IssueSheet({ topic }: { topic: TopicData }) {
                     ) : (
                       <div className="space-y-3">
                         {data.candidates.map((c) => (
-                          <div
-                            key={c.slug}
-                            className="rounded-xl border border-border bg-white p-4"
-                          >
-                            <div className="mb-3 flex items-start justify-between gap-2">
-                              <div>
-                                <a
-                                  href={`/candidates/${c.slug}`}
-                                  className="text-[13px] font-semibold text-navy transition-colors hover:text-jersey-red"
-                                >
-                                  {c.name}
-                                </a>
-                                <div className="mt-1 flex items-center gap-2">
-                                  <span className="text-[11px] text-muted-foreground">
-                                    {c.district}
-                                  </span>
-                                  {c.party && (
-                                    <>
-                                      <span className="text-border">·</span>
-                                      <span className="text-[11px] font-medium text-jersey-red">
-                                        {c.party}
-                                      </span>
-                                    </>
-                                  )}
-                                </div>
-                              </div>
-                              <ConfidenceBadge confidence={c.confidence} />
-                            </div>
-
-                            <p className="mb-3 text-[13px] leading-relaxed text-muted-foreground">
-                              {c.position}
-                            </p>
-
-                            {c.sourceQuote && (
-                              <div className="border-l-2 border-gold pl-3">
-                                <p className="text-[12px] italic leading-relaxed text-muted-foreground">
-                                  &ldquo;{c.sourceQuote}&rdquo;
-                                </p>
-                                {c.manifestoUrl && (
-                                  <a
-                                    href={c.manifestoUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="mt-1 inline-block text-[12px] text-jersey-red hover:underline"
-                                  >
-                                    Source ↗
-                                  </a>
-                                )}
-                              </div>
-                            )}
-                          </div>
+                          <CandidatePositionCard key={c.slug} candidate={c} />
                         ))}
                       </div>
                     )}
@@ -626,5 +609,160 @@ export function IssueSheet({ topic }: { topic: TopicData }) {
         </div>
       )}
     </>
+  );
+}
+
+// ── Per-candidate position card ──────────────────────────────────────────────
+// Renders the new structured action-points layout when available. Falls back
+// to the legacy paragraph + single source quote for rows that haven't been
+// re-enriched under the action-points pipeline yet.
+function CandidatePositionCard({ candidate }: { candidate: CandidatePosition }) {
+  const actionPoints = candidate.actionPoints ?? [];
+  const hasActionPoints = actionPoints.length > 0;
+  const stanceType = candidate.stanceType ?? "neutral";
+  const stanceColour = STANCE_COLOUR[stanceType];
+  const stanceLabel = STANCE_LABEL[stanceType];
+  const initials = candidate.name
+    .split(/\s+/)
+    .map((n) => n[0] ?? "")
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+      {/* Header — name + district + stance badge */}
+      <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-4 py-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <div
+            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-[#F5E8C8]"
+            style={{ backgroundColor: "#0D1B2A" }}
+          >
+            {initials}
+          </div>
+          <div className="min-w-0">
+            <a
+              href={`/candidates/${candidate.slug}`}
+              className="block truncate text-sm font-semibold text-[#0D1B2A] transition-colors hover:text-[#A31621]"
+            >
+              {candidate.name}
+            </a>
+            <p className="truncate text-xs text-[#0D1B2A]/50">
+              {candidate.district}
+              {candidate.party && candidate.party !== "Independent"
+                ? ` · ${candidate.party}`
+                : ""}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-shrink-0 items-center gap-2">
+          <ConfidenceBadge confidence={candidate.confidence} />
+          {candidate.stanceType && (
+            <span
+              className="rounded-full border px-2 py-0.5 text-[11px] font-semibold"
+              style={{
+                color: stanceColour,
+                borderColor: `${stanceColour}30`,
+                backgroundColor: `${stanceColour}10`,
+              }}
+            >
+              {stanceLabel}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Body */}
+      {hasActionPoints ? (
+        <div className="px-4 py-3">
+          <ul className="space-y-2.5">
+            {actionPoints.map((ap, i) => {
+              const isOpposition = ap.type === "opposition";
+              const iconColour = isOpposition ? "#A31621" : "#1A6B3A";
+              return (
+                <li key={i} className="flex items-start gap-2.5">
+                  <span
+                    aria-hidden
+                    className="mt-0.5 flex-shrink-0 text-sm leading-none"
+                    style={{ color: iconColour }}
+                  >
+                    {isOpposition ? "✗" : "✓"}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm leading-snug text-[#0D1B2A]">
+                      {ap.text}
+                    </p>
+                    {ap.sourceQuote && (
+                      <details className="mt-1">
+                        <summary className="flex list-none items-center gap-1 text-[11px] text-[#0D1B2A]/45 transition-colors hover:text-[#0D1B2A]/70 [&::-webkit-details-marker]:hidden">
+                          <svg
+                            className="h-2.5 w-2.5 transition-transform"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={2.5}
+                            aria-hidden
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                          Source quote
+                        </summary>
+                        <blockquote
+                          className="mt-1.5 border-l-2 pl-3 text-[11px] italic leading-relaxed text-[#0D1B2A]/60"
+                          style={{ borderColor: "rgba(163,22,33,0.3)" }}
+                        >
+                          &ldquo;{ap.sourceQuote}&rdquo;
+                        </blockquote>
+                      </details>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ) : (
+        // Fallback — no action points extracted (legacy data, or Grok found
+        // none for this issue). Show the position summary + primary quote.
+        <div className="px-4 py-3">
+          <p className="text-sm italic leading-relaxed text-[#0D1B2A]/70">
+            {candidate.position}
+          </p>
+          {candidate.sourceQuote && (
+            <blockquote
+              className="mt-2 border-l-2 pl-3 text-xs italic leading-relaxed text-[#0D1B2A]/50"
+              style={{ borderColor: "rgba(163,22,33,0.3)" }}
+            >
+              &ldquo;{candidate.sourceQuote}&rdquo;
+            </blockquote>
+          )}
+        </div>
+      )}
+
+      {/* Footer — profile link + optional source */}
+      <div className="flex items-center justify-between gap-3 border-t border-gray-50 bg-gray-50/60 px-4 py-2">
+        <a
+          href={`/candidates/${candidate.slug}`}
+          className="flex items-center gap-1 text-[12px] font-medium text-[#A31621] hover:underline"
+        >
+          Full profile →
+        </a>
+        {candidate.manifestoUrl && (
+          <a
+            href={candidate.manifestoUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[11px] text-[#0D1B2A]/45 hover:text-[#A31621] hover:underline"
+          >
+            Manifesto ↗
+          </a>
+        )}
+      </div>
+    </div>
   );
 }

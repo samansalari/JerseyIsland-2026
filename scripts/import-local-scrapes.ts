@@ -14,6 +14,7 @@ import {
   extractDeclaredIntention,
   extractElectionHistory,
 } from "./parsers/flow-je-history";
+import { cleanManifestoForStorage } from "../src/lib/clean-manifesto";
 
 const FLOW_JE_FOLDER = "./data/flow.je";
 
@@ -310,9 +311,11 @@ async function main() {
           : baseDistrict;
       const party = JERSEY_PARTIES.find((p) => markdown.includes(p)) || null;
       const bio = extractBio(markdown, name);
-      // ── manifestoRaw stores the FULL markdown (incl. election history). The
-      // page renders a cleaned-up view; Grok needs the full text for context.
-      const manifesto_raw = markdown;
+      // ── manifestoRaw stores the FULL markdown (incl. election history) so
+      // Grok has full context, but we strip vote.je / flow.je nav noise and
+      // SVG icon-label garbage at ingest. The page renders a further-cleaned
+      // view via cleanManifestoForDisplay.
+      const manifesto_raw = cleanManifestoForStorage(markdown);
       const photo_url = extractPhotoUrl(markdown, metadata);
       const election_history = extractElectionHistory(markdown, name);
 

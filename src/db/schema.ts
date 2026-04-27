@@ -73,6 +73,53 @@ export type ElectionRecord = {
 
 export type ElectionHistory = ElectionRecord[];
 
+// ── AI-extracted issue stances (Grok) ───────────────────────────────────────
+// One `IssueStance` per (candidate, policy issue). Lives inside the
+// `candidates.ai_issues` jsonb column. The flat `position` / `source_quote` /
+// `confidence` fields are kept for backwards compatibility with rows enriched
+// before the action-points pipeline; new fields are `stanceType` and
+// `actionPoints`. UI code must treat both new fields as optional.
+
+/** A single concrete thing the candidate proposes to do, opposes, or raises. */
+export type ActionPoint = {
+  /** Specific, concrete proposal (≤ 150 chars enforced server-side). */
+  text: string;
+  /**
+   * - `action`     — generic thing they will do
+   * - `commitment` — firm pledge ("I will…")
+   * - `opposition` — explicitly opposes ("I oppose…")
+   * - `concern`    — raised concern without a specific solution
+   */
+  type: "action" | "commitment" | "opposition" | "concern";
+  /** Verbatim manifesto quote that supports this point. */
+  sourceQuote: string;
+};
+
+/** A candidate's full position on one of the 10 canonical policy issues. */
+export type IssueStance = {
+  /** Slug — one of housing|healthcare|tax|education|environment|transport|cost_of_living|immigration|economy|public_services. */
+  issue: string;
+  /** One-sentence overview of their stance (kept for backwards compat). */
+  position: string;
+  /** 0.0–1.0 — how clearly the manifesto states this position. */
+  confidence: number;
+  /** Primary supporting verbatim quote (kept for backwards compat). */
+  source_quote: string;
+  /**
+   * Overall stance on this issue:
+   * - `supportive` — actively proposes specific action
+   * - `opposing`   — explicitly opposes a current policy or proposal
+   * - `concerned`  — raises the issue but offers no specific solution
+   * - `neutral`    — mentions the issue without taking a position
+   *
+   * Optional because rows enriched before the action-points pipeline
+   * predate this field.
+   */
+  stanceType?: "supportive" | "opposing" | "concerned" | "neutral";
+  /** Structured list of concrete proposals — empty `[]` when none extracted. */
+  actionPoints?: ActionPoint[];
+};
+
 // ── Supervisor review (Kimi K2.6 via OpenRouter) ────────────────────────────
 // The supervisor reads the candidate's full manifesto + Grok's ai_summary and
 // scores accuracy / neutrality / hallucination. Results are written to
@@ -138,14 +185,11 @@ export const candidates = pgTable(
 
     // AI enrichment (nullable until the pipeline fills them).
     aiSummary: text("ai_summary"),
-    aiIssues: jsonb("ai_issues").$type<
-      Array<{
-        issue: string;
-        position: string;
-        confidence: number;
-        source_quote: string;
-      }>
-    >(),
+    // The `ai_issues` jsonb column stores `IssueStance[]` — see the type
+    // declared above the table. Old records (pre-action-points pipeline)
+    // omit `stanceType` / `actionPoints`; the display layer treats both as
+    // optional and falls back gracefully.
+    aiIssues: jsonb("ai_issues").$type<IssueStance[]>(),
 
     // Provenance + change detection.
     sourceUrls: text("source_urls")

@@ -8,6 +8,8 @@ import {
   issues,
   snapshots,
   topicSummaries,
+  type ActionPoint,
+  type IssueStance,
 } from "../src/db/schema";
 import {
   type GrokUsage,
@@ -89,15 +91,22 @@ const db = drizzle(pgClient, {
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
+/**
+ * Shape of the single Grok JSON response. Wraps the issue array inside an
+ * object because `extractJsonObject` requires the response to start with `{`.
+ * Action points and stance type are the new structured outputs.
+ */
 interface EnrichmentResult {
   summary: string;
   key_promises: string[];
-  issues: Array<{
-    issue: string;
-    position: string;
-    source_quote: string;
-    confidence: number;
-  }>;
+  issues: Array<
+    {
+      issue: string;
+      position: string;
+      source_quote: string;
+      confidence: number;
+    } & Partial<Pick<IssueStance, "stanceType" | "actionPoints">>
+  >;
   election_history?: string;
 }
 
@@ -162,44 +171,132 @@ type ManifestoGrokResult = {
   usage: GrokUsage;
 };
 
+// ── Grok prompt (action-points extraction) ─────────────────────────────────
+//
+// New pipeline (Apr 2026): Grok extracts a structured `actionPoints` list per
+// issue alongside the existing `position` summary. The wrapper
+// `grokChatCompletionJson` slices the response from `{` to `}`, so the schema
+// must remain a top-level JSON object — the issues array lives inside it.
+
+const ISSUE_EXTRACTION_SYSTEM = `You are a political analyst extracting policy positions from Jersey election candidate manifestos.
+
+Jersey's 2026 general election is on 7 June 2026. You are reading a candidate's manifesto or electoral profile.
+
+Your task: Extract specific, concrete policy positions for each of the 10 issue categories below.
+
+CRITICAL RULES:
+
+1. ACTION POINTS — the most important output:
+   Extract specific things the candidate says they will DO or SUPPORT or OPPOSE.
+   These must be CONCRETE and SPECIFIC — not vague.
+
+   GOOD action points (specific, concrete):
+   "Build 500 affordable homes by 2028"
+   "Introduce rent controls for private sector"
+   "Reduce GP waiting times to under 48 hours"
+   "Ring-fence education budget at 25% of States spending"
+
+   BAD action points (too vague — DO NOT extract these):
+   "Support better healthcare"
+   "Help with housing"
+   "Focus on the economy"
+   "Improve services"
+
+2. STANCE TYPE — classify the candidate's overall stance per issue:
+   "supportive" — actively proposes specific action on this issue
+   "opposing" — explicitly opposes a current policy or proposal
+   "concerned" — raises the issue but offers no specific solution
+   "neutral" — mentions the issue without taking a position
+
+3. SOURCE QUOTES — every action point needs a verbatim quote from the manifesto
+   that supports it. Short quotes (10-30 words) are better than long ones.
+
+4. ONLY EXTRACT what is explicitly stated in the manifesto.
+   DO NOT infer, assume, or extrapolate positions not in the text.
+   DO NOT extract action points from previous elections if this is a historical manifesto.
+   If a candidate doesn't mention an issue — return nothing for that issue.
+
+5. HISTORICAL MANIFESTOS — if the manifesto starts with "[Historical manifesto",
+   this is from a previous election. Still extract positions but note they may
+   be outdated. Do not fabricate 2026-specific commitments.
+
+6. HISTORICAL ELECTION DATA — the profile text may contain election results
+   tables from previous elections (vote counts, percentages, ranks). IGNORE
+   these. They are not policy positions. Past election outcomes are not
+   evidence of a stance on any issue.
+
+ISSUE CATEGORIES (only use these exact slugs):
+- housing: Housing supply, affordability, rent, first-time buyers, social housing
+- healthcare: NHS/hospital, GPs, mental health, waiting times, healthcare access
+- tax: Income tax, GST, corporation tax, rates, fiscal policy
+- education: Schools, teachers, university, skills, apprenticeships
+- environment: Climate, marine, green spaces, carbon, sustainability
+- transport: Roads, buses, cycling, parking, ferry, airport
+- cost_of_living: Inflation, wages, energy bills, food costs, affordability
+- immigration: Population policy, work permits, migration, residency
+- economy: Business, finance sector, jobs, diversification, investment
+- public_services: States services, social care, parish services, government efficiency
+
+Return ONLY valid JSON. No markdown. No preamble.`;
+
+function buildIssueExtractionUserPrompt(
+  candidateName: string,
+  district: string,
+  manifesto: string,
+): string {
+  return `Extract policy positions for candidate: ${candidateName} (district: ${district}).
+
+MANIFESTO TEXT:
+---
+${manifesto.slice(0, 8000)}
+---
+
+Return ONLY a JSON object with this exact shape (no markdown, no preamble):
+
+{
+  "summary": "2-3 sentence neutral summary of who this person is and their 2026 platform. If info is sparse, summarise their background and declared intention to stand.",
+  "key_promises": ["short list of headline pledges, may be empty"],
+  "election_history": "brief summary of past elections if present, or empty string",
+  "issues": [
+    {
+      "issue": "<one of the 10 slugs above>",
+      "position": "<one sentence summary of their overall stance>",
+      "confidence": <0.0-1.0 — how clearly this is stated>,
+      "source_quote": "<primary supporting verbatim quote>",
+      "stanceType": "<supportive|opposing|concerned|neutral>",
+      "actionPoints": [
+        {
+          "text": "<specific concrete action point, max 15 words>",
+          "type": "<action|commitment|opposition|concern>",
+          "sourceQuote": "<verbatim quote supporting this specific point>"
+        }
+      ]
+    }
+  ]
+}
+
+Rules:
+- Only include issues that are explicitly mentioned in the manifesto text above.
+- If fewer than 2 action points can be extracted for an issue, still include
+  the issue entry but with an empty actionPoints array and an appropriate
+  stanceType (typically "concerned" or "neutral").
+- Every "source_quote" and every actionPoints[].sourceQuote MUST be a verbatim
+  string copied from the manifesto text — do not paraphrase.
+- Return "issues": [] if no relevant policy positions are found.`;
+}
+
 /** Call Grok with one retry on parse / transport failure. */
 async function callGrokForManifesto(
   candidateName: string,
   district: string,
   manifestoRaw: string,
 ): Promise<ManifestoGrokResult> {
-  const systemPrompt = `You are analysing a Jersey election candidate's profile page. The text may contain election history, biographical details, and declared intentions for 2026. Extract whatever is available. Do not say "no manifesto provided" - work with what exists.
-
-IMPORTANT: The profile text may contain historical election data including vote counts, percentages, and election results tables from previous elections (e.g. 2008, 2014, 2016, 2018, 2022). IGNORE all historical election result tables completely. They are not policy positions. Only extract policy positions from explicit 2026 manifesto content, declared 2026 intentions, or unambiguous policy statements. Do not confuse historical vote counts with policy positions, and do not treat past election outcomes as evidence of a stance on any issue.`;
-
-  const userPrompt = `Analyse this profile for ${candidateName}.
-
-Return ONLY valid JSON:
-{
-  "summary": "2-3 sentence summary of who this person is and what is known about their 2026 intentions. If limited info, summarise their background and declared intention to stand.",
-  "key_promises": ["any stated intention or past position"],
-  "issues": [
-    {
-      "issue": "one of: housing, healthcare, tax, education, environment, transport, cost_of_living, immigration, economy, public_services",
-      "position": "Their stance in 1-2 sentences",
-      "source_quote": "Exact quote from the profile text supporting this position",
-      "confidence": 0.0 to 1.0
-    }
-  ],
-  "election_history": "brief summary of past elections if present"
-}
-
-Rules:
-- Work with profile history, biography, and declared 2026 intentions even when policy detail is sparse
-- Only include issues that are explicitly supported by the text
-- source_quote MUST be a verbatim quote from the text below
-- Do NOT say there is no manifesto; summarise what is actually present
-- If details are sparse, use key_promises for declared intentions or notable positions and leave issues empty when unsupported
-
-Profile text:
----
-${manifestoRaw.substring(0, 3000)}
----`;
+  const systemPrompt = ISSUE_EXTRACTION_SYSTEM;
+  const userPrompt = buildIssueExtractionUserPrompt(
+    candidateName,
+    district,
+    manifestoRaw,
+  );
 
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
@@ -207,7 +304,8 @@ ${manifestoRaw.substring(0, 3000)}
         systemPrompt,
         userPrompt,
         temperature: 0,
-        maxTokens: 4096,
+        // More tokens than before — action points add significant output volume.
+        maxTokens: 6000,
         model: MODEL,
       });
       return { result: data, usage };
@@ -225,6 +323,83 @@ ${manifestoRaw.substring(0, 3000)}
   }
 
   throw new Error("Unreachable");
+}
+
+// ── Validation helpers (action-points pipeline) ────────────────────────────
+
+const VALID_STANCE_TYPES = new Set<NonNullable<IssueStance["stanceType"]>>([
+  "supportive",
+  "opposing",
+  "concerned",
+  "neutral",
+]);
+
+const VALID_ACTION_TYPES = new Set<ActionPoint["type"]>([
+  "action",
+  "commitment",
+  "opposition",
+  "concern",
+]);
+
+/**
+ * Validate + normalise one Grok-returned issue entry into the persisted
+ * `IssueStance` shape. Returns `null` if the entry is malformed or refers to
+ * an unknown issue slug.
+ */
+function validateIssueStance(
+  raw: EnrichmentResult["issues"][number],
+): IssueStance | null {
+  if (!raw || typeof raw !== "object") return null;
+  if (!VALID_ISSUES.has(raw.issue)) return null;
+  if (typeof raw.position !== "string") return null;
+
+  const position = raw.position.trim();
+  if (position.length <= 10) return null;
+
+  const confidenceRaw = Number(raw.confidence);
+  const confidence = Number.isFinite(confidenceRaw)
+    ? Math.max(0, Math.min(1, confidenceRaw))
+    : 0.5;
+
+  const sourceQuote =
+    typeof raw.source_quote === "string" ? raw.source_quote.trim() : "";
+
+  const stanceType: NonNullable<IssueStance["stanceType"]> =
+    raw.stanceType && VALID_STANCE_TYPES.has(raw.stanceType)
+      ? raw.stanceType
+      : "neutral";
+
+  const rawActionPoints = Array.isArray(raw.actionPoints)
+    ? raw.actionPoints
+    : [];
+
+  const actionPoints: ActionPoint[] = rawActionPoints
+    .filter(
+      (ap): ap is ActionPoint =>
+        !!ap &&
+        typeof (ap as ActionPoint).text === "string" &&
+        (ap as ActionPoint).text.trim().length > 5 &&
+        (ap as ActionPoint).text.trim().length < 200,
+    )
+    // Cap at 6 per issue — keeps cards scannable and the jsonb column small.
+    .slice(0, 6)
+    .map((ap) => ({
+      text: ap.text.trim().slice(0, 150),
+      type: VALID_ACTION_TYPES.has(ap.type) ? ap.type : "action",
+      sourceQuote:
+        typeof ap.sourceQuote === "string"
+          ? ap.sourceQuote.trim().slice(0, 300)
+          : "",
+    }));
+
+  return {
+    issue: raw.issue,
+    position: position.slice(0, 300),
+    confidence,
+    source_quote: sourceQuote.slice(0, 500),
+    stanceType,
+    actionPoints,
+  };
 }
 
 // ── Per-candidate enrichment (used by default + --batch) ────────────────────
@@ -309,33 +484,34 @@ async function enrichOneCandidate(
     );
     tokenTracker.printCall(rec);
 
-    const validIssues: EnrichmentResult["issues"] = [];
-    for (const entry of gr.issues) {
-      if (!VALID_ISSUES.has(entry.issue)) {
-        console.warn(`  ⚠ Unknown issue "${entry.issue}" — skipping`);
+    const validated: IssueStance[] = [];
+    for (const entry of gr.issues ?? []) {
+      const stance = validateIssueStance(entry);
+      if (!stance) {
+        if (entry?.issue && !VALID_ISSUES.has(entry.issue)) {
+          console.warn(`  ⚠ Unknown issue "${entry.issue}" — skipping`);
+        }
         continue;
       }
 
-      if (
-        typeof entry.confidence !== "number" ||
-        entry.confidence < 0 ||
-        entry.confidence > 1
-      ) {
-        console.warn(
-          `  ⚠ Invalid confidence ${entry.confidence} for "${entry.issue}" — clamping`,
-        );
-        entry.confidence = Math.max(0, Math.min(1, Number(entry.confidence) || 0.5));
+      // Source-quote spot check (warning only — Grok occasionally trims
+      // whitespace or normalises punctuation, so we don't drop the entry).
+      if (stance.source_quote && candidate.manifestoRaw) {
+        const matchScore = fuzzyMatch(stance.source_quote, candidate.manifestoRaw);
+        if (matchScore < 0.7) {
+          console.warn(
+            `  ⚠ Source quote for "${stance.issue}" has low match (${(matchScore * 100).toFixed(0)}%) — flagging`,
+          );
+        }
       }
 
-      const matchScore = fuzzyMatch(entry.source_quote, candidate.manifestoRaw);
-      if (matchScore < 0.7) {
-        console.warn(
-          `  ⚠ Source quote for "${entry.issue}" has low match (${(matchScore * 100).toFixed(0)}%) — flagging`,
-        );
-      }
-
-      validIssues.push(entry);
+      validated.push(stance);
     }
+
+    const totalActionPoints = validated.reduce(
+      (n, s) => n + (s.actionPoints?.length ?? 0),
+      0,
+    );
 
     await db.insert(snapshots).values({
       entityType: "candidate",
@@ -354,14 +530,13 @@ async function enrichOneCandidate(
         .update(candidates)
         .set({
           aiSummary: summary,
-          aiIssues: validIssues.map((i) => ({
-            issue: i.issue,
-            position: i.position,
-            confidence: i.confidence,
-            source_quote: i.source_quote,
-          })),
+          aiIssues: validated,
           lastEnrichedAt: now,
           updatedAt: now,
+          // Schema changed — old supervisor scores are no longer meaningful.
+          // Re-enrichment requires a fresh review pass (`review:summaries`).
+          reviewStatus: null,
+          lastReviewedAt: null,
         })
         .where(eq(candidates.id, candidate.id));
     } catch (error) {
@@ -369,7 +544,7 @@ async function enrichOneCandidate(
       throw error;
     }
 
-    for (const entry of validIssues) {
+    for (const entry of validated) {
       const issueId = issueMap.get(entry.issue);
       if (!issueId) {
         console.warn(
@@ -399,7 +574,7 @@ async function enrichOneCandidate(
 
     const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
     console.log(
-      `  ✓ Done — ${validIssues.length} issues extracted (${elapsed}s)`,
+      `  ✓ Done — ${validated.length} issues, ${totalActionPoints} action points extracted (${elapsed}s)`,
     );
     await revalidateCandidate(candidate.slug);
     return "processed";
@@ -594,9 +769,14 @@ async function revalidateHomepage(): Promise<void> {
 async function main() {
   const startTime = Date.now();
   const args = process.argv.slice(2);
+  // Accept either `--candidate-slug=foo` (legacy) or the shorter `--slug=foo`.
   const slugFlag = args
-    .find((a) => a.startsWith("--candidate-slug="))
+    .find((a) => a.startsWith("--candidate-slug=") || a.startsWith("--slug="))
     ?.split("=")[1];
+  // `--force` re-enriches every candidate with a manifesto regardless of
+  // staleness or prior enrichment. Used after schema changes (e.g. adding
+  // structured action points) to backfill the entire cohort in one pass.
+  const forceFlag = args.includes("--force");
 
   const issueRows = await db.select().from(issues);
   const issueMap = new Map(issueRows.map((i) => [i.name, i.id]));
@@ -618,6 +798,11 @@ async function main() {
       );
       process.exit(1);
     }
+  } else if (forceFlag) {
+    rows = await query.where(isNotNull(candidates.manifestoRaw));
+    console.log(
+      `[enrich] --force enabled — re-enriching every candidate with a manifesto`,
+    );
   } else {
     rows = await query.where(
       and(
