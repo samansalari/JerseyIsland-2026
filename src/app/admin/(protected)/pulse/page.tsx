@@ -1,5 +1,5 @@
 import { db } from '@/db'
-import { issueVotes, candidateRatings, pulseInsights } from '@/db/schema'
+import { issueVotes, candidateRatings, pulseInsights, topicFeedback } from '@/db/schema'
 import { sql, count, desc } from 'drizzle-orm'
 import { PulseAdminClient } from './pulse-admin-client'
 
@@ -12,6 +12,7 @@ export default async function AdminPulsePage() {
     totalRatingsResult,
     votesByIssue,
     latestInsight,
+    feedbackByType,
   ] = await Promise.all([
     db.select({ count: count() }).from(issueVotes),
 
@@ -34,6 +35,14 @@ export default async function AdminPulsePage() {
     .from(pulseInsights)
     .orderBy(desc(pulseInsights.generatedAt))
     .limit(1),
+
+    db.select({
+      feedbackType: topicFeedback.feedbackType,
+      count: sql<number>`count(*)`.mapWith(Number),
+    })
+    .from(topicFeedback)
+    .groupBy(topicFeedback.feedbackType)
+    .orderBy(sql`count(*) desc`),
   ])
 
   const votes = Number(totalVotesResult[0]?.count ?? 0)
@@ -120,6 +129,29 @@ export default async function AdminPulsePage() {
           <p className="text-sm text-[#0D1B2A]/50 text-center py-4">
             No insight generated yet. Click &ldquo;Regenerate Insight&rdquo; below.
           </p>
+        </div>
+      )}
+
+      {feedbackByType.length > 0 && (
+        <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6">
+          <h3 className="font-semibold text-[#0D1B2A] text-sm mb-4">
+            Feedback by type
+          </h3>
+          <div className="space-y-2">
+            {feedbackByType.map(row => (
+              <div
+                key={row.feedbackType}
+                className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0"
+              >
+                <span className="text-sm text-[#0D1B2A]/70 capitalize">
+                  {row.feedbackType.replace(/_/g, ' ')}
+                </span>
+                <span className="text-sm font-semibold text-[#0D1B2A]">
+                  {row.count}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

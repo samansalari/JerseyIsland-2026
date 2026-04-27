@@ -36,24 +36,24 @@ interface TopicApiResponse {
 
 const FEEDBACK_TYPES = [
   {
-    value: "agree",
+    value: "accurate",
     label: "✓ Accurate",
     colour:
       "bg-green-50 border-green-200 text-green-700 hover:bg-green-100",
   },
   {
-    value: "disagree",
+    value: "inaccurate",
     label: "✗ Inaccurate",
     colour: "bg-red-50 border-red-200 text-red-700 hover:bg-red-100",
   },
   {
-    value: "missing",
+    value: "missing_data",
     label: "+ Missing data",
     colour:
       "bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100",
   },
   {
-    value: "wrong",
+    value: "wrong_attribution",
     label: "⚠ Wrong attribution",
     colour:
       "bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100",
@@ -90,6 +90,8 @@ export function IssueSheet({ topic }: { topic: TopicData }) {
     return localStorage.getItem(`vp-upvote-${topic.issue}`) === "1";
   });
   const [feedbackSent, setFeedbackSent] = useState(false);
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+  const [feedbackError, setFeedbackError] = useState(false);
   const [feedbackText, setFeedbackText] = useState("");
   const [feedbackType, setFeedbackType] = useState<string | null>(null);
 
@@ -127,16 +129,24 @@ export function IssueSheet({ topic }: { topic: TopicData }) {
   };
 
   const handleFeedback = async () => {
-    if (!feedbackType || feedbackSent) return;
+    if (!feedbackType || feedbackSent || feedbackSubmitting) return;
+    setFeedbackSubmitting(true);
+    setFeedbackError(false);
     try {
-      await fetch(`/api/topics/${topic.issue}/feedback`, {
+      const res = await fetch(`/api/topics/${topic.issue}/feedback`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ feedbackType, content: feedbackText }),
+        body: JSON.stringify({ feedbackType, content: feedbackText || undefined }),
       });
-      setFeedbackSent(true);
+      if (res.ok) {
+        setFeedbackSent(true);
+      } else {
+        setFeedbackError(true);
+      }
     } catch {
-      /* non-fatal */
+      setFeedbackError(true);
+    } finally {
+      setFeedbackSubmitting(false);
     }
   };
 
@@ -461,12 +471,18 @@ export function IssueSheet({ topic }: { topic: TopicData }) {
                           />
                         )}
 
+                        {feedbackError && (
+                          <p className="mb-2 text-[12px] text-jersey-red">
+                            Something went wrong. Please try again.
+                          </p>
+                        )}
+
                         <button
                           onClick={handleFeedback}
-                          disabled={!feedbackType}
+                          disabled={!feedbackType || feedbackSubmitting}
                           className="rounded-lg bg-navy px-4 py-2 text-[12px] font-semibold text-on-primary transition-colors hover:bg-jersey-red disabled:cursor-not-allowed disabled:opacity-30"
                         >
-                          Submit feedback
+                          {feedbackSubmitting ? "Submitting…" : "Submit feedback"}
                         </button>
                       </>
                     )}

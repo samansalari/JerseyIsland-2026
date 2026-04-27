@@ -2,40 +2,67 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { topicFeedback } from "@/db/schema";
 import { createHash } from "crypto";
+import { z } from "zod";
 
-const VALID_TYPES = new Set(["agree", "disagree", "missing", "wrong"]);
+const VALID_FEEDBACK_TYPES = [
+  "accurate",
+  "inaccurate",
+  "missing_data",
+  "wrong_attribution",
+] as const;
+
+const VALID_ISSUES = new Set([
+  "housing",
+  "healthcare",
+  "tax",
+  "education",
+  "environment",
+  "transport",
+  "cost_of_living",
+  "immigration",
+  "economy",
+  "public_services",
+]);
+
+const FeedbackSchema = z.object({
+  feedbackType: z.enum(VALID_FEEDBACK_TYPES),
+  content: z.string().max(500).optional(),
+});
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ issue: string }> },
 ) {
   const { issue } = await params;
-  const body = await req.json().catch(() => null);
 
-  if (!body) {
-    return NextResponse.json({ error: "Invalid body" }, { status: 400 });
+  if (!VALID_ISSUES.has(issue)) {
+    return NextResponse.json({ error: "Invalid issue" }, { status: 400 });
   }
 
-  const { feedbackType, content } = body as {
-    feedbackType: string;
-    content?: unknown;
-  };
+  let rawBody: unknown;
+  try {
+    rawBody = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
 
-  if (!VALID_TYPES.has(feedbackType)) {
+  const parsed = FeedbackSchema.safeParse(rawBody);
+  if (!parsed.success) {
     return NextResponse.json(
-      { error: "Invalid feedback type" },
+      { error: "Invalid request", details: parsed.error.flatten() },
       { status: 400 },
     );
   }
 
-  const trimmedContent =
-    typeof content === "string" ? content.trim().slice(0, 500) : null;
+  const { feedbackType, content } = parsed.data;
+  const trimmedContent = content?.trim() ?? null;
 
-  // Fingerprint (no PII — SHA256 of IP + UA + hour + issue)
+  // Server-side fingerprint — no PII sent from client
+  // Rate-limits to one submission per IP+UA+hour+issue combination
   const ip =
     req.headers.get("x-forwarded-for")?.split(",")[0] ?? "unknown";
   const ua = req.headers.get("user-agent") ?? "unknown";
-  const hour = new Date().toISOString().slice(0, 13); // YYYY-MM-DDTHH (hourly rate limit)
+  const hour = new Date().toISOString().slice(0, 13); // YYYY-MM-DDTHH
   const fingerprint = createHash("sha256")
     .update(`${ip}:${ua}:${hour}:${issue}:votepulse-feedback`)
     .digest("hex");
@@ -51,6 +78,7 @@ export async function POST(
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("[Feedback API]", err);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    // Return ok so duplicate submissions don't surface errors to users
+    return NextResponse.json({ ok: true });
   }
 }
