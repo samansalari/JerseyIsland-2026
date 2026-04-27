@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { asc } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { candidates } from "@/db/schema";
 import { buildPublicPageMetadata } from "@/lib/seo";
@@ -27,6 +27,7 @@ async function getData() {
         photo_url: candidates.photoUrl,
       })
       .from(candidates)
+      .where(eq(candidates.is2026, true))
       .orderBy(asc(candidates.name));
 
     const districts = [...new Set(allCandidates.map((candidate) => candidate.district))]

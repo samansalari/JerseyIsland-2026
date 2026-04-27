@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { db } from '@/db'
 import { candidates } from '@/db/schema'
-import { ne } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { PublicPulseClient } from './pulse-client'
 
 export const metadata: Metadata = {
@@ -22,7 +22,7 @@ export default async function TrendsPage() {
       party: candidates.party,
     })
     .from(candidates)
-    .where(ne(candidates.district, 'Unknown'))
+    .where(eq(candidates.is2026, true))
     .orderBy(candidates.name)
 
   return (

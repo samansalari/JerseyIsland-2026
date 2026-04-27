@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { candidates, topicSummaries } from "@/db/schema";
-import { eq, isNotNull } from "drizzle-orm";
+import { and, eq, isNotNull } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
@@ -54,7 +54,7 @@ export async function GET(
         manifestoUrl: candidates.manifestoUrl,
       })
       .from(candidates)
-      .where(isNotNull(candidates.aiIssues));
+      .where(and(isNotNull(candidates.aiIssues), eq(candidates.is2026, true)));
 
     type CandidateWithPosition = {
       name: string;

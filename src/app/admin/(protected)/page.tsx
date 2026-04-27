@@ -33,6 +33,10 @@ export default async function AdminDashboard() {
     topicSummariesResult,
     topicUpvotesResult,
     topicFeedbackResult,
+    reviewedResult,
+    reviewPassedResult,
+    reviewFailedResult,
+    avgScoreResult,
   ] = await Promise.all([
     db.select({ count: count() }).from(candidates),
 
@@ -65,6 +69,31 @@ export default async function AdminDashboard() {
     db.select({ count: count() }).from(topicUpvotes),
 
     db.select({ count: count() }).from(topicFeedback),
+
+    // Kimi K2.6 review stats — total reviewed, passed, failed, average score.
+    db
+      .select({ count: count() })
+      .from(candidates)
+      .where(isNotNull(candidates.lastReviewedAt)),
+
+    db
+      .select({ count: count() })
+      .from(candidates)
+      .where(sql`(${candidates.reviewStatus}->>'passed')::boolean = true`),
+
+    db
+      .select({ count: count() })
+      .from(candidates)
+      .where(sql`(${candidates.reviewStatus}->>'passed')::boolean = false`),
+
+    db
+      .select({
+        avgScore: sql<number>`
+          ROUND(AVG((${candidates.reviewStatus}->>'score')::numeric), 1)
+        `.mapWith(Number),
+      })
+      .from(candidates)
+      .where(isNotNull(candidates.reviewStatus)),
   ]);
 
   // ── Extract values ───────────────────────────────────────────────────
@@ -80,6 +109,16 @@ export default async function AdminDashboard() {
   const enrichmentRate =
     totalCandidates > 0
       ? Math.round((enrichedCount / totalCandidates) * 100)
+      : 0;
+
+  // Supervisor stats
+  const reviewedCount = Number(reviewedResult[0]?.count ?? 0);
+  const reviewPassedCount = Number(reviewPassedResult[0]?.count ?? 0);
+  const reviewFailedCount = Number(reviewFailedResult[0]?.count ?? 0);
+  const avgScore = Number(avgScoreResult[0]?.avgScore ?? 0);
+  const passRate =
+    reviewedCount > 0
+      ? Math.round((reviewPassedCount / reviewedCount) * 100)
       : 0;
 
   // ── Most recently enriched candidate ────────────────────────────────
@@ -214,6 +253,85 @@ export default async function AdminDashboard() {
             </p>
           )}
         </div>
+      </section>
+
+      {/* ── AI Quality Review (Kimi K2.6) ────────────────────────── */}
+      <section className="mb-8">
+        <h2 className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-4">
+          Kimi K2.6 Quality Review
+        </h2>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+          {[
+            {
+              value: `${reviewedCount}`,
+              label: "Summaries reviewed",
+              sub: `of ${totalCandidates} total`,
+              colour: "#0D1B2A",
+            },
+            {
+              value: avgScore > 0 ? `${avgScore.toFixed(1)}/10` : "—",
+              label: "Average score",
+              sub: "across all reviewed",
+              colour:
+                avgScore >= 8
+                  ? "#1A6B3A"
+                  : avgScore >= 6
+                    ? "#C8922A"
+                    : avgScore > 0
+                      ? "#A31621"
+                      : "#0D1B2A",
+            },
+            {
+              value: `${reviewPassedCount}`,
+              label: "Passed",
+              sub: reviewedCount > 0 ? `${passRate}% pass rate` : "—",
+              colour: "#1A6B3A",
+            },
+            {
+              value: `${reviewFailedCount}`,
+              label: "Need attention",
+              sub:
+                reviewFailedCount > 0
+                  ? "Check candidates table"
+                  : "All clear ✓",
+              colour: reviewFailedCount > 0 ? "#A31621" : "#1A6B3A",
+            },
+          ].map((s) => (
+            <div
+              key={s.label}
+              className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5"
+            >
+              <div
+                className="text-3xl font-bold leading-none mb-1 tabular-nums"
+                style={{ color: s.colour }}
+              >
+                {s.value}
+              </div>
+              <div className="text-xs font-semibold text-gray-700 mt-1">
+                {s.label}
+              </div>
+              <div className="text-xs text-gray-400 mt-0.5">{s.sub}</div>
+            </div>
+          ))}
+        </div>
+
+        <p className="text-xs text-gray-400">
+          Reviewed by <strong>moonshotai/kimi-k2.6</strong> via OpenRouter ·
+          Runs daily at 02:00 Europe/London · Only reviews summaries updated
+          since last check
+        </p>
+
+        {reviewFailedCount > 0 && (
+          <div className="mt-3 p-4 rounded-xl bg-amber-50 border border-amber-200">
+            <p className="text-sm text-amber-700">
+              <strong>⚠ {reviewFailedCount} summaries failed review.</strong>
+              {" "}Open <strong>Candidates</strong> in the sidebar to see
+              which ones need attention. Scores ≤ 5 have been auto-corrected
+              by Kimi K2.6.
+            </p>
+          </div>
+        )}
       </section>
 
       {/* ── Policy Intelligence stats ────────────────────────────── */}

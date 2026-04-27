@@ -25,6 +25,8 @@ export default async function AdminCandidatesPage() {
         END`,
       lastEnrichedAt: candidates.lastEnrichedAt,
       updatedAt: candidates.updatedAt,
+      reviewStatus: candidates.reviewStatus,
+      lastReviewedAt: candidates.lastReviewedAt,
     })
     .from(candidates)
     .orderBy(desc(candidates.updatedAt))

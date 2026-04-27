@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { and, asc, eq, inArray, ne } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { candidateIssues, candidates, issues } from "@/db/schema";
 
@@ -25,7 +25,7 @@ export async function GET(
         manifesto_url: candidates.manifestoUrl,
       })
       .from(candidates)
-      .where(and(eq(candidates.district, district), ne(candidates.district, "Unknown")))
+      .where(and(eq(candidates.district, district), eq(candidates.is2026, true)))
       .orderBy(asc(candidates.name));
 
     if (!districtCandidates.length) {

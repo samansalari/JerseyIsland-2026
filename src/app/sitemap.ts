@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { db } from "@/db";
 import { candidates } from "@/db/schema";
-import { asc, ne } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 3600; // regenerate sitemap every hour
@@ -82,7 +82,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         district: candidates.district,
       })
       .from(candidates)
-      .where(ne(candidates.district, "Unknown"))
+      .where(eq(candidates.is2026, true))
       .orderBy(asc(candidates.slug));
 
     // priority: 0.8, changeFrequency: 'daily' as required

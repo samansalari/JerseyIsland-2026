@@ -1,19 +1,19 @@
 import type { Metadata } from "next";
 import { db } from "@/db";
 import { candidates } from "@/db/schema";
-import { and, asc, count, isNotNull, ne, notLike, sql } from "drizzle-orm";
+import { and, asc, count, eq, isNotNull, sql } from "drizzle-orm";
 import { CandidateGrid } from "./candidate-grid";
 import { buildPublicPageMetadata } from "@/lib/seo";
 
 export const revalidate = 21600; // 6 hours
 
 export const metadata: Metadata = buildPublicPageMetadata({
-  titleSegment: "All 135 Candidates — Jersey 2026 General Election",
+  titleSegment: "All 96 Candidates — Jersey 2026 General Election",
   description:
-    "Jersey's 2026 general election (7 June 2026) has 135 declared candidates " +
-    "standing across 14 districts. Browse AI-generated manifesto summaries, " +
-    "compare policy positions on housing, healthcare, tax, and more. " +
-    "Non-partisan. Free.",
+    "Jersey's 2026 general election (7 June 2026) has 96 declared candidates " +
+    "standing across the island as Senators, Connétables and Deputies. " +
+    "Browse AI-generated manifesto summaries, compare policy positions on " +
+    "housing, healthcare, tax, and more. Non-partisan. Free.",
   path: "/candidates",
 });
 
@@ -23,6 +23,7 @@ export type CandidateCard = {
   name: string;
   district: string;
   party: string | null;
+  role: "Senator" | "Deputy" | "Connétable" | null;
   photoUrl: string | null;
   aiSummary: string | null;
 };
@@ -35,10 +36,12 @@ async function getCandidates(): Promise<CandidateCard[]> {
         name: candidates.name,
         district: candidates.district,
         party: candidates.party,
+        role: candidates.role,
         photoUrl: candidates.photoUrl,
         aiSummary: candidates.aiSummary,
       })
       .from(candidates)
+      .where(eq(candidates.is2026, true))
       .orderBy(asc(candidates.name));
   } catch {
     return [];
@@ -49,6 +52,9 @@ export default async function CandidatesPage() {
   const all = await getCandidates();
 
   // ── AEO aggregate queries ──────────────────────────────────────────────────
+  // The 2026 super-districts (e.g. "St Mary, St Ouen and St Peter") combine
+  // multiple parishes — list them alongside the individual parishes so the
+  // capsule renders every constituency the official list uses.
   const REAL_JERSEY_DISTRICTS = new Set([
     "St Helier North",
     "St Helier Central",
@@ -64,6 +70,9 @@ export default async function CandidatesPage() {
     "Trinity",
     "Grouville",
     "St Martin",
+    "St Mary, St Ouen and St Peter",
+    "Grouville and St Martin",
+    "St John, St Lawrence and Trinity",
     "Island-wide (Senator)",
   ]);
 
@@ -74,16 +83,10 @@ export default async function CandidatesPage() {
       enriched: sql<number>`count(*) filter (where ${candidates.aiSummary} is not null)`,
     })
     .from(candidates)
-    .where(
-      and(
-        ne(candidates.district, "Unknown"),
-        notLike(candidates.district, "District %"),
-      ),
-    )
+    .where(eq(candidates.is2026, true))
     .groupBy(candidates.district)
     .orderBy(candidates.district);
 
-  // Secondary client-side guard for any other non-real names
   const validDistrictCounts = districtCounts.filter((d) =>
     REAL_JERSEY_DISTRICTS.has(d.district),
   );
@@ -91,7 +94,7 @@ export default async function CandidatesPage() {
   const enrichedCountRows = await db
     .select({ count: count() })
     .from(candidates)
-    .where(isNotNull(candidates.aiSummary));
+    .where(and(eq(candidates.is2026, true), isNotNull(candidates.aiSummary)));
 
   const totalEnriched = enrichedCountRows[0]?.count ?? 0;
 
@@ -101,18 +104,21 @@ export default async function CandidatesPage() {
       count: count(),
     })
     .from(candidates)
-    .where(ne(candidates.district, "Unknown"))
+    .where(eq(candidates.is2026, true))
     .groupBy(candidates.party)
     .orderBy(sql`count(*) desc`);
 
   const independentCount = partyBreakdown
-    .filter((p) => !p.party)
+    .filter((p) => !p.party || p.party === "Independent")
     .reduce((sum, p) => sum + Number(p.count), 0);
 
   // Derive filter options from the data.
   const districts = [...new Set(all.map((c) => c.district))].sort();
   const parties = [
     ...new Set(all.map((c) => c.party).filter(Boolean) as string[]),
+  ].sort();
+  const roles = [
+    ...new Set(all.map((c) => c.role).filter(Boolean) as string[]),
   ].sort();
 
   const siteUrl =
@@ -150,9 +156,9 @@ export default async function CandidatesPage() {
             >
               Jersey&apos;s 2026 general election, scheduled for{" "}
               <strong>7 June 2026</strong>, has{" "}
-              <strong>{all.length > 0 ? all.length : 135} declared candidates</strong>{" "}
-              standing across <strong>14 districts</strong> in the States of
-              Jersey.{" "}
+              <strong>{all.length > 0 ? all.length : 96} declared candidates</strong>{" "}
+              standing as <strong>Senators, Connétables and Deputies</strong>{" "}
+              across the island.{" "}
               {independentCount > 0 && (
                 <>
                   <strong>{independentCount} candidates</strong> are standing as
@@ -167,13 +173,13 @@ export default async function CandidatesPage() {
             <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
                 {
-                  value: String(all.length > 0 ? all.length : 135),
+                  value: String(all.length > 0 ? all.length : 96),
                   label: "Declared candidates",
                   colour: "#A31621",
                 },
                 {
-                  value: "14",
-                  label: "Electoral districts",
+                  value: String(validDistrictCounts.length),
+                  label: "Constituencies",
                   colour: "#0D1B2A",
                 },
                 {
@@ -297,8 +303,8 @@ export default async function CandidatesPage() {
               "@type": "ItemList",
               name: "Jersey 2026 Election Candidates",
               description:
-                "All 135 candidates standing in Jersey's 2026 general election on 7 June 2026 across 14 districts.",
-              numberOfItems: all.length > 0 ? all.length : 135,
+                "All 96 candidates standing in Jersey's 2026 general election on 7 June 2026.",
+              numberOfItems: all.length > 0 ? all.length : 96,
               itemListElement: validDistrictCounts.map((d, i) => ({
                 "@type": "ListItem",
                 position: i + 1,
@@ -314,6 +320,7 @@ export default async function CandidatesPage() {
         candidates={all}
         districts={districts}
         parties={parties}
+        roles={roles}
       />
     </main>
   );

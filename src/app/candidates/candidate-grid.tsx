@@ -9,27 +9,31 @@ export function CandidateGrid({
   candidates,
   districts,
   parties,
+  roles,
 }: {
   candidates: CandidateCard[];
   districts: string[];
   parties: string[];
+  roles: string[];
 }) {
   const [search, setSearch] = useState("");
   const [district, setDistrict] = useState("");
   const [party, setParty] = useState(""); // "" = all, "__independent" = null party
+  const [role, setRole] = useState("");
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
     return candidates.filter((c) => {
       if (q && !c.name.toLowerCase().includes(q)) return false;
       if (district && c.district !== district) return false;
-      if (party === "__independent" && c.party !== null) return false;
+      if (party === "__independent" && c.party !== null && c.party !== "Independent") return false;
       if (party && party !== "__independent" && c.party !== party) return false;
+      if (role && c.role !== role) return false;
       return true;
     });
-  }, [candidates, search, district, party]);
+  }, [candidates, search, district, party, role]);
 
-  const hasActiveFilter = search || district || party;
+  const hasActiveFilter = search || district || party || role;
 
   return (
     <>
@@ -57,6 +61,20 @@ export function CandidateGrid({
           />
         </div>
 
+        {/* Role (Senator / Deputy / Connétable) */}
+        <select
+          value={role}
+          onChange={(e) => setRole(e.target.value)}
+          className="h-10 rounded-md border border-border bg-white px-3 text-[13px] text-navy outline-none transition-colors focus:border-jersey-red/40 focus:ring-1 focus:ring-jersey-red/20"
+        >
+          <option value="">All roles</option>
+          {roles.map((r) => (
+            <option key={r} value={r}>
+              {r}
+            </option>
+          ))}
+        </select>
+
         {/* District */}
         <select
           value={district}
@@ -79,11 +97,13 @@ export function CandidateGrid({
         >
           <option value="">All parties</option>
           <option value="__independent">Independent</option>
-          {parties.map((p) => (
-            <option key={p} value={p}>
-              {p}
-            </option>
-          ))}
+          {parties
+            .filter((p) => p !== "Independent")
+            .map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
         </select>
 
         {/* Clear */}
@@ -94,6 +114,7 @@ export function CandidateGrid({
               setSearch("");
               setDistrict("");
               setParty("");
+              setRole("");
             }}
             className="h-10 rounded-md border border-border bg-white px-3 text-[12px] font-medium text-muted-foreground transition-colors hover:border-jersey-red/30 hover:text-jersey-red"
           >
@@ -184,13 +205,21 @@ function CandidateCardItem({ candidate: c }: { candidate: CandidateCard }) {
           {displayName}
         </p>
 
-        {/* District + Party */}
+        {/* Role + District + Party */}
         <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[12px] text-muted-foreground">
+          {c.role && (
+            <>
+              <span className="inline-flex items-center rounded-full border border-navy/15 bg-navy/5 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-navy/80">
+                {c.role}
+              </span>
+              <span className="text-border">·</span>
+            </>
+          )}
           <span>{c.district}</span>
           <span className="text-border">·</span>
           <span
             className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium ${
-              c.party
+              c.party && c.party !== "Independent"
                 ? "border-border bg-muted/50 text-muted-foreground"
                 : "border-gold/30 bg-gold/10 text-gold"
             }`}

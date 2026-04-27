@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { candidates } from "@/db/schema";
 
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
         manifestoRaw: candidates.manifestoRaw,
       })
       .from(candidates)
-      .where(inArray(candidates.id, ids));
+      .where(and(inArray(candidates.id, ids), eq(candidates.is2026, true)));
 
     const orderedResults = ids
       .map((id) => results.find((candidate) => candidate.id === id))

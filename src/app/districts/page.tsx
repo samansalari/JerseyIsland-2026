@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { asc, sql } from "drizzle-orm";
+import { asc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { candidates } from "@/db/schema";
 
@@ -12,6 +12,7 @@ export default async function DistrictsPage() {
       count: sql<number>`count(*)`.as("count"),
     })
     .from(candidates)
+    .where(eq(candidates.is2026, true))
     .groupBy(candidates.district)
     .orderBy(asc(candidates.district));
 

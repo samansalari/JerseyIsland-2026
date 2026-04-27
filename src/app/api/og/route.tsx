@@ -7,7 +7,7 @@ import { ImageResponse } from "next/og";
 import { NextRequest } from "next/server";
 import { db } from "@/db";
 import { candidates } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 // CRITICAL: Do NOT set `export const runtime = 'edge'`
 // Railway runs Node.js — edge runtime is not supported there.
@@ -84,7 +84,7 @@ async function getCandidateForOg(
         aiSummary: candidates.aiSummary,
       })
       .from(candidates)
-      .where(eq(candidates.slug, slug))
+      .where(and(eq(candidates.slug, slug), eq(candidates.is2026, true)))
       .limit(1);
 
     return rows[0] ?? null;

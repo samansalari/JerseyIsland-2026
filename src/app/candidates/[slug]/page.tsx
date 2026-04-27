@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import ReactMarkdown from "react-markdown";
-import { arrayContains, desc, eq } from "drizzle-orm";
+import { and, arrayContains, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import {
   articles,
@@ -91,7 +91,10 @@ function getSourceLabel(url: string): string {
 
 export async function generateStaticParams() {
   try {
-    const rows = await db.select({ slug: candidates.slug }).from(candidates);
+    const rows = await db
+      .select({ slug: candidates.slug })
+      .from(candidates)
+      .where(eq(candidates.is2026, true));
     return rows.map((r) => ({ slug: r.slug }));
   } catch {
     return [];
@@ -102,7 +105,7 @@ async function getCandidate(slug: string) {
   const [row] = await db
     .select()
     .from(candidates)
-    .where(eq(candidates.slug, slug))
+    .where(and(eq(candidates.slug, slug), eq(candidates.is2026, true)))
     .limit(1);
   return row ?? null;
 }
@@ -293,11 +296,16 @@ export default async function CandidatePage({ params }: Props) {
                 {candidateDisplayName}
               </h1>
               <div className="mt-2 flex flex-wrap items-center gap-2">
+                {candidate.role && (
+                  <span className="inline-flex items-center rounded-full bg-gold/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-gold ring-1 ring-inset ring-gold/30">
+                    {candidate.role}
+                  </span>
+                )}
                 <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-sm text-on-primary">
                   <span aria-hidden>📍</span>
                   {candidate.district}
                 </span>
-                {candidate.party ? (
+                {candidate.party && candidate.party !== "Independent" ? (
                   <span className="inline-flex items-center rounded-full bg-jersey-red px-3 py-1 text-sm text-on-primary">
                     {candidate.party}
                   </span>

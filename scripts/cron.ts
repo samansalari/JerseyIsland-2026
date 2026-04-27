@@ -333,6 +333,18 @@ async function socialScrapeCycle() {
   log(`CRON: Social scrape cycle complete (${total}s)\n`);
 }
 
+async function supervisorCycle() {
+  // Kimi K2.6 reads manifestos + Grok summaries and scores them. Default
+  // mode of the script only re-reviews summaries that have been re-enriched
+  // since their last review, so this is cheap (~$0.05/day at steady state).
+  log("CRON: Starting Kimi K2.6 supervisor pass (02:00 Europe/London)");
+  const cycleStart = Date.now();
+  await runTask("REVIEW summaries (Kimi K2.6)", "scripts/review-summaries.ts");
+  await triggerRevalidation();
+  const total = ((Date.now() - cycleStart) / 1000).toFixed(0);
+  log(`CRON: Supervisor cycle complete (${total}s)\n`);
+}
+
 // ── Schedule ────────────────────────────────────────────────────────────────
 
 log("CRON: VotePulse orchestrator starting");
@@ -369,6 +381,21 @@ cron.schedule(
       warn(
         "CRON",
         `Social scrape cycle crashed: ${err instanceof Error ? err.message : err}`,
+      ),
+    );
+  },
+  { timezone: "Europe/London" },
+);
+
+// Daily at 02:00 Europe/London — Kimi K2.6 reviews any summaries Grok has
+// updated since the last review pass.
+cron.schedule(
+  "0 2 * * *",
+  () => {
+    supervisorCycle().catch((err) =>
+      warn(
+        "CRON",
+        `Supervisor cycle crashed: ${err instanceof Error ? err.message : err}`,
       ),
     );
   },

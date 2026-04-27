@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { candidates, issueVotes, pulseInsights } from "@/db/schema";
-import { desc, eq, isNotNull, sql } from "drizzle-orm";
+import { and, desc, eq, isNotNull, sql } from "drizzle-orm";
 import { grokChatCompletionJson } from "@/lib/grok";
 
 type AiIssue = { issue: string; position: string; confidence: number };
@@ -37,7 +37,7 @@ export async function generatePulseInsight() {
       aiIssues: candidates.aiIssues,
     })
     .from(candidates)
-    .where(isNotNull(candidates.aiIssues))
+    .where(and(isNotNull(candidates.aiIssues), eq(candidates.is2026, true)))
     .limit(50);
 
   const relevantCandidates = enrichedCandidates

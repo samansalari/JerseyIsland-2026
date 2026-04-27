@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { asc, count, eq, sql } from "drizzle-orm";
+import { and, asc, count, eq, sql } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { db } from "@/db";
 import { candidates } from "@/db/schema";
@@ -69,6 +69,7 @@ export async function generateStaticParams() {
     const districts = await db
       .selectDistinct({ district: candidates.district })
       .from(candidates)
+      .where(eq(candidates.is2026, true))
       .orderBy(asc(candidates.district));
 
     return districts
@@ -86,6 +87,7 @@ export default async function DistrictPage({ params }: Props) {
   const allDistricts = await db
     .selectDistinct({ district: candidates.district })
     .from(candidates)
+    .where(eq(candidates.is2026, true))
     .orderBy(asc(candidates.district));
 
   const districtList = allDistricts
@@ -101,7 +103,7 @@ export default async function DistrictPage({ params }: Props) {
       parties: sql<string[]>`array_agg(distinct ${candidates.party}) filter (where ${candidates.party} is not null)`,
     })
     .from(candidates)
-    .where(eq(candidates.district, district));
+    .where(and(eq(candidates.district, district), eq(candidates.is2026, true)));
 
   const statsRow = districtStats[0];
   const partyList = (statsRow?.parties ?? []).filter(Boolean);

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { asc } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { candidates } from "@/db/schema";
 
@@ -9,6 +9,7 @@ export async function GET() {
   const result = await db
     .selectDistinct({ district: candidates.district })
     .from(candidates)
+    .where(eq(candidates.is2026, true))
     .orderBy(asc(candidates.district));
 
   const districts = result

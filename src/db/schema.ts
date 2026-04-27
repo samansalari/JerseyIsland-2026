@@ -6,6 +6,7 @@ import {
   real,
   integer,
   timestamp,
+  boolean,
   index,
   uniqueIndex,
   primaryKey,
@@ -72,6 +73,34 @@ export type ElectionRecord = {
 
 export type ElectionHistory = ElectionRecord[];
 
+// ── Supervisor review (Kimi K2.6 via OpenRouter) ────────────────────────────
+// The supervisor reads the candidate's full manifesto + Grok's ai_summary and
+// scores accuracy / neutrality / hallucination. Results are written to
+// `candidates.reviewStatus` by `scripts/review-summaries.ts`.
+export type ReviewFlag = {
+  type:
+    | "hallucination"
+    | "bias"
+    | "attribution_error"
+    | "incompleteness"
+    | "inaccuracy"
+    | "neutrality_breach";
+  severity: "low" | "medium" | "high";
+  description: string;
+  quote: string | null;
+};
+
+export type ReviewStatus = {
+  reviewedAt: string; // ISO timestamp from the supervisor
+  model: string; // e.g. "moonshotai/kimi-k2.6"
+  score: number; // 1-10
+  passed: boolean; // score >= 7
+  flags: ReviewFlag[];
+  /** Present only when score < 7 and Kimi proposed a rewrite. */
+  correctedSummary: string | null;
+  reasoning: string;
+};
+
 // ── Candidates ──────────────────────────────────────────────────────────────
 export const candidates = pgTable(
   "candidates",
@@ -85,6 +114,15 @@ export const candidates = pgTable(
     party: text("party"),
     photoUrl: text("photo_url"),
     bio: text("bio"),
+
+    // Office sought in the 2026 election. `null` for legacy/archived rows
+    // that pre-date the column. Application code narrows via $type.
+    role: text("role").$type<"Senator" | "Deputy" | "Connétable">(),
+
+    // True for candidates standing in the 2026 general election. Historical
+    // entries (previous elections) keep `is_2026 = false` and are excluded
+    // from public-facing queries while remaining visible in admin views.
+    is2026: boolean("is_2026").notNull().default(false),
 
     // Sacred raw data — never overwritten by AI.
     manifestoRaw: text("manifesto_raw"),
@@ -119,6 +157,10 @@ export const candidates = pgTable(
     lastScrapedAt: timestamp("last_scraped_at", { withTimezone: true }),
     lastEnrichedAt: timestamp("last_enriched_at", { withTimezone: true }),
 
+    // Supervisor (Kimi K2.6) review results — see ReviewStatus type above.
+    reviewStatus: jsonb("review_status").$type<ReviewStatus>(),
+    lastReviewedAt: timestamp("last_reviewed_at", { withTimezone: true }),
+
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -129,6 +171,7 @@ export const candidates = pgTable(
   (t) => ({
     slugUq: uniqueIndex("candidates_slug_uq").on(t.slug),
     districtIdx: index("candidates_district_idx").on(t.district),
+    is2026Idx: index("candidates_is_2026_idx").on(t.is2026),
   }),
 );
 

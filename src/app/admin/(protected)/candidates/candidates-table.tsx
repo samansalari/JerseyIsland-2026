@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { reEnrichCandidate } from './actions'
+import type { ReviewStatus } from '@/db/schema'
 
 type Row = {
   id: string
@@ -15,6 +16,8 @@ type Row = {
   issueCount: number
   lastEnrichedAt: Date | null
   updatedAt: Date | null
+  reviewStatus: ReviewStatus | null
+  lastReviewedAt: Date | null
 }
 
 export function CandidatesTable({ rows }: { rows: Row[] }) {
@@ -102,6 +105,7 @@ export function CandidatesTable({ rows }: { rows: Row[] }) {
               <th className="px-4 py-3 text-center font-semibold">Summary</th>
               <th className="px-4 py-3 text-center font-semibold">Issues</th>
               <th className="px-4 py-3 text-left font-semibold">Last enriched</th>
+              <th className="px-4 py-3 text-center font-semibold w-24">Review</th>
               <th className="px-4 py-3 text-left font-semibold">Actions</th>
             </tr>
           </thead>
@@ -153,6 +157,44 @@ export function CandidatesTable({ rows }: { rows: Row[] }) {
                         day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
                       })
                     : '—'}
+                </td>
+                <td className="px-4 py-3 text-center">
+                  {(() => {
+                    const rs = row.reviewStatus
+                    if (!rs) {
+                      return <span className="text-xs text-gray-300">—</span>
+                    }
+                    const colour = rs.passed
+                      ? '#1A6B3A'
+                      : rs.score >= 5
+                        ? '#C8922A'
+                        : '#A31621'
+                    return (
+                      <div
+                        className="flex flex-col items-center gap-0.5 tabular-nums"
+                        title={rs.reasoning}
+                      >
+                        <span
+                          className="text-xs font-bold"
+                          style={{ color: colour }}
+                        >
+                          {rs.score}/10
+                        </span>
+                        <span
+                          className="text-[10px] font-semibold uppercase tracking-wide"
+                          style={{ color: colour }}
+                        >
+                          {rs.passed ? 'Pass' : 'Fail'}
+                        </span>
+                        {rs.flags.length > 0 && (
+                          <span className="text-[10px] text-gray-400">
+                            {rs.flags.length} flag
+                            {rs.flags.length !== 1 ? 's' : ''}
+                          </span>
+                        )}
+                      </div>
+                    )
+                  })()}
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">

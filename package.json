@@ -46,7 +46,11 @@
     "discover:social:dry": "npx tsx scripts/discover-social-links.ts --dry-run",
     "scrape:social": "npx tsx scripts/scrape-social.ts",
     "scrape:social:dry": "npx tsx scripts/scrape-social.ts --dry-run",
-    "scrape:social:force": "npx tsx scripts/scrape-social.ts --force"
+    "scrape:social:force": "npx tsx scripts/scrape-social.ts --force",
+    "review:summaries": "npx tsx scripts/review-summaries.ts",
+    "review:summaries:dry": "npx tsx scripts/review-summaries.ts --dry-run",
+    "review:summaries:all": "npx tsx scripts/review-summaries.ts --all",
+    "review:summaries:failed": "npx tsx scripts/review-summaries.ts --failed-only"
   },
   "dependencies": {
     "@fontsource/archivo": "^5.2.8",

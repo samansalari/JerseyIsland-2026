@@ -3,7 +3,7 @@ import { db } from "@/db";
 
 export const runtime = "nodejs";
 import { candidates } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 export const alt = "VotePulse candidate";
 export const size = { width: 1200, height: 630 };
@@ -16,7 +16,7 @@ export default async function Image({ params }: Props) {
   const [row] = await db
     .select({ name: candidates.name, district: candidates.district })
     .from(candidates)
-    .where(eq(candidates.slug, slug))
+    .where(and(eq(candidates.slug, slug), eq(candidates.is2026, true)))
     .limit(1);
 
   const name = row?.name ?? "Candidate";
