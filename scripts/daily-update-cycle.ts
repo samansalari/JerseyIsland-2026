@@ -175,6 +175,16 @@ async function triggerRevalidation(): Promise<boolean> {
 }
 
 async function main() {
+  // Safety check: verify is_2026 counts are sane before proceeding
+  const { active } = await db.select({
+    active: sql<number>`COUNT(*) FILTER (WHERE is_2026 = true)`.mapWith(Number),
+  }).from(candidates).then(r => r[0]);
+
+  if (active < 85) {
+    console.error(`SAFETY ABORT: only ${active} candidates have is_2026=true. Expected ~92. Something reset the flags. Aborting cycle.`);
+    process.exit(1);
+  }
+
   const cycleStart = Date.now();
   const runDate = new Date().toISOString().split("T")[0];
 

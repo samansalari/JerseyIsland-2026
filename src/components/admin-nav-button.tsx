@@ -1,22 +1,37 @@
-import { createClient } from "@/lib/supabase/server";
+"use client";
+
+import { useEffect, useState } from "react";
 
 /**
- * Server component — safe to call createClient() here.
- * Renders only when the current user is authenticated.
- * Import this in layout.tsx and pass it as a prop to <Navbar>.
+ * Client component so public static pages never read auth cookies during SSR.
+ * Renders only when the current browser session is authenticated.
  */
-export async function AdminNavButton() {
-  try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+export function AdminNavButton() {
+  const [isAdmin, setIsAdmin] = useState(false);
 
-    if (!user) return null;
-  } catch {
-    // Supabase not configured — no admin button
-    return null;
-  }
+  useEffect(() => {
+    let mounted = true;
+
+    async function checkSession() {
+      try {
+        const res = await fetch("/api/admin/health", {
+          cache: "no-store",
+          credentials: "same-origin",
+        });
+        if (mounted) setIsAdmin(res.ok);
+      } catch {
+        if (mounted) setIsAdmin(false);
+      }
+    }
+
+    void checkSession();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  if (!isAdmin) return null;
 
   return (
     <a

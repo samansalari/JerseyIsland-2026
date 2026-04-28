@@ -442,6 +442,7 @@ async function enrichOneCandidate(
         if (cleaned.issues.length > 0) {
           console.log(`  [cleaner] Fixed: ${cleaned.issues.join(", ")}`);
         }
+        // IMPORTANT: never include is_2026 in this update — only sync-official-candidates.ts may set it
         await db
           .update(candidates)
           .set({
@@ -534,6 +535,7 @@ async function enrichOneCandidate(
     const now = new Date();
     const summary = gr.summary?.trim() || null;
     try {
+      // IMPORTANT: never include is_2026 in this update — only sync-official-candidates.ts may set it
       await db
         .update(candidates)
         .set({

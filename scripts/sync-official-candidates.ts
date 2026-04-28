@@ -1,12 +1,11 @@
 import "./bootstrap-env";
 import { db } from "../src/db";
 import { candidates } from "../src/db/schema";
-import { eq, inArray } from "drizzle-orm";
+import { eq, ilike, inArray } from "drizzle-orm";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import {
   OFFICIAL_2026_CANDIDATES,
-  NAME_ALIASES,
   type OfficialCandidate,
 } from "./data/official-2026-candidates";
 
@@ -24,16 +23,12 @@ import {
  *                                                          is_2026 = true
  *
  * Matching strategy (in order):
- *   1. DB.slug === nameToSlug(official.name)
- *   2. DB.name (lowercased) === official.name (lowercased)
- *   3. DB.slug or DB.name matches a NAME_ALIASES entry
+ *   1. Exact slug match: DB.slug === nameToSlug(official.name)
+ *   2. Case-insensitive name match: DB.name ILIKE official.name
+ *   3. Last-name-only match as a fallback, only when unambiguous
  *
- * Aliases are explicit and live in `data/official-2026-candidates.ts`. They
- * cover honorific changes ("Sir Mark Boleat" → "Mark Boleat"), marriage
- * names ("Serena Kersten" → "Serena Kersten Guthrie"), and first-name
- * shortenings ("David Curtis" → "Dave Curtis"). Anything ambiguous is left
- * alone — better to insert a duplicate that an admin can manually merge
- * than to overwrite the wrong record.
+ * Ambiguous last-name matches are left alone — better to insert a duplicate
+ * that an admin can manually merge than to overwrite the wrong record.
  *
  * Usage:
  *   npx tsx scripts/sync-official-candidates.ts --dry-run
@@ -111,6 +106,85 @@ interface UpdatePlan {
   changes: Record<string, unknown>;
 }
 
+const candidateSelect = {
+  id: candidates.id,
+  name: candidates.name,
+  slug: candidates.slug,
+  district: candidates.district,
+  party: candidates.party,
+  role: candidates.role,
+  is2026: candidates.is2026,
+  manifestoUrl: candidates.manifestoUrl,
+};
+
+function escapeLikePattern(value: string): string {
+  return value.replace(/[\\%_]/g, (char) => `\\${char}`);
+}
+
+function lastNameOf(name: string): string {
+  return name.trim().split(/\s+/).at(-1) ?? name.trim();
+}
+
+function firstUnclaimed(rows: DbRow[], claimedIds: Set<string>): DbRow | null {
+  return rows.find((row) => !claimedIds.has(row.id)) ?? null;
+}
+
+function buildChanges(row: DbRow, official: OfficialCandidate) {
+  const desiredDistrict = normaliseDistrict(official.district);
+  const changes: Record<string, unknown> = {};
+
+  if (official.name !== row.name) changes.name = official.name;
+  if (official.role !== row.role) changes.role = official.role;
+  if (desiredDistrict !== row.district) changes.district = desiredDistrict;
+  if (official.party !== row.party) changes.party = official.party;
+  if (row.manifestoUrl !== official.voteJeUrl) {
+    changes.manifestoUrl = official.voteJeUrl;
+  }
+  if (!row.is2026) changes.is2026 = true;
+
+  return changes;
+}
+
+async function findDbMatchForOfficial(
+  official: OfficialCandidate,
+  claimedIds: Set<string>,
+): Promise<DbRow | null> {
+  const officialSlug = nameToSlug(official.name);
+
+  const slugMatches = await localDb
+    .select(candidateSelect)
+    .from(candidates)
+    .where(eq(candidates.slug, officialSlug));
+  const slugMatch = firstUnclaimed(slugMatches, claimedIds);
+  if (slugMatch) return slugMatch;
+
+  const nameMatches = await localDb
+    .select(candidateSelect)
+    .from(candidates)
+    .where(ilike(candidates.name, escapeLikePattern(official.name)));
+  const nameMatch = firstUnclaimed(nameMatches, claimedIds);
+  if (nameMatch) return nameMatch;
+
+  const lastName = lastNameOf(official.name);
+  const lastNameMatches = (
+    await localDb
+      .select(candidateSelect)
+      .from(candidates)
+      .where(ilike(candidates.name, `% ${escapeLikePattern(lastName)}`))
+  ).filter((row) => !claimedIds.has(row.id));
+
+  if (lastNameMatches.length === 1) {
+    return lastNameMatches[0]!;
+  }
+  if (lastNameMatches.length > 1) {
+    console.warn(
+      `[sync] Ambiguous last-name fallback for ${official.name}: ${lastNameMatches.map((row) => row.name).join(", ")}`,
+    );
+  }
+
+  return null;
+}
+
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -122,72 +196,28 @@ async function main() {
   // ── Load DB rows ───────────────────────────────────────────────────────────
 
   const dbCandidates: DbRow[] = await localDb
-    .select({
-      id: candidates.id,
-      name: candidates.name,
-      slug: candidates.slug,
-      district: candidates.district,
-      party: candidates.party,
-      role: candidates.role,
-      is2026: candidates.is2026,
-      manifestoUrl: candidates.manifestoUrl,
-    })
+    .select(candidateSelect)
     .from(candidates);
 
   console.log(`DB candidates: ${dbCandidates.length}\n`);
 
-  // ── Build official-lookup map keyed by slug AND lowercased name ────────────
-  // The same OfficialCandidate may sit under multiple keys (canonical slug,
-  // canonical name, plus every alias) so the matcher tolerates renames.
+  // ── Match official rows to DB rows ─────────────────────────────────────────
 
-  const officialByKey = new Map<string, OfficialCandidate>();
-  for (const official of OFFICIAL_2026_CANDIDATES) {
-    const slug = nameToSlug(official.name);
-    const nameKey = official.name.toLowerCase().trim();
-    officialByKey.set(`slug:${slug}`, official);
-    officialByKey.set(`name:${nameKey}`, official);
-
-    for (const alias of NAME_ALIASES[official.name] ?? []) {
-      // Heuristic: hyphen + no spaces → slug; otherwise it's a name.
-      if (alias.includes("-") && !alias.includes(" ")) {
-        officialByKey.set(`slug:${alias.toLowerCase()}`, official);
-      } else {
-        officialByKey.set(`name:${alias.toLowerCase().trim()}`, official);
-      }
-    }
-  }
-
-  // ── Categorise DB rows ─────────────────────────────────────────────────────
-
-  const toArchive: DbRow[] = [];
   const toUpdate: UpdatePlan[] = [];
   const alreadyCorrect: DbRow[] = [];
   const matchedOfficials = new Set<OfficialCandidate>();
+  const matchedDbIds = new Set<string>();
 
-  for (const row of dbCandidates) {
-    const slugKey = `slug:${row.slug.toLowerCase()}`;
-    const nameKey = `name:${row.name.toLowerCase().trim()}`;
-    const official = officialByKey.get(slugKey) ?? officialByKey.get(nameKey);
-
-    if (!official) {
-      toArchive.push(row);
+  for (const official of OFFICIAL_2026_CANDIDATES) {
+    const row = await findDbMatchForOfficial(official, matchedDbIds);
+    if (!row) {
       continue;
     }
 
     matchedOfficials.add(official);
+    matchedDbIds.add(row.id);
 
-    const desiredDistrict = normaliseDistrict(official.district);
-    const changes: Record<string, unknown> = {};
-
-    if (official.name !== row.name) changes.name = official.name;
-    if (official.role !== row.role) changes.role = official.role;
-    if (desiredDistrict !== row.district) changes.district = desiredDistrict;
-    if (official.party !== row.party) changes.party = official.party;
-    if (row.manifestoUrl !== official.voteJeUrl) {
-      changes.manifestoUrl = official.voteJeUrl;
-    }
-    if (!row.is2026) changes.is2026 = true;
-
+    const changes = buildChanges(row, official);
     if (Object.keys(changes).length > 0) {
       toUpdate.push({ dbRow: row, official, changes });
     } else {
@@ -198,6 +228,7 @@ async function main() {
   const toInsert = OFFICIAL_2026_CANDIDATES.filter(
     (c) => !matchedOfficials.has(c),
   );
+  const toArchive = dbCandidates.filter((row) => !matchedDbIds.has(row.id));
 
   // ── Report ─────────────────────────────────────────────────────────────────
 

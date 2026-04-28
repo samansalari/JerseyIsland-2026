@@ -361,6 +361,7 @@ async function runPhase1(allCandidates: CandidateRow[]): Promise<Stats> {
     if (prevHash !== "" && newHash === prevHash) {
       console.log(`  = Unchanged (hash match): ${existing.name}`);
       if (!DRY_RUN) {
+        // IMPORTANT: never include is_2026 in this update — only sync-official-candidates.ts may set it
         await db
           .update(candidates)
           .set({ lastScrapedAt: new Date() })
@@ -391,6 +392,7 @@ async function runPhase1(allCandidates: CandidateRow[]): Promise<Stats> {
         ...new Set([...(existing.sourceUrls ?? []), url]),
       ];
 
+      // IMPORTANT: never include is_2026 in this update — only sync-official-candidates.ts may set it
       await db
         .update(candidates)
         .set({
@@ -550,6 +552,7 @@ async function runPhase2(allCandidates: CandidateRow[]): Promise<HistoricalStats
     ) {
       console.log("  = Already populated with this historical manifesto");
       if (!DRY_RUN) {
+        // IMPORTANT: never include is_2026 in this update — only sync-official-candidates.ts may set it
         await db
           .update(candidates)
           .set({ lastScrapedAt: new Date() })
@@ -581,6 +584,7 @@ async function runPhase2(allCandidates: CandidateRow[]): Promise<HistoricalStats
         ...new Set([...(candidate.sourceUrls ?? []), target.url]),
       ];
 
+      // IMPORTANT: never include is_2026 in this update — only sync-official-candidates.ts may set it
       await db
         .update(candidates)
         .set({
