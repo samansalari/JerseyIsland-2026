@@ -482,3 +482,21 @@ export type NewTopicUpvote = typeof topicUpvotes.$inferInsert;
 
 export type TopicFeedback = typeof topicFeedback.$inferSelect;
 export type NewTopicFeedback = typeof topicFeedback.$inferInsert;
+
+// ── cron_logs (daily update pipeline — optional; created via migration) ─────
+export const cronLogs = pgTable("cron_logs", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  cycleDate: text("cycle_date").notNull().unique(), // 'YYYY-MM-DD'
+  changedCount: integer("changed_count").default(0).notNull(),
+  allOk: boolean("all_ok").default(true).notNull(),
+  durationMs: integer("duration_ms").default(0).notNull(),
+  details: jsonb("details"),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
+export type CronLog = typeof cronLogs.$inferSelect;
+export type NewCronLog = typeof cronLogs.$inferInsert;

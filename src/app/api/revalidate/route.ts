@@ -11,7 +11,15 @@ export const runtime = "nodejs";
  * Protected by REVALIDATION_SECRET.
  *
  * Body: { secret: string, paths: string[] }
+ * Optional: { secret?: string, revalidateAll?: boolean } with header
+ * `x-revalidation-secret` instead of body.secret (used by daily-update-cycle).
  */
+const DEFAULT_REVALIDATE_PATHS = [
+  "/",
+  "/candidates",
+  "/compare",
+] as const;
+
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null);
 
@@ -19,7 +27,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid body" }, { status: 400 });
   }
 
-  const { secret, paths } = body as { secret?: string; paths?: string[] };
+  const headerSecret = request.headers.get("x-revalidation-secret");
+  const { secret: bodySecret, paths, revalidateAll } = body as {
+    secret?: string;
+    paths?: string[];
+    revalidateAll?: boolean;
+  };
+
+  const secret = bodySecret ?? headerSecret ?? "";
 
   const expected = process.env.REVALIDATION_SECRET;
   if (!expected) {
@@ -33,15 +48,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid secret" }, { status: 401 });
   }
 
-  if (!Array.isArray(paths) || paths.length === 0) {
+  let pathsToRevalidate: string[];
+  if (revalidateAll === true) {
+    pathsToRevalidate = [...DEFAULT_REVALIDATE_PATHS];
+  } else if (Array.isArray(paths) && paths.length > 0) {
+    pathsToRevalidate = paths;
+  } else {
     return NextResponse.json(
-      { error: "paths must be a non-empty array" },
+      { error: "paths must be a non-empty array, or set revalidateAll: true" },
       { status: 400 },
     );
   }
 
   const revalidated: string[] = [];
-  for (const path of paths) {
+  for (const path of pathsToRevalidate) {
     if (typeof path === "string" && path.startsWith("/")) {
       revalidatePath(path);
       revalidated.push(path);

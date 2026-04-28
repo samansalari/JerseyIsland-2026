@@ -352,11 +352,20 @@ async function runPhase1(allCandidates: CandidateRow[]): Promise<Stats> {
     const cleanedManifesto = cleanManifestoForStorage(page.markdown);
     const newLen = cleanedManifesto.length;
     const existingLen = existing.manifestoRaw?.length ?? 0;
-    const meaningfullyLonger = newLen > existingLen + 200;
-    const hashChanged = sha256(cleanedManifesto) !== (existing.dataHash ?? "");
+    const newHash = sha256(cleanedManifesto);
+    const prevHash =
+      existing.dataHash ??
+      (existing.manifestoRaw ? sha256(existing.manifestoRaw) : "");
 
-    if (!meaningfullyLonger && !hashChanged) {
-      console.log(`  = Unchanged: ${existing.name}`);
+    // Content unchanged — keep DB row as-is but record that we scraped successfully.
+    if (prevHash !== "" && newHash === prevHash) {
+      console.log(`  = Unchanged (hash match): ${existing.name}`);
+      if (!DRY_RUN) {
+        await db
+          .update(candidates)
+          .set({ lastScrapedAt: new Date() })
+          .where(eq(candidates.id, existing.id));
+      }
       await sleep(RATE_LIMIT_MS);
       continue;
     }
@@ -388,10 +397,12 @@ async function runPhase1(allCandidates: CandidateRow[]): Promise<Stats> {
           manifestoRaw: cleanedManifesto,
           manifestoUrl: url,
           sourceUrls: mergedSourceUrls,
-          dataHash: sha256(cleanedManifesto),
+          dataHash: newHash,
           aiSummary: null,
           aiIssues: null,
           lastEnrichedAt: null,
+          reviewStatus: null,
+          lastReviewedAt: null,
           lastScrapedAt: new Date(),
           updatedAt: new Date(),
         })
@@ -533,8 +544,17 @@ async function runPhase2(allCandidates: CandidateRow[]): Promise<HistoricalStats
 
     // Skip if we'd be writing the same historical content back.
     const newHash = sha256(newManifesto);
-    if (newHash === (candidate.dataHash ?? "") && (candidate.manifestoRaw ?? "").startsWith(HISTORICAL_NOTE_PREFIX)) {
+    if (
+      newHash === (candidate.dataHash ?? "") &&
+      (candidate.manifestoRaw ?? "").startsWith(HISTORICAL_NOTE_PREFIX)
+    ) {
       console.log("  = Already populated with this historical manifesto");
+      if (!DRY_RUN) {
+        await db
+          .update(candidates)
+          .set({ lastScrapedAt: new Date() })
+          .where(eq(candidates.id, candidate.id));
+      }
       await sleep(RATE_LIMIT_MS);
       continue;
     }
@@ -572,6 +592,8 @@ async function runPhase2(allCandidates: CandidateRow[]): Promise<HistoricalStats
           aiSummary: null,
           aiIssues: null,
           lastEnrichedAt: null,
+          reviewStatus: null,
+          lastReviewedAt: null,
           lastScrapedAt: new Date(),
           updatedAt: new Date(),
         })

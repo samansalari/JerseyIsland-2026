@@ -1,5 +1,5 @@
 import cron from "node-cron";
-import { execFile } from "node:child_process";
+import { execFile, execSync } from "node:child_process";
 import { appendFileSync, mkdirSync, readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 
@@ -351,6 +351,15 @@ log("CRON: VotePulse orchestrator starting");
 log(`CRON: Site URL: ${SITE_URL}`);
 log(`CRON: Revalidation secret: ${REVALIDATION_SECRET ? "set" : "NOT SET"}`);
 log("");
+console.log("[cron] Schedule:");
+console.log("  02:00 — Kimi K2.6 supervision");
+console.log("  06:00 — Social scrape cycle");
+console.log(
+  "  08:00 — Daily content update (scrape → enrich → supervise → topics)",
+);
+console.log("  Every 2h — News ingest");
+console.log("  Every 6h — Pulse insight regeneration");
+console.log("");
 
 // Every 6 hours: 00:00, 06:00, 12:00, 18:00 UTC
 cron.schedule("0 0,6,12,18 * * *", () => {
@@ -402,23 +411,25 @@ cron.schedule(
   { timezone: "Europe/London" },
 );
 
-// ── One-time: Official candidate list day — Monday 27 April 2026 ─────────────
-// vote.je and flow.je are expected to publish the official 2026 candidate list.
-// Run at 08:00 Jersey time (Europe/London = UTC+1 in BST).
+// Daily at 08:00 Europe/London — manifesto scrape, selective enrich, Kimi, topics, ISR
 cron.schedule(
-  "0 8 27 4 *",
-  async () => {
-    log("CRON: Official candidate list day — running full rescrape + manifesto harvest");
-    await runTask(
-      "SCRAPE vote.je manifestos",
-      "scripts/scrapers/scrape-vote-je-manifestos.ts",
-    );
-    await runTask("SCRAPE flow.je", "scripts/scrapers/scrape-flow-je.ts");
-    await runTask("IMPORT local scrapes", "scripts/import-local-scrapes.ts");
-    await runTask("EXTRACT social links", "scripts/extract-social-links.ts");
-    await runTask("ENRICH batch", "scripts/enrich.ts", ["--batch"]);
-    await triggerRevalidation();
-    log("CRON: Official list day cycle complete");
+  "0 8 * * *",
+  () => {
+    log("[cron] Daily update cycle starting...");
+    const start = Date.now();
+    try {
+      execSync("npx tsx scripts/daily-update-cycle.ts", {
+        stdio: "inherit",
+        timeout: 900_000,
+        cwd: process.cwd(),
+        env: process.env as NodeJS.ProcessEnv,
+      });
+      log(
+        `[cron] Daily update done in ${((Date.now() - start) / 1000 / 60).toFixed(1)}min`,
+      );
+    } catch (err) {
+      console.error("[cron] Daily update failed:", err);
+    }
   },
   { timezone: "Europe/London" },
 );

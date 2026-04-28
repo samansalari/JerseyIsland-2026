@@ -3,11 +3,12 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import {
   candidates,
+  cronLogs,
   topicSummaries,
   topicUpvotes,
   topicFeedback,
 } from "@/db/schema";
-import { count, isNotNull, sql } from "drizzle-orm";
+import { count, desc, isNotNull, sql } from "drizzle-orm";
 
 // CRITICAL: force-dynamic so stats are always live, never cached
 export const dynamic = "force-dynamic";
@@ -120,6 +121,29 @@ export default async function AdminDashboard() {
     reviewedCount > 0
       ? Math.round((reviewPassedCount / reviewedCount) * 100)
       : 0;
+
+  let recentCycles: {
+    cycleDate: string;
+    changedCount: number;
+    allOk: boolean;
+    durationMs: number;
+    updatedAt: Date;
+  }[] = [];
+  try {
+    recentCycles = await db
+      .select({
+        cycleDate: cronLogs.cycleDate,
+        changedCount: cronLogs.changedCount,
+        allOk: cronLogs.allOk,
+        durationMs: cronLogs.durationMs,
+        updatedAt: cronLogs.updatedAt,
+      })
+      .from(cronLogs)
+      .orderBy(desc(cronLogs.updatedAt))
+      .limit(7);
+  } catch {
+    recentCycles = [];
+  }
 
   // ── Most recently enriched candidate ────────────────────────────────
   const [lastEnriched] = await db
@@ -400,6 +424,82 @@ export default async function AdminDashboard() {
             </p>
           </div>
         )}
+      </section>
+
+      {/* ── Daily Update History ─────────────────────────────── */}
+      <section className="mb-8">
+        <h2 className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-4">
+          Daily Update History
+        </h2>
+
+        {recentCycles.length === 0 ? (
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <p className="text-sm text-[#0D1B2A]/40">
+              No update cycles recorded yet. First cycle runs at 08:00
+              Europe/London.
+            </p>
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  {["Date", "Status", "Changed", "Duration"].map((h) => (
+                    <th
+                      key={h}
+                      className="px-4 py-3 text-left text-xs font-semibold text-[#0D1B2A]/50 uppercase tracking-wider"
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {recentCycles.map((cycle) => (
+                  <tr
+                    key={cycle.cycleDate}
+                    className="hover:bg-gray-50/50 transition-colors"
+                  >
+                    <td className="px-4 py-3 text-xs font-mono text-[#0D1B2A]/70">
+                      {cycle.cycleDate}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-1 rounded-full ${
+                          cycle.allOk
+                            ? "bg-[#1A6B3A]/10 text-[#1A6B3A]"
+                            : "bg-[#A31621]/10 text-[#A31621]"
+                        }`}
+                      >
+                        {cycle.allOk ? "✓ OK" : "✗ Error"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-[#0D1B2A]/70">
+                      {cycle.changedCount === 0 ? (
+                        <span className="text-[#0D1B2A]/30">No changes</span>
+                      ) : (
+                        `${cycle.changedCount} candidate${cycle.changedCount !== 1 ? "s" : ""}`
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-[#0D1B2A]/50">
+                      {cycle.durationMs > 0
+                        ? `${(cycle.durationMs / 1000 / 60).toFixed(1)} min`
+                        : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <p className="text-xs text-gray-400 mt-3">
+          To trigger manually:{" "}
+          <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">
+            npm run update:daily
+          </code>{" "}
+          or use the Scrapers + Enrichment pages above.
+        </p>
       </section>
 
       {/* ── Quick actions ────────────────────────────────────────── */}

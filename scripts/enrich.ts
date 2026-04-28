@@ -1,7 +1,15 @@
 import "./bootstrap-env";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { eq, isNull, or, lt, and, isNotNull, sql as sqlTag } from "drizzle-orm";
+import {
+  eq,
+  isNull,
+  or,
+  lt,
+  and,
+  isNotNull,
+  sql as sqlTag,
+} from "drizzle-orm";
 import {
   candidates,
   candidateIssues,
@@ -777,6 +785,8 @@ async function main() {
   // staleness or prior enrichment. Used after schema changes (e.g. adding
   // structured action points) to backfill the entire cohort in one pass.
   const forceFlag = args.includes("--force");
+  /** Restrict `--force` / `--batch` to 2026 standing candidates only. */
+  const is2026Flag = args.includes("--is2026");
 
   const issueRows = await db.select().from(issues);
   const issueMap = new Map(issueRows.map((i) => [i.name, i.id]));
@@ -799,9 +809,14 @@ async function main() {
       process.exit(1);
     }
   } else if (forceFlag) {
-    rows = await query.where(isNotNull(candidates.manifestoRaw));
+    rows = await query.where(
+      and(
+        isNotNull(candidates.manifestoRaw),
+        ...(is2026Flag ? [eq(candidates.is2026, true)] : []),
+      ),
+    );
     console.log(
-      `[enrich] --force enabled — re-enriching every candidate with a manifesto`,
+      `[enrich] --force enabled — re-enriching every candidate with a manifesto${is2026Flag ? " (is2026 only)" : ""}`,
     );
   } else {
     rows = await query.where(
@@ -862,6 +877,7 @@ if (process.argv.includes("--topics-only")) {
   });
 } else if (process.argv.includes("--batch")) {
   (async () => {
+    const batchIs2026 = process.argv.includes("--is2026");
     console.log("\n=== GROK BATCH ENRICHMENT ===\n");
     const issueRows = await db.select().from(issues);
     const issueMap = new Map(issueRows.map((i) => [i.name, i.id]));
@@ -873,6 +889,7 @@ if (process.argv.includes("--topics-only")) {
         and(
           isNotNull(candidates.manifestoRaw),
           isNull(candidates.aiSummary),
+          ...(batchIs2026 ? [eq(candidates.is2026, true)] : []),
         ),
       );
 
