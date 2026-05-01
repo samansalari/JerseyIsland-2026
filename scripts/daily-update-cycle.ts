@@ -54,6 +54,13 @@ function resolveRevalidateOrigin(): string {
   return `http://127.0.0.1:${port}`;
 }
 
+function formatDuration(ms: number): string {
+  const totalSeconds = Math.round(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}m ${seconds}s`;
+}
+
 /** Long-running AI/network batch jobs — Windows execSync defaults bit hard at 5 min. */
 function execTimeoutMs(cmd: string): number {
   // Kimi over many candidates often exceeds 15m on Windows (`spawnSync` ETIMEDOUT).
@@ -87,7 +94,7 @@ async function run(
     });
     const duration = Date.now() - start;
     console.log(`  ✓ Done in ${(duration / 1000).toFixed(1)}s`);
-    return { ok: true, output: output.slice(-500), duration };
+    return { ok: true, output, duration };
   } catch (err: unknown) {
     const e = err as ExecSyncException;
     const duration = Date.now() - start;
@@ -135,6 +142,34 @@ async function getCandidatesNeedingManifestoEnrichment(): Promise<string[]> {
   return rows.map((r) => r.slug);
 }
 
+async function getCandidatesNeedingReview(): Promise<string[]> {
+  const rows = await db
+    .select({ slug: candidates.slug })
+    .from(candidates)
+    .where(
+      and(
+        isNotNull(candidates.aiSummary),
+        sql`(${candidates.lastReviewedAt} IS NULL OR ${candidates.lastEnrichedAt} > ${candidates.lastReviewedAt})`,
+      ),
+    )
+    .orderBy(sql`${candidates.lastEnrichedAt} DESC NULLS LAST`);
+  return rows.map((r) => r.slug);
+}
+
+async function getLastCycleTimestamp(): Promise<string> {
+  try {
+    const row = await db
+      .select({
+        lastRun: sql<Date | null>`max(${cronLogs.updatedAt})`,
+      })
+      .from(cronLogs)
+      .then((r) => r[0]);
+    return row?.lastRun ? new Date(row.lastRun).toISOString() : "never";
+  } catch {
+    return "unknown (cron_logs unavailable)";
+  }
+}
+
 async function triggerRevalidation(): Promise<boolean> {
   if (!REVALIDATION_SECRET) {
     console.log(
@@ -175,6 +210,10 @@ async function triggerRevalidation(): Promise<boolean> {
 }
 
 async function main() {
+  const cycleStart = Date.now();
+  const since = await getLastCycleTimestamp();
+  console.log(`[cycle] Starting — checking for changes since ${since}`);
+
   // Safety check: verify is_2026 counts are sane before proceeding
   const { active } = await db.select({
     active: sql<number>`COUNT(*) FILTER (WHERE is_2026 = true)`.mapWith(Number),
@@ -185,7 +224,6 @@ async function main() {
     process.exit(1);
   }
 
-  const cycleStart = Date.now();
   const runDate = new Date().toISOString().split("T")[0];
 
   console.log(`\n${"═".repeat(50)}`);
@@ -198,6 +236,8 @@ async function main() {
   const results: Record<string, { ok: boolean; duration: number }> = {};
 
   console.log("\n── Step 1: Scrape vote.je manifesto pages");
+  console.log(`[cycle] Step 1 scrape: starting`);
+  const step1Start = Date.now();
   const scrapeResult = await run(
     "npx tsx scripts/scrapers/scrape-vote-je-manifestos.ts",
     "Scraping vote.je for updated 2026 manifesto pages",
@@ -212,6 +252,9 @@ async function main() {
     : await getCandidatesNeedingManifestoEnrichment();
 
   console.log(
+    `[cycle] Step 1 scrape: found ${FORCE ? "all" : changedSlugs.length} changed candidates (${formatDuration(Date.now() - step1Start)})`,
+  );
+  console.log(
     `  Changed candidates: ${FORCE ? "ALL (force mode)" : changedSlugs.length}`,
   );
   if (changedSlugs.length > 0) {
@@ -219,7 +262,11 @@ async function main() {
   }
 
   if (FORCE || changedSlugs.length > 0) {
+    console.log(
+      `[cycle] Step 2 enrich: enriching ${FORCE ? "all" : changedSlugs.length} candidates`,
+    );
     console.log("\n── Step 3: Grok enrichment");
+    const step2Start = Date.now();
 
     if (FORCE) {
       const enrichResult = await run(
@@ -241,17 +288,28 @@ async function main() {
       }
       results.enrich = { ok: allEnrichOk, duration: enrichDuration };
     }
+    console.log(`[cycle] Step 2 enrich: done in ${formatDuration(Date.now() - step2Start)}`);
   } else {
+    console.log("[cycle] Step 2 enrich: skipped (0 changes)");
     console.log("\n── Step 3: No enrichment needed (no changes detected)");
     results.enrich = { ok: true, duration: 0 };
   }
 
   console.log("\n── Step 4: Kimi K2.6 supervision");
-  const superviseResult = await run(
-    "npx tsx scripts/review-summaries.ts",
-    "Kimi K2.6 reviewing new/changed summaries",
-  );
+  const reviewSlugs = await getCandidatesNeedingReview();
+  console.log(`[cycle] Step 3 supervise: reviewing ${reviewSlugs.length} candidates`);
+  const step3Start = Date.now();
+  const superviseResult =
+    reviewSlugs.length === 0 && !FORCE
+      ? { ok: true, output: "skipped (0 candidates)", duration: 0 }
+      : await run(
+          "npx tsx scripts/review-summaries.ts",
+          "Kimi K2.6 reviewing new/changed summaries",
+        );
   results.supervise = superviseResult;
+  if (reviewSlugs.length > 0 || FORCE) {
+    console.log(`[cycle] Step 3 supervise: done in ${formatDuration(Date.now() - step3Start)}`);
+  }
 
   const shouldRegenTopics =
     FORCE || changedSlugs.length >= TOPIC_REGEN_THRESHOLD;
@@ -298,6 +356,7 @@ async function main() {
   console.log(
     `Cache:     ${DRY_RUN ? "dry run (skipped)" : revalidated ? "revalidated" : "not revalidated"}`,
   );
+  console.log(`[cycle] Total: ${formatDuration(totalDuration)}`);
   console.log("");
 
   Object.entries(results).forEach(([step, result]) => {

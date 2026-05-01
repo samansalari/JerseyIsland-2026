@@ -16,6 +16,9 @@ import Firecrawl from "@mendable/firecrawl-js";
 // ── Config ──────────────────────────────────────────────────────────────────
 
 const RETRY_DELAY_MS = 5000;
+const DEFAULT_SCRAPE_TIMEOUT_MS = 60_000;
+const DEFAULT_BATCH_TIMEOUT_MS = 600_000;
+const DEFAULT_MAP_TIMEOUT_MS = 120_000;
 const DAILY_CREDIT_WARN_THRESHOLD =
   Number(process.env.FIRECRAWL_DAILY_CREDIT_LIMIT) || 500;
 
@@ -83,6 +86,26 @@ function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  label: string,
+): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(
+      () => reject(new Error(`${label} timed out after ${timeoutMs}ms`)),
+      timeoutMs,
+    );
+  });
+
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+}
+
 function toScrapedPage(data: any): ScrapedPage {
   return {
     url: data.metadata?.sourceURL || data.metadata?.url || "",
@@ -103,10 +126,15 @@ export async function scrapeUrl(
   options?: ScrapeOptions,
 ): Promise<ScrapedPage> {
   const formats = options?.formats ?? ["markdown"];
+  const timeout = options?.timeout ?? DEFAULT_SCRAPE_TIMEOUT_MS;
 
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      const result = await client.scrapeUrl(url, { formats });
+      const result = await withTimeout(
+        client.scrapeUrl(url, { formats }),
+        timeout,
+        `Scrape ${url}`,
+      );
 
       if (!result.success) {
         throw new FirecrawlError(
@@ -154,11 +182,16 @@ export async function batchScrapeUrls(
   if (urls.length === 0) return [];
 
   const formats = options?.formats ?? ["markdown"];
+  const timeout = options?.timeout ?? DEFAULT_SCRAPE_TIMEOUT_MS;
 
   console.log(`[firecrawl] Batch scrape: ${urls.length} URLs…`);
   const startTime = Date.now();
 
-  const result = await client.batchScrapeUrls(urls, { formats });
+  const result = await withTimeout(
+    client.batchScrapeUrls(urls, { formats }),
+    timeout,
+    `Batch scrape (${urls.length} URLs)`,
+  );
 
   if (!result.success) {
     throw new FirecrawlError(
@@ -187,7 +220,11 @@ export async function batchScrapeUrls(
 export async function mapSite(url: string): Promise<string[]> {
   console.log(`[firecrawl] Mapping ${url}…`);
 
-  const result = await client.mapUrl(url);
+  const result = await withTimeout(
+    client.mapUrl(url),
+    DEFAULT_MAP_TIMEOUT_MS,
+    `Map ${url}`,
+  );
 
   if (!result.success || !result.links || result.links.length === 0) {
     throw new FirecrawlError(
@@ -208,11 +245,15 @@ export async function mapSite(url: string): Promise<string[]> {
 export async function scrapePdf(url: string): Promise<ScrapedPage> {
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      const result = await client.scrapeUrl(url, {
-        formats: ["markdown"],
-        // @ts-expect-error — parsers option exists but may not be in SDK types yet
-        parsers: [{ type: "pdf", mode: "auto" }],
-      });
+      const result = await withTimeout(
+        client.scrapeUrl(url, {
+          formats: ["markdown"],
+          // @ts-expect-error — parsers option exists but may not be in SDK types yet
+          parsers: [{ type: "pdf", mode: "auto" }],
+        }),
+        DEFAULT_SCRAPE_TIMEOUT_MS,
+        `PDF scrape ${url}`,
+      );
 
       if (!result.success || !result.markdown) {
         throw new FirecrawlError(

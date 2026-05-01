@@ -216,54 +216,19 @@ async function triggerRevalidation() {
 
 async function sixHourCycle() {
   const cycleStart = Date.now();
-  log("CRON: Starting 6-hour cycle");
+  log("CRON: Starting 6-hour Public Pulse cycle");
 
-  // 1. Scrapers
-  const nowFlow = new Date().toISOString();
-  if (await runTask("SCRAPE flow.je", "scripts/scrapers/scrape-flow-je.ts")) {
-    state.lastScrape.flow_je = nowFlow;
-    state.lastScrapeResult.flow_je = "success";
-  } else {
-    state.lastScrape.flow_je = nowFlow;
-    state.lastScrapeResult.flow_je = "fail";
-  }
-
-  const nowVote = new Date().toISOString();
-  if (await runTask("SCRAPE vote.je", "scripts/scrapers/scrape-vote-je.ts")) {
-    state.lastScrape.vote_je = nowVote;
-    state.lastScrapeResult.vote_je = "success";
-  } else {
-    state.lastScrape.vote_je = nowVote;
-    state.lastScrapeResult.vote_je = "fail";
-  }
-
-  // policy.je scraper — uncomment when built
-  // if (await runTask("SCRAPE policy.je", "scripts/scrapers/scrape-policy-je.ts")) {
-  //   state.lastScrape.policy_je = new Date().toISOString();
-  // }
-
-  // 2. Candidate enrichment (for any that changed)
-  // Token usage and cost: child processes append to logs/token-usage.jsonl
-  // and print a summary on exit (see src/lib/token-tracker.ts), not in this process.
-  const nowEnr = new Date().toISOString();
-  if (await runTask("ENRICH candidates", "scripts/enrich.ts")) {
-    state.lastEnrichment = nowEnr;
-    state.lastEnrichmentResult = "success";
-  } else {
-    state.lastEnrichment = nowEnr;
-    state.lastEnrichmentResult = "fail";
-  }
-
-  // 3. Public Pulse summary (Grok → DB only; /api/pulse/insight reads cache)
+  // Public Pulse summary (Grok → DB only; /api/pulse/insight reads cache).
+  // Candidate scraping/enrichment belongs to dailyUpdateCycle; running it here
+  // made the 6-hour worker spend most of its life rechecking unchanged pages.
   await runTask("PULSE insight", "scripts/generate-pulse-insight.ts");
 
-  // 4. ISR revalidation
   await triggerRevalidation();
 
   saveState(state);
 
   const total = ((Date.now() - cycleStart) / 1000).toFixed(0);
-  log(`CRON: 6-hour cycle complete (total: ${total}s)\n`);
+  log(`CRON: 6-hour Public Pulse cycle complete (total: ${total}s)\n`);
 }
 
 async function twoHourCycle() {

@@ -46,6 +46,9 @@ import { cleanManifestoForStorage } from "../../src/lib/clean-manifesto";
 
 const BASE_URL = "https://www.vote.je";
 const RATE_LIMIT_MS = 1500;
+const FAST_EXIT_UNCHANGED_MATCHES = Number(
+  process.env.MANIFESTO_FAST_EXIT_UNCHANGED_MATCHES ?? "6",
+);
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const FIRECRAWL_API_KEY = process.env.FIRECRAWL_API_KEY;
@@ -271,6 +274,7 @@ type Stats = {
   updated: number;
   noMatch: number;
   failed: number;
+  fastExited: boolean;
 };
 
 type CandidateRow = typeof candidates.$inferSelect;
@@ -282,6 +286,7 @@ async function runPhase1(allCandidates: CandidateRow[]): Promise<Stats> {
     updated: 0,
     noMatch: 0,
     failed: 0,
+    fastExited: false,
   };
 
   console.log("[manifestos] Phase 1 — mapping vote.je for 2026 manifesto pages…");
@@ -307,6 +312,10 @@ async function runPhase1(allCandidates: CandidateRow[]): Promise<Stats> {
     );
     return stats;
   }
+
+  let unchangedHashMatches = 0;
+  const canFastExit =
+    !SLUG_FILTER && !DRY_RUN && FAST_EXIT_UNCHANGED_MATCHES > 0;
 
   for (const url of manifestoUrls) {
     console.log(`[manifestos] Scraping: ${url}`);
@@ -360,6 +369,7 @@ async function runPhase1(allCandidates: CandidateRow[]): Promise<Stats> {
     // Content unchanged — keep DB row as-is but record that we scraped successfully.
     if (prevHash !== "" && newHash === prevHash) {
       console.log(`  = Unchanged (hash match): ${existing.name}`);
+      unchangedHashMatches++;
       if (!DRY_RUN) {
         // IMPORTANT: never include is_2026 in this update — only sync-official-candidates.ts may set it
         await db
@@ -367,10 +377,25 @@ async function runPhase1(allCandidates: CandidateRow[]): Promise<Stats> {
           .set({ lastScrapedAt: new Date() })
           .where(eq(candidates.id, existing.id));
       }
+
+      if (
+        canFastExit &&
+        stats.updated === 0 &&
+        stats.failed === 0 &&
+        unchangedHashMatches >= FAST_EXIT_UNCHANGED_MATCHES
+      ) {
+        stats.fastExited = true;
+        console.log(
+          `[manifestos] Phase 1 — fast exit after ${unchangedHashMatches} unchanged hash matches; assuming no vote.je manifesto changes`,
+        );
+        break;
+      }
+
       await sleep(RATE_LIMIT_MS);
       continue;
     }
 
+    unchangedHashMatches = 0;
     console.log(
       `  ✓ Updating: ${existing.name} (${newLen} chars cleaned, was ${existingLen})`,
     );
@@ -430,6 +455,7 @@ type HistoricalStats = {
   skippedHas2026: number;
   noArchiveLink: number;
   failed: number;
+  fastExited: boolean;
 };
 
 const HISTORICAL_NOTE_PREFIX = "[Historical manifesto from vote.je —";
@@ -444,7 +470,11 @@ async function runPhase2(allCandidates: CandidateRow[]): Promise<HistoricalStats
     skippedHas2026: 0,
     noArchiveLink: 0,
     failed: 0,
+    fastExited: false,
   };
+
+  let unchangedSequential = 0;
+  const canFastExitPhase2 = !SLUG_FILTER && !DRY_RUN && FAST_EXIT_UNCHANGED_MATCHES > 0;
 
   console.log("[manifestos] Phase 2 — historical vote.je archive fallback…\n");
 
@@ -481,6 +511,33 @@ async function runPhase2(allCandidates: CandidateRow[]): Promise<HistoricalStats
         const yMatch = url.match(/\/candidates\/(\d{4})\//);
         return { url, year: yMatch ? Number(yMatch[1]) : 0 };
       });
+
+    // Fast path: candidate already has a stored historical manifesto with a known hash
+    // and the archive URL is known. Historical pages don't change, so skip re-scraping.
+    if (
+      archiveCandidates.length > 0 &&
+      candidate.manifestoRaw?.startsWith(HISTORICAL_NOTE_PREFIX) &&
+      candidate.dataHash
+    ) {
+      console.log(`  = Already has historical manifesto — skipping re-scrape`);
+      if (!DRY_RUN) {
+        await db
+          .update(candidates)
+          .set({ lastScrapedAt: new Date() })
+          .where(eq(candidates.id, candidate.id));
+      }
+      unchangedSequential++;
+      if (canFastExitPhase2 && unchangedSequential >= FAST_EXIT_UNCHANGED_MATCHES) {
+        stats.fastExited = true;
+        console.log(
+          `[manifestos] Phase 2 — fast exit after ${unchangedSequential} already-populated candidates`,
+        );
+        break;
+      }
+      await sleep(200);
+      continue;
+    }
+    unchangedSequential = 0;
 
     // If we don't have an archive URL stored, fish it out of flow.je.
     if (archiveCandidates.length === 0 && candidate.manifestoUrl) {
@@ -562,6 +619,7 @@ async function runPhase2(allCandidates: CandidateRow[]): Promise<HistoricalStats
       continue;
     }
 
+    unchangedSequential = 0;
     console.log(
       `  ✓ Updating: ${candidate.name} — ${body.length} chars from vote.je ${target.year}`,
     );
@@ -621,12 +679,39 @@ async function main() {
   console.log(`[manifestos] Loaded ${allCandidates.length} DB candidates\n`);
 
   const phase1 = SLUG_FILTER
-    ? { scraped: 0, matched: 0, updated: 0, noMatch: 0, failed: 0 }
+    ? {
+        scraped: 0,
+        matched: 0,
+        updated: 0,
+        noMatch: 0,
+        failed: 0,
+        fastExited: false,
+      }
     : await runPhase1(allCandidates);
 
-  // Reload candidates so Phase 2 sees Phase 1's writes.
-  const refreshed = await db.select().from(candidates);
-  const phase2 = await runPhase2(refreshed);
+  const emptyPhase2Stats: HistoricalStats = {
+    considered: 0,
+    scrapedFlow: 0,
+    archiveFound: 0,
+    archiveScraped: 0,
+    updated: 0,
+    skippedHas2026: 0,
+    noArchiveLink: 0,
+    failed: 0,
+    fastExited: false,
+  };
+
+  let phase2: HistoricalStats;
+  if (!SLUG_FILTER && phase1.fastExited) {
+    console.log(
+      "[manifestos] Phase 1 fast-exited — skipping Phase 2 (no vote.je changes detected)\n",
+    );
+    phase2 = emptyPhase2Stats;
+  } else {
+    // Reload candidates so Phase 2 sees Phase 1's writes.
+    const refreshed = await db.select().from(candidates);
+    phase2 = await runPhase2(refreshed);
+  }
 
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
@@ -637,6 +722,7 @@ async function main() {
   console.log(`[manifestos]   Updated  : ${phase1.updated}`);
   console.log(`[manifestos]   No match : ${phase1.noMatch}`);
   console.log(`[manifestos]   Failed   : ${phase1.failed}`);
+  console.log(`[manifestos]   Fast exit: ${phase1.fastExited ? "yes" : "no"}`);
   console.log(`[manifestos] Phase 2 (historical fallback)`);
   console.log(`[manifestos]   Considered      : ${phase2.considered}`);
   console.log(`[manifestos]   Flow.je rescrap : ${phase2.scrapedFlow}`);
@@ -646,6 +732,7 @@ async function main() {
   console.log(`[manifestos]   No archive link : ${phase2.noArchiveLink}`);
   console.log(`[manifestos]   Skipped (2026)  : ${phase2.skippedHas2026}`);
   console.log(`[manifestos]   Failed          : ${phase2.failed}`);
+  console.log(`[manifestos]   Fast exit       : ${phase2.fastExited ? "yes" : "no"}`);
   console.log(`[manifestos] Total: ${elapsed}s`);
   if (DRY_RUN) console.log("[manifestos] (DRY RUN — no DB writes)");
   if (phase1.updated + phase2.updated > 0) {
