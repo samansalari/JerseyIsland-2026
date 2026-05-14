@@ -47,3 +47,14 @@ logs/token-usage.jsonl
 
 # drizzle
 /drizzle/meta
+
+# local agent/editor metadata
+.agents/
+.claude/
+.continue/
+.continueignore
+.continuerules
+.cursor/
+.goose/
+.kilocode/
+skills/
